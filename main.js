@@ -1,5 +1,5 @@
 import {drawAnatomy} from './interpolateAnatomy.js';
-import {anatomyData, TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from '/constants.js';
+import {anatomyData, TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from './constants.js';
 import {Button} from './UIclasses/Button.js';
 import {Dropdown} from './UIclasses/Dropdown.js';
 import {NumberInput} from './UIclasses/NumberInput.js';

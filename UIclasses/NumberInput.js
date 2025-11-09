@@ -1,4 +1,4 @@
-import {getFontSize} from '/UIclasses/getFontSize.js';
+import {getFontSize} from './getFontSize.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
