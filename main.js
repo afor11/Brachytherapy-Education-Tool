@@ -1,9 +1,9 @@
-import {drawAnatomy} from '/interpolateAnatomy.js';
+import {drawAnatomy} from './interpolateAnatomy.js';
 import {anatomyData, TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from '/constants.js';
-import {Button} from '/UIclasses/Button.js';
-import {Dropdown} from '/UIclasses/Dropdown.js';
-import {NumberInput} from '/UIclasses/NumberInput.js';
-import {Slider} from '/UIclasses/Slider.js';
+import {Button} from './UIclasses/Button.js';
+import {Dropdown} from './UIclasses/Dropdown.js';
+import {NumberInput} from './UIclasses/NumberInput.js';
+import {Slider} from './UIclasses/Slider.js';
 
 let formattedAnatomy = {};
 scaleAnatomyData({x: 0,y: 0},500,10);
