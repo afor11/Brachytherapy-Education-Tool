@@ -1,0 +1,13 @@
+#container {
+    position: relative;
+}
+  
+#container canvas, #graph1, #graph2, #graph3 {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+  
+#canvas {
+    z-index: 2;
+}
