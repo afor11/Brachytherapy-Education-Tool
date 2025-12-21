@@ -7,7 +7,16 @@ const img = document.getElementById("image");
 // ## in the html, and these params
 
 const viewName = "axialView";
-let params = {BladderWidth:100,CervixWidth:35};
+let params = {
+    BladderWidth: 7,
+    BladderHeight: 3.5,
+    CervixDist: 0.3,
+    CervixWidth: 2.5,
+    CervixHeight: 1.3,
+    RectumDist: 0.5,
+    RectumWidth: 2,
+    RectumHeight: 1.5
+};
 const maxUndos = 75;
 
 /*
@@ -94,7 +103,9 @@ let data = {
     selectedControlPoint: {curveInd:-1, subcurveID: -1},
     blockFinished: false,
     curveTemp: [],
-    jsonData: {}
+    jsonData: {},
+    tapeMeasures: [],
+    addingTapeMeasure: false,
 };
 // default json data
 data.jsonData[viewName] = [
@@ -122,6 +133,82 @@ if (img.complete){
 }
 
 setInterval(tick,50);
+
+class MeasuringTape {
+    constructor (firstPoint, ID){
+        this.points = [firstPoint];
+        this.ID = ID;
+    }
+    checkClick() {
+        let numPointsBefore = this.points.length;
+        // clicking on a point removes it from a tape measure
+        this.points = this.points.filter((point) =>
+            !(getDistance([point.x, point.y],[mouse.x, mouse.y]) < 10 / window.devicePixelRatio)
+        );
+        if (this.points.length == 0){
+            //if the tape measure has no points, delete it
+            data.tapeMeasures.splice(this.ID,1);
+            return true;
+        }
+        if (this.points.length == numPointsBefore){
+            if (this.points.length < 2){
+                //add a point if no points were cliked and the tape measure does not have all its points
+                this.points.push({x: mouse.x, y: mouse.y});
+                return true;
+            }
+        }else{
+            //removeing a point counts as a fultilled click
+            return true;
+        }
+        return false;
+    }
+    getMeasurement(){
+        if (this.points.length < 2){return 0;}
+        return (
+            getDistance(
+                [this.points[0].x,this.points[0].y],
+                [this.points[1].x,this.points[1].y]
+            ) * data.measuredDistance / getDistance(
+                [data.measuringPoints[0].x,data.measuringPoints[0].y],
+                [data.measuringPoints[1].x,data.measuringPoints[1].y]
+            )
+        );
+    }
+    draw(){
+        if (this.points.length == 2){
+            //draw line
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 10 / window.devicePixelRatio;
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x,this.points[0].y);
+            ctx.lineTo(this.points[1].x,this.points[1].y);
+            ctx.stroke();
+            
+            //draw measurement
+            ctx.lineWidth = 1 / window.devicePixelRatio;
+            ctx.strokeStyle = "white";
+            ctx.fillText(
+                this.getMeasurement().toFixed(3) + "cm",
+                lerp(this.points[0].x,this.points[1].x,0.5),
+                lerp(this.points[0].y,this.points[1].y,0.5)
+            );
+            ctx.strokeText(
+                this.getMeasurement().toFixed(3) + "cm",
+                lerp(this.points[0].x,this.points[1].x,0.5),
+                lerp(this.points[0].y,this.points[1].y,0.5)
+            );
+        }
+
+        //draw points
+        ctx.fillStyle = "black";
+        this.points.forEach((point) => {
+            ctx.beginPath();
+            ctx.arc(point.x,point.y,10 / window.devicePixelRatio, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        });
+    }
+}
 
 function drawImage(){
     // if the image is loaded, scale it, then draw it to the canvas
@@ -182,6 +269,11 @@ function tick(){
         ctx.stroke();
     }
 
+    //draw the tape measures
+    data.tapeMeasures.forEach((tapeMeasure) => {
+        tapeMeasure.draw();
+    });
+
     let drawDefault = true;
     let menuPos = {
         x: window.scrollX,
@@ -218,7 +310,129 @@ function tick(){
     if (drawDefault){
         ctx.fillText(data.editingMode,menuPos.x,menuPos.y);
     }
-    ctx.fillText(JSON.stringify(params),menuPos.x,menuPos.y + (60 / window.devicePixelRatio));
+
+    //draw parameters
+    ctx.fillStyle = "black";
+    ctx.strokeStyle = "white";
+    ctx.lineWidth =  10 / window.devicePixelRatio;
+    ctx.font = (30 / window.devicePixelRatio) + "px Arial";
+    Object.keys(params).forEach((key,ind) => {
+        ctx.strokeText(
+            key + ": " + params[key],
+            menuPos.x + (40 / window.devicePixelRatio),
+            menuPos.y + (40 / window.devicePixelRatio) * (ind + 1)
+        );
+        ctx.fillText(
+            key + ": " + params[key],
+            menuPos.x + (40 / window.devicePixelRatio),
+            menuPos.y + (40 / window.devicePixelRatio) * (ind + 1)
+        );
+    });
+
+    //draw valid actions
+    ctx.textAlign = 'right';
+    getValidActions().forEach((action,ind) => {
+        ctx.strokeText(
+            action,
+            menuPos.x + (canvas.width * 0.99) / window.devicePixelRatio,
+            menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+        );
+        ctx.fillText(
+            action,
+            menuPos.x + (canvas.width * 0.99) / window.devicePixelRatio,
+            menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+        );
+    });
+    ctx.textAlign = 'left';
+}
+
+function getValidActions(){
+    let validActions = ["<: undo", ">: redo"];
+    if (data.editingMode === "enteringName"){
+        validActions.push("enter name");
+        return validActions;
+    }
+    validActions.push(
+        "q: toggle visable points",
+        "v: toggle showing curves",
+        "b: toggle showing picture"
+    );
+    if ((data.editingMode === "adjustingFillColor") || (data.editingMode === "adjustingOutlineColor")){
+        if (data.editingMode === "adjustingFillColor"){
+            validActions.push("c: edit outline color");
+        }else{
+            validActions.push("c: edit curve");
+        }
+        validActions.push(
+            "q/a: inc/dec hue",
+            "w/s: inc/dec saturation",
+            "e/d: inc/dec lightness",
+            "r/f: inc/dec alpha",
+        );
+        return validActions;
+    }
+    if ((data.editingMode === "enteringOrigin") || (data.editingMode === "loadingData")){
+        if (data.editingMode === "enteringOrigin"){
+            validActions.push("Enter: finish editing origin and edit name");
+        }else{
+            validActions.push("Enter: finish editing origin and edit curve");
+        }
+        validActions.push(
+            "w/ArrowUp: move origin up",
+            "s/ArrowDown: move origin down",
+            "a/ArrowLeft: move origin left",
+            "d/ArrowRight: move origin right",
+            "e: expand curves",
+            "r: contract curves"
+        );
+        if (data.editingMode === "loadingData"){
+            validActions.push(
+                "f: edit next param",
+                "h: edit last param",
+                "t/T: increment param",
+                "g/G: decrement param"
+            );
+        }
+        return validActions;
+    }
+    if ((data.editingMode === "editingCurve") && data.blockFinished){
+        validActions.push(
+            "a: finish drawing",
+            "y: split curve",
+            "z: to to last block",
+            "x: go to next block",
+            "t: vertically stretch block",
+            "g: vertically compress block",
+            "h: horizontally stretch block",
+            "f: horizontally compress block",
+            "m: new measuring tape"
+        );
+    }
+    if (data.editingMode === "enteringScale"){
+        validActions.push("enter scale (must be a number)");
+        return validActions;
+    }
+    if (data.blockFinished){
+        validActions.push(
+            "c: adjust fill color"
+        );
+    }else{
+        validActions.push(
+            "d: add curve",
+            "f: add end of block curve"
+        );
+    }
+    validActions.push(
+        "n: new block",
+        "w/s: inc/dec line thickness",
+        "p: save and print save string"
+    );
+    if (data.jsonData[viewName][viewInd].blocks.length > 1){
+        validActions.push(
+            "k: delete block"
+        );
+    }
+    return validActions;
 }
 
 function saveData(){
@@ -385,6 +599,10 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 document.addEventListener("keydown", (e) => {
+    if (e.key === "m"){
+        data.addingTapeMeasure = true;
+        return;
+    }
     if (data.editingMode === "enteringName"){
         if ((e.key === "Backspace") && (data.jsonData[viewName][viewInd].blocks[blockEditing].name.length > 0)){
             data.jsonData[viewName][viewInd].blocks[blockEditing].name = data.jsonData[viewName][viewInd].blocks[blockEditing].name.slice(0,-1);
@@ -528,6 +746,21 @@ document.addEventListener("keydown", (e) => {
             saveData();
             blockEditing = Math.min(blockEditing + 1, data.jsonData[viewName][viewInd].blocks.length - 1);
         }
+        if ("tfgh".includes(e.key)){
+            saveData();
+            let yScale = 0;
+            let xScale = 0;
+            if (e.key === "t"){yScale = 0.1;}
+            if (e.key === "g"){yScale = -0.1;}
+            if (e.key === "f"){xScale = 0.1;}
+            if (e.key === "h"){xScale = -0.1;}
+            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+                for (let i = 1; i < 5; i++){
+                    curve["y" + i] += (curve["y" + i] - mouse.y) * yScale;
+                    curve["x" + i] += (curve["x" + i] - mouse.x) * xScale;
+                }
+            });
+        }
     }
     if (data.editingMode === "enteringScale"){
         if ((e.key === "Backspace") && (data.measuredDistance.length > 0)){
@@ -587,7 +820,11 @@ document.addEventListener("keydown", (e) => {
     }
     if (e.key === "s"){ //decrement line thickness
         saveData();
-        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness--;
+        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness =
+            Math.max(
+                data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness - 1,
+                0
+            );
         return;
     }
     if ((e.key === "d") && !data.blockFinished){ // add curve
@@ -598,7 +835,7 @@ document.addEventListener("keydown", (e) => {
         data.editingMode = "finishingBlock";
         return;
     }
-    if ((e.key === "k") && (data.jsonData[viewName][viewInd].blocks.length > 1)){ //decrement line thickness
+    if ((e.key === "k") && (data.jsonData[viewName][viewInd].blocks.length > 0)){ //delete block
         saveData();
         data.jsonData[viewName][viewInd].blocks.splice(blockEditing,1);
         blockEditing = Math.max(blockEditing - 1, 0);
@@ -610,6 +847,19 @@ document.addEventListener("keydown", (e) => {
     }
 });
 document.addEventListener("click", (e) => {
+    if (data.addingTapeMeasure){
+        saveData();
+        data.tapeMeasures.push(
+            new MeasuringTape({x: mouse.x, y: mouse.y},data.tapeMeasures.length)
+        );
+        data.addingTapeMeasure = false;
+        return;
+    }
+    for (let i = 0; i < data.tapeMeasures.length; i++){
+        if (data.tapeMeasures[i].checkClick()){
+            return;
+        }
+    }
     if ((data.editingMode === "addingCurve") || (data.editingMode === "finishingBlock")){
         saveData();
         data.curveTemp.push(mouse.x);
