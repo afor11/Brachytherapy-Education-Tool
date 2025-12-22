@@ -6,18 +6,13 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "axialView";
-let params = {
-    BladderWidth: 7,
-    BladderHeight: 3.5,
-    CervixDist: 0.3,
-    CervixWidth: 2.5,
-    CervixHeight: 1.3,
-    RectumDist: 0.5,
-    RectumWidth: 2,
-    RectumHeight: 1.5
+const viewName = "axialView (Tandem + Ovoids)";
+const maxUndos = 100;
+let paramSet = {
+    tandemLength: [20, 60],
+    tandemAngle: [30, 90],
+    ovoidSize: [20, 35]
 };
-const maxUndos = 75;
 
 /*
 x = go to next block
@@ -65,6 +60,13 @@ b = toggle picture
 > = redo
 k = delete block
 y = split curve
+m = add new tape measure
+i/I = rotate block counter clockwise
+u/U = rotate block clockwise
+=/+: move block up
+]/}: move block down
+[/{: move block left
+\\/|: move block right
 load(loadString, resetLoadString) = when entered in console, loadString
 | will be loaded. If resetLoadString is true then the next time load is
 | called, it will just load what was initally loaded into loadString for
@@ -79,6 +81,38 @@ load(loadString, resetLoadString) = when entered in console, loadString
 
 //don't modify anything below here unless you know what you're doing
 
+// look through the param set and take the n-fold cartesian product of all
+// valid parameter values to generate a set of parameters the user can go
+// between using "n" (use the first element as the inital value of "params")
+let defaultParams = [];
+let paramSetLoop = [];
+let paramSetInd = 0;
+for (let i = 0; i < Object.keys(paramSet).length; i++){
+    paramSetLoop.push(0);
+}
+while (
+    paramSetLoop[paramSetLoop.length - 1]
+    < Object.values(paramSet)[paramSetLoop.length - 1].length
+){
+    defaultParams.push(
+        paramSetLoop.reduce((obj,num,keyInd) => {
+            obj[Object.keys(paramSet)[keyInd]] = Object.values(paramSet)[keyInd][num];
+            return obj;
+        },
+        {})
+    );
+    paramSetLoop[0]++;
+    paramSetLoop.forEach((value,ind) => {
+        if ((ind < (paramSetLoop.length - 1)) && (value >= Object.values(paramSet)[ind].length)){
+            paramSetLoop[ind] = 0;
+            paramSetLoop[ind + 1]++;
+        }
+    });
+}
+
+let params = {...defaultParams[0]};
+
+//setup canvas and variables
 ctx.canvas.width = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
 ctx.lineCap = "round";
@@ -174,33 +208,56 @@ class MeasuringTape {
             )
         );
     }
+    getAngle(){
+        if (this.points.length < 2){return 0;}
+        if (this.points[0].x == this.points[1].x){
+            return ((this.points[0].y > this.points[1].y) ? 1 : -1) * Math.PI / 2;
+        }
+        return Math.atan2(
+            this.points[0].y - this.points[1].y, //the y-coordinate subtraction order is flipped since y increases going up, not down
+            this.points[1].x - this.points[0].x
+        );
+    }
     draw(){
         if (this.points.length == 2){
             //draw line
             ctx.strokeStyle = "black";
             ctx.lineWidth = 10 / window.devicePixelRatio;
+            ctx.font = (50 / window.devicePixelRatio) + "px Arial";
             ctx.beginPath();
             ctx.moveTo(this.points[0].x,this.points[0].y);
             ctx.lineTo(this.points[1].x,this.points[1].y);
             ctx.stroke();
             
             //draw measurement
-            ctx.lineWidth = 1 / window.devicePixelRatio;
             ctx.strokeStyle = "white";
-            ctx.fillText(
-                this.getMeasurement().toFixed(3) + "cm",
+            ctx.strokeText(
+                this.getMeasurement().toFixed(3) + "mm",
                 lerp(this.points[0].x,this.points[1].x,0.5),
                 lerp(this.points[0].y,this.points[1].y,0.5)
             );
-            ctx.strokeText(
-                this.getMeasurement().toFixed(3) + "cm",
+            ctx.fillText(
+                this.getMeasurement().toFixed(3) + "mm",
                 lerp(this.points[0].x,this.points[1].x,0.5),
                 lerp(this.points[0].y,this.points[1].y,0.5)
+            );
+
+            //draw angle measurement
+            ctx.strokeText(
+                (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
+                lerp(this.points[0].x,this.points[1].x,0.5),
+                lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
+            );
+            ctx.fillText(
+                (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
+                lerp(this.points[0].x,this.points[1].x,0.5),
+                lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
             );
         }
 
         //draw points
         ctx.fillStyle = "black";
+        ctx.lineWidth = 3 / window.devicePixelRatio;
         this.points.forEach((point) => {
             ctx.beginPath();
             ctx.arc(point.x,point.y,10 / window.devicePixelRatio, 0, 2 * Math.PI);
@@ -316,16 +373,24 @@ function tick(){
     ctx.strokeStyle = "white";
     ctx.lineWidth =  10 / window.devicePixelRatio;
     ctx.font = (30 / window.devicePixelRatio) + "px Arial";
+    let paramYOffset = 1;
+
+    if (data.addingTapeMeasure || ((data.tapeMeasures.length > 0) && (data.tapeMeasures[data.tapeMeasures.length - 1].points.length < 2))){
+        ctx.strokeText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
+        ctx.fillText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
+        paramYOffset = 2;
+    }
+
     Object.keys(params).forEach((key,ind) => {
         ctx.strokeText(
             key + ": " + params[key],
             menuPos.x + (40 / window.devicePixelRatio),
-            menuPos.y + (40 / window.devicePixelRatio) * (ind + 1)
+            menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
         );
         ctx.fillText(
             key + ": " + params[key],
             menuPos.x + (40 / window.devicePixelRatio),
-            menuPos.y + (40 / window.devicePixelRatio) * (ind + 1)
+            menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
         );
     });
 
@@ -347,7 +412,7 @@ function tick(){
 }
 
 function getValidActions(){
-    let validActions = ["<: undo", ">: redo"];
+    let validActions = ["<: undo", ">: redo", "m: new measuring tape"];
     if (data.editingMode === "enteringName"){
         validActions.push("enter name");
         return validActions;
@@ -390,7 +455,8 @@ function getValidActions(){
                 "f: edit next param",
                 "h: edit last param",
                 "t/T: increment param",
-                "g/G: decrement param"
+                "g/G: decrement param",
+                "n/N: move through given parameter set"
             );
         }
         return validActions;
@@ -405,7 +471,12 @@ function getValidActions(){
             "g: vertically compress block",
             "h: horizontally stretch block",
             "f: horizontally compress block",
-            "m: new measuring tape"
+            "u/U: rotate block left",
+            "i/I: rotate block right",
+            "=/+: move block up",
+            "]/}: move block down",
+            "[/{: move block left",
+            "\\/|: move block right",
         );
     }
     if (data.editingMode === "enteringScale"){
@@ -425,13 +496,9 @@ function getValidActions(){
     validActions.push(
         "n: new block",
         "w/s: inc/dec line thickness",
-        "p: save and print save string"
+        "p: save and print save string",
+        "k: delete block"
     );
-    if (data.jsonData[viewName][viewInd].blocks.length > 1){
-        validActions.push(
-            "k: delete block"
-        );
-    }
     return validActions;
 }
 
@@ -600,6 +667,7 @@ document.addEventListener("mousemove", (e) => {
 });
 document.addEventListener("keydown", (e) => {
     if (e.key === "m"){
+        saveData();
         data.addingTapeMeasure = true;
         return;
     }
@@ -723,6 +791,16 @@ document.addEventListener("keydown", (e) => {
                 params[Object.keys(params)[paramEditing]] += [1,0.015625,-1,-0.015625]["tTgG".indexOf(e.key)];
                 load(jsonString,false);
             }
+            if (e.key === "n"){
+                paramSetInd = Math.max(paramSetInd + 1, 0)
+                params = {...defaultParams[paramSetInd]};
+                load(jsonString,false);
+            }
+            if (e.key === "N"){
+                paramSetInd = Math.min(paramSetInd - 1, defaultParams.length - 1)
+                params = {...defaultParams[paramSetInd]};
+                load(jsonString,false);
+            }
         }
         if ((e.key != "<") && (e.key != ">")){
             return;
@@ -752,12 +830,43 @@ document.addEventListener("keydown", (e) => {
             let xScale = 0;
             if (e.key === "t"){yScale = 0.1;}
             if (e.key === "g"){yScale = -0.1;}
-            if (e.key === "f"){xScale = 0.1;}
-            if (e.key === "h"){xScale = -0.1;}
+            if (e.key === "f"){xScale = -0.1;}
+            if (e.key === "h"){xScale = 0.1;}
             data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
-                    curve["y" + i] += (curve["y" + i] - mouse.y) * yScale;
                     curve["x" + i] += (curve["x" + i] - mouse.x) * xScale;
+                    curve["y" + i] += (curve["y" + i] - mouse.y) * yScale;
+                }
+            });
+        }
+        if ("uUiI".includes(e.key)){
+            saveData();
+            let dAngle = [0.2,0.1,-0.2,-0.1]["uUiI".indexOf(e.key)];
+            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+                for (let i = 1; i < 5; i++){
+                    let x = (curve["x" + i] - mouse.x);
+                    let y = (curve["y" + i] - mouse.y);
+                    curve["x" + i] = x * Math.cos(dAngle) - y * Math.sin(dAngle) + mouse.x;
+                    curve["y" + i] = x * Math.sin(dAngle) + y * Math.cos(dAngle) + mouse.y;
+                }
+            });
+        }
+        if ("=+[{]}\\|".includes(e.key)){
+            saveData();
+            let xOffset = 0;
+            let yOffset = 0;
+            if (e.key === "]"){yOffset = 10;}
+            if (e.key === "}"){yOffset = 1;}
+            if (e.key === "="){yOffset = -10;}
+            if (e.key === "+"){yOffset = -1;}
+            if (e.key === "\\"){xOffset = 10;}
+            if (e.key === "|"){xOffset = 1;}
+            if (e.key === "["){xOffset = -10;}
+            if (e.key === "{"){xOffset = -1;}
+            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+                for (let i = 1; i < 5; i++){
+                    curve["x" + i] += xOffset;
+                    curve["y" + i] += yOffset;
                 }
             });
         }
@@ -801,6 +910,7 @@ document.addEventListener("keydown", (e) => {
         nextDatas.unshift(cloneObj(data));
         data = cloneObj(lastDatas[lastDatas.length - 1]);
         lastDatas.splice(lastDatas.length - 1);
+        blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
         return;
     }
     if ((e.key === ">") && (nextDatas.length > 0)){ //redo
@@ -811,6 +921,7 @@ document.addEventListener("keydown", (e) => {
         if (lastDatas.length > maxUndos){
             lastDatas = lastDatas.splice(1);
         }
+        blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
         return;
     }
     if (e.key === "w"){ //increment line thickness
@@ -835,7 +946,7 @@ document.addEventListener("keydown", (e) => {
         data.editingMode = "finishingBlock";
         return;
     }
-    if ((e.key === "k") && (data.jsonData[viewName][viewInd].blocks.length > 0)){ //delete block
+    if (e.key === "k"){ //delete block
         saveData();
         data.jsonData[viewName][viewInd].blocks.splice(blockEditing,1);
         blockEditing = Math.max(blockEditing - 1, 0);
@@ -848,7 +959,6 @@ document.addEventListener("keydown", (e) => {
 });
 document.addEventListener("click", (e) => {
     if (data.addingTapeMeasure){
-        saveData();
         data.tapeMeasures.push(
             new MeasuringTape({x: mouse.x, y: mouse.y},data.tapeMeasures.length)
         );
