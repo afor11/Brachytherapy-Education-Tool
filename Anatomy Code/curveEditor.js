@@ -6,18 +6,19 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "axialView (Tandem + Ovoids)";
+const viewName = "axialView(Tandem+Ovoids)"; // viewname cannot have whitespace
 const maxUndos = 100;
 let paramSet = {
     tandemLength: [20, 60],
     tandemAngle: [30, 90],
     ovoidSize: [20, 35]
 };
+let usingParamSet = true;
 
 /*
 x = go to next block
 z = go to last block
-p = log json save data
+o = log json save data
 n = new block
 c = toggle editing block colors
 q =
@@ -63,10 +64,10 @@ y = split curve
 m = add new tape measure
 i/I = rotate block counter clockwise
 u/U = rotate block clockwise
-=/+: move block up
-]/}: move block down
-[/{: move block left
-\\/|: move block right
+p/P: move block up
+;/:: move block down
+l/L: move block left
+'/": move block right
 load(loadString, resetLoadString) = when entered in console, loadString
 | will be loaded. If resetLoadString is true then the next time load is
 | called, it will just load what was initally loaded into loadString for
@@ -81,36 +82,40 @@ load(loadString, resetLoadString) = when entered in console, loadString
 
 //don't modify anything below here unless you know what you're doing
 
-// look through the param set and take the n-fold cartesian product of all
-// valid parameter values to generate a set of parameters the user can go
-// between using "n" (use the first element as the inital value of "params")
+let params;
 let defaultParams = [];
-let paramSetLoop = [];
 let paramSetInd = 0;
-for (let i = 0; i < Object.keys(paramSet).length; i++){
-    paramSetLoop.push(0);
+if (usingParamSet){
+    // look through the param set and take the n-fold cartesian product of all
+    // valid parameter values to generate a set of parameters the user can go
+    // between using "n" (use the first element as the inital value of "params")
+    let paramSetLoop = [];
+    for (let i = 0; i < Object.keys(paramSet).length; i++){
+        paramSetLoop.push(0);
+    }
+    while (
+        paramSetLoop[paramSetLoop.length - 1]
+        < Object.values(paramSet)[paramSetLoop.length - 1].length
+    ){
+        defaultParams.push(
+            paramSetLoop.reduce((obj,num,keyInd) => {
+                obj[Object.keys(paramSet)[keyInd]] = Object.values(paramSet)[keyInd][num];
+                return obj;
+            },
+            {})
+        );
+        paramSetLoop[0]++;
+        paramSetLoop.forEach((value,ind) => {
+            if ((ind < (paramSetLoop.length - 1)) && (value >= Object.values(paramSet)[ind].length)){
+                paramSetLoop[ind] = 0;
+                paramSetLoop[ind + 1]++;
+            }
+        });
+    }
+    params = {...defaultParams[0]};
+}else{
+    params = {...paramSet};
 }
-while (
-    paramSetLoop[paramSetLoop.length - 1]
-    < Object.values(paramSet)[paramSetLoop.length - 1].length
-){
-    defaultParams.push(
-        paramSetLoop.reduce((obj,num,keyInd) => {
-            obj[Object.keys(paramSet)[keyInd]] = Object.values(paramSet)[keyInd][num];
-            return obj;
-        },
-        {})
-    );
-    paramSetLoop[0]++;
-    paramSetLoop.forEach((value,ind) => {
-        if ((ind < (paramSetLoop.length - 1)) && (value >= Object.values(paramSet)[ind].length)){
-            paramSetLoop[ind] = 0;
-            paramSetLoop[ind + 1]++;
-        }
-    });
-}
-
-let params = {...defaultParams[0]};
 
 //setup canvas and variables
 ctx.canvas.width = window.innerWidth;
@@ -181,6 +186,9 @@ class MeasuringTape {
         );
         if (this.points.length == 0){
             //if the tape measure has no points, delete it
+            for (let i = this.ID + 1; i < data.tapeMeasures.length; i++){ //decrement all ID's after the deleted one
+                data.tapeMeasures[i].ID--;
+            }
             data.tapeMeasures.splice(this.ID,1);
             return true;
         }
@@ -229,30 +237,32 @@ class MeasuringTape {
             ctx.lineTo(this.points[1].x,this.points[1].y);
             ctx.stroke();
             
-            //draw measurement
-            ctx.strokeStyle = "white";
-            ctx.strokeText(
-                this.getMeasurement().toFixed(3) + "mm",
-                lerp(this.points[0].x,this.points[1].x,0.5),
-                lerp(this.points[0].y,this.points[1].y,0.5)
-            );
-            ctx.fillText(
-                this.getMeasurement().toFixed(3) + "mm",
-                lerp(this.points[0].x,this.points[1].x,0.5),
-                lerp(this.points[0].y,this.points[1].y,0.5)
-            );
+            if (showControlPoints) {
+                //draw measurement
+                ctx.strokeStyle = "white";
+                ctx.strokeText(
+                    this.getMeasurement().toFixed(3) + "mm",
+                    lerp(this.points[0].x,this.points[1].x,0.5),
+                    lerp(this.points[0].y,this.points[1].y,0.5)
+                );
+                ctx.fillText(
+                    this.getMeasurement().toFixed(3) + "mm",
+                    lerp(this.points[0].x,this.points[1].x,0.5),
+                    lerp(this.points[0].y,this.points[1].y,0.5)
+                );
 
-            //draw angle measurement
-            ctx.strokeText(
-                (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
-                lerp(this.points[0].x,this.points[1].x,0.5),
-                lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
-            );
-            ctx.fillText(
-                (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
-                lerp(this.points[0].x,this.points[1].x,0.5),
-                lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
-            );
+                //draw angle measurement
+                ctx.strokeText(
+                    (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
+                    lerp(this.points[0].x,this.points[1].x,0.5),
+                    lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
+                );
+                ctx.fillText(
+                    (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
+                    lerp(this.points[0].x,this.points[1].x,0.5),
+                    lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
+                );
+            }
         }
 
         //draw points
@@ -361,7 +371,17 @@ function tick(){
         drawDefault = false;
     }
     if (data.editingMode === "loadingData"){
-        ctx.fillText("Loading Data (Editing: " + Object.keys(params)[paramEditing] + ")",menuPos.x,menuPos.y);
+        ctx.fillText(
+            "Loading Data (Editing: "
+                + Object.keys(params)[paramEditing]
+                + (
+                    usingParamSet ?
+                        (", " + ((paramSetInd / (defaultParams.length - 1)) * 100).toFixed(1) + "%")
+                    :
+                        ""
+                ) + ")",
+            menuPos.x,menuPos.y
+        );
         drawDefault = false;
     }
     if (drawDefault){
@@ -467,16 +487,16 @@ function getValidActions(){
             "y: split curve",
             "z: to to last block",
             "x: go to next block",
-            "t: vertically stretch block",
-            "g: vertically compress block",
-            "h: horizontally stretch block",
-            "f: horizontally compress block",
+            "t/T: vertically stretch block",
+            "g/G: vertically compress block",
+            "h/H: horizontally stretch block",
+            "f/F: horizontally compress block",
             "u/U: rotate block left",
             "i/I: rotate block right",
-            "=/+: move block up",
-            "]/}: move block down",
-            "[/{: move block left",
-            "\\/|: move block right",
+            "p/P: move block up",
+            ";/:: move block down",
+            "l/L: move block left",
+            "'/\": move block right",
         );
     }
     if (data.editingMode === "enteringScale"){
@@ -496,7 +516,7 @@ function getValidActions(){
     validActions.push(
         "n: new block",
         "w/s: inc/dec line thickness",
-        "p: save and print save string",
+        "o: save and print save string",
         "k: delete block"
     );
     return validActions;
@@ -792,12 +812,12 @@ document.addEventListener("keydown", (e) => {
                 load(jsonString,false);
             }
             if (e.key === "n"){
-                paramSetInd = Math.max(paramSetInd + 1, 0)
+                paramSetInd = Math.min(paramSetInd + 1, defaultParams.length - 1)
                 params = {...defaultParams[paramSetInd]};
                 load(jsonString,false);
             }
             if (e.key === "N"){
-                paramSetInd = Math.min(paramSetInd - 1, defaultParams.length - 1)
+                paramSetInd = Math.max(paramSetInd - 1, 0)
                 params = {...defaultParams[paramSetInd]};
                 load(jsonString,false);
             }
@@ -824,14 +844,18 @@ document.addEventListener("keydown", (e) => {
             saveData();
             blockEditing = Math.min(blockEditing + 1, data.jsonData[viewName][viewInd].blocks.length - 1);
         }
-        if ("tfgh".includes(e.key)){
+        if ("tTfFgGhH".includes(e.key)){
             saveData();
             let yScale = 0;
             let xScale = 0;
             if (e.key === "t"){yScale = 0.1;}
+            if (e.key === "T"){yScale = 0.01;}
             if (e.key === "g"){yScale = -0.1;}
+            if (e.key === "G"){yScale = -0.01;}
             if (e.key === "f"){xScale = -0.1;}
+            if (e.key === "F"){xScale = -0.01;}
             if (e.key === "h"){xScale = 0.1;}
+            if (e.key === "H"){xScale = 0.01;}
             data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     curve["x" + i] += (curve["x" + i] - mouse.x) * xScale;
@@ -851,18 +875,18 @@ document.addEventListener("keydown", (e) => {
                 }
             });
         }
-        if ("=+[{]}\\|".includes(e.key)){
+        if (";:pP'\"lL".includes(e.key)){
             saveData();
             let xOffset = 0;
             let yOffset = 0;
-            if (e.key === "]"){yOffset = 10;}
-            if (e.key === "}"){yOffset = 1;}
-            if (e.key === "="){yOffset = -10;}
-            if (e.key === "+"){yOffset = -1;}
-            if (e.key === "\\"){xOffset = 10;}
-            if (e.key === "|"){xOffset = 1;}
-            if (e.key === "["){xOffset = -10;}
-            if (e.key === "{"){xOffset = -1;}
+            if (e.key === ";"){yOffset = 10;}
+            if (e.key === ":"){yOffset = 1;}
+            if (e.key === "p"){yOffset = -10;}
+            if (e.key === "P"){yOffset = -1;}
+            if (e.key === "'"){xOffset = 10;}
+            if (e.key === "\""){xOffset = 1;}
+            if (e.key === "l"){xOffset = -10;}
+            if (e.key === "L"){xOffset = -1;}
             data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     curve["x" + i] += xOffset;
@@ -952,7 +976,7 @@ document.addEventListener("keydown", (e) => {
         blockEditing = Math.max(blockEditing - 1, 0);
         return;
     }
-    if (e.key === "p"){ //save
+    if (e.key === "o"){ //save
         console.log(getSaveString());
         return;
     }
