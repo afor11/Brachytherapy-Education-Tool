@@ -1,10 +1,10 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , graphToScreenPos , cloneObj, getMax, getMin} from './utils.js';
-import { ctx, moduleData } from './main.js';
+import { magnitude , cloneObj, getMax, getMin} from './utils.js';
+import { ctx, moduleData , module} from './main.js';
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -15,6 +15,7 @@ export class Graph {
         this.yTicks = yTicks;
         this.perspective = perspective; //maps coordinates on the graph to coordinates in space (allows to adjust perspective)
         this.graphDimensions = {x: 0, y: 0, width: 0, height: 0};
+        this.name = name;
     }
     getPointDose(pos){
         return this.seeds.reduce((z,seed) => {
@@ -121,16 +122,20 @@ export class Graph {
                     ctx.fillStyle = "rgb(0, 0, 0)";
                     ctx.strokeStyle = "rgb(255, 255, 255)";
                 }
-                let screenPos = graphToScreenPos({x: seedPos.x,y: seedPos.y},graph,bound);
+                let screenPos = this.graphToScreenPos({x: seedPos.x,y: seedPos.y});
                 ctx.beginPath();
                 ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
                 ctx.stroke();
                 ctx.fill();
             }
         });
-        if ((typeof moduleData.selectedSeed != "undefined") && (moduleData.selectedSeed != -1) && ((module === "brachytherapy applicators") || (moduleData.selectedGraph === name))){
+        if (
+            (typeof moduleData.selectedSeed != "undefined")
+            && (moduleData.selectedSeed != -1)
+            && ((module === "brachytherapy applicators") || (moduleData.selectedGraph === this.name))
+        ){
             ctx.fillStyle = "rgb(169, 255, 103)";
-            let screenPos = graphToScreenPos(graph.perspective(graph.seeds[moduleData.selectedSeed].pos),graph,bound);
+            let screenPos = this.graphToScreenPos(this.perspective(this.seeds[moduleData.selectedSeed].pos));
             ctx.beginPath();
             ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
             ctx.fill();

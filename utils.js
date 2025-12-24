@@ -44,13 +44,6 @@ export function lerp(a,b,t){
     return (a == b) ? a : (a + (t * (b - a)));
 }
 
-export function graphToScreenPos(pos,graph,boundingBox){
-    return {
-        x: boundingBox.x + ((pos.x - getMin(graph.xTicks)) / (getMax(graph.xTicks) - getMin(graph.xTicks))) * boundingBox.width,
-        y: boundingBox.y + boundingBox.height - ((pos.y - getMin(graph.yTicks)) / (getMax(graph.yTicks) - getMin(graph.yTicks))) * boundingBox.height,
-    };
-}
-
 export function getFontSize(width,height,label,font){
     if (!width || !height || !label || !font){return 0}
     let metrics = ctx.measureText(label);

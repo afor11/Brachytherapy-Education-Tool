@@ -5,11 +5,12 @@ import {NumberInput} from './UIclasses/NumberInput.js';
 import {Slider} from './UIclasses/Slider.js';
 import {Seed} from './seed.js';
 import {Graph} from './graph.js';
-import { graphToScreenPos , getFontSize, getMin, getMax, convertUnit} from './utils.js';
+import { getFontSize, getMin, getMax, convertUnit} from './utils.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
 export let moduleData = {};
+export let module = "single seed";
 
 ctx.canvas.width = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
@@ -19,7 +20,6 @@ let mouseGraphPos = {x: 0, y: 0};
 let scrollPos = {x: 0, y: 0};
 let render = true; // used to indicate if the graphs should be re-drawn
 let resetGraphs = true;
-let module = "single seed";
 let savedModuleData = {};
 
 const airKermaSliderLimits ={
@@ -47,12 +47,12 @@ function tick(){
         if (render){
             if (module === "brachytherapy applicators"){
                 if (resetGraphs){
-                    adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", boundingBox: moduleData.divBoundGraph1, view: "front"});
+                    adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
                     if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-                        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", boundingBox: moduleData.divBoundGraph2, view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+                        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
                     }
                     if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-                        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", boundingBox: moduleData.divBoundGraph3, view: "top"});
+                        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
                     }
                     moduleData.graph1refPointLabel = [];
                     moduleData.graph1refPoints.forEach((refPoint) => {
@@ -78,20 +78,18 @@ function tick(){
                     resetGraphs = false;
                 }
                 adjustFormatting();
-                moduleData.divBoundGraph1 = moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
+                moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
                 if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-                    moduleData.divBoundGraph2 = moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
+                    moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
                 }
                 if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-                    moduleData.divBoundGraph3 = moduleData.graph3.drawGraph(document.getElementById("graph3"),moduleData.graph3refPoints);
+                    moduleData.graph3.drawGraph(document.getElementById("graph3"),moduleData.graph3refPoints);
                 }
             }else{
                 adjustFormatting();
-                if (moduleData.divBoundGraph1){
-                    moduleData.divBoundGraph1 = moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
-                }
-                if (moduleData.divBoundGraph2){
-                    moduleData.divBoundGraph2 = moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
+                moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
+                if (typeof moduleData.graph2 != "undefined"){
+                    moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
                 }
             }
             render = false;
@@ -146,8 +144,8 @@ function tick(){
         moduleData.graph1ModelDropdown.drawDropdown();
         moduleData.graph2ModelDropdown.drawDropdown();
 
-        drawSeed(moduleData.graph1.seeds[0],moduleData.graph1,moduleData.divBoundGraph1);
-        drawSeed(moduleData.graph2.seeds[0],moduleData.graph2,moduleData.divBoundGraph2);
+        drawSeed(moduleData.graph1.seeds[0],moduleData.graph1);
+        drawSeed(moduleData.graph2.seeds[0],moduleData.graph2);
     }
     if (module === "string of seeds"){
         ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -310,11 +308,11 @@ function tick(){
         //reset dwell times button
         moduleData.resetDwellTimes.draw();
 
-        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", boundingBox: moduleData.divBoundGraph1, view: "front"});
+        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
         moduleData.graph1DrawApplicator();
         // erase graph2 if applicator is Vaginal Cylinder
         if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", boundingBox: moduleData.divBoundGraph2, view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
             moduleData.graph2DrawApplicator();
         }else{
             let div = document.getElementById("graph2");
@@ -324,7 +322,7 @@ function tick(){
         }
         // add graph3 if applicator is Tandem/Ovoids
         if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", boundingBox: moduleData.divBoundGraph3, view: "top"});
+            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
             moduleData.graph3DrawApplicator();
         }else{
             let div = document.getElementById("graph3");
@@ -362,11 +360,7 @@ function tick(){
                                 z: moduleData[`graph${j + 1}`].zSlice
                             })
                         );
-                        let barPos1 = graphToScreenPos(
-                            transformedSlice,
-                            moduleData[`graph${i + 1}`],
-                            moduleData[`divBoundGraph${i + 1}`]
-                        );
+                        let barPos1 = moduleData[`graph${i + 1}`].graphToScreenPos(transformedSlice);
                         ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
                         ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.003;
                         ctx.beginPath();
@@ -382,9 +376,7 @@ function tick(){
                 }
             }
         }
-        //ctx.fillStyle = "black";
-        //ctx.fillRect(moduleData.graph1.x,moduleData.graph1.y,moduleData.graph1.width,moduleData.graph1.height);
-        moduleData.graph1.overlayAnatomy("axialView(Tandem/Ovoids)");
+        //moduleData.graph1.overlayAnatomy("axialView(Tandem/Ovoids)");
     }
     // draw reference point labels
     let numGraphs;
@@ -399,9 +391,9 @@ function tick(){
     }
     for (let i = 0; i < numGraphs; i++){
         moduleData[`graph${i + 1}refPoints`].forEach((refPoint,ind) => {
-            let divBound = moduleData[`divBoundGraph${i + 1}`];
-            let refPos = graphToScreenPos(moduleData[`graph${i + 1}`].perspective(refPoint),moduleData[`graph${i + 1}`],divBound);
-            let size = Math.min(divBound.width,divBound.height) * 0.01;
+            let labeledGraph = moduleData[`graph${i + 1}`];
+            let refPos = moduleData[`graph${i + 1}`].graphToScreenPos(moduleData[`graph${i + 1}`].perspective(refPoint));
+            let size = Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.01;
             ctx.strokeStyle = "red";
             ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.003;
             ctx.beginPath();
@@ -419,16 +411,16 @@ function tick(){
     }
     if ((module === "string of seeds") || (module === "planar array of seeds") || (module === "brachytherapy applicators")){
         //draw "dwell positions of seeds" graph1
-        drawGraphSeeds(moduleData.graph1,moduleData.divBoundGraph1,"graph1");
+        moduleData.graph1.drawGraphSeeds();
     }
     if (moduleData.graph1){
         // label dose at cursor graph 1
-        if ((mouse.x > moduleData.divBoundGraph1.x) && (mouse.x < moduleData.divBoundGraph1.x + moduleData.divBoundGraph1.width)
-            && (mouse.y > moduleData.divBoundGraph1.y) && (mouse.y < moduleData.divBoundGraph1.y + moduleData.divBoundGraph1.height)){
+        if ((mouse.x > moduleData.graph1.graphDimensions.x) && (mouse.x < moduleData.graph1.graphDimensions.x + moduleData.graph1.graphDimensions.width)
+            && (mouse.y > moduleData.graph1.graphDimensions.y) && (mouse.y < moduleData.graph1.graphDimensions.y + moduleData.graph1.graphDimensions.height)){
             mouseGraphPos = {
-                x: (((mouse.x - moduleData.divBoundGraph1.x) / moduleData.divBoundGraph1.width)*
+                x: (((mouse.x - moduleData.graph1.graphDimensions.x) / moduleData.graph1.graphDimensions.width)*
                     (getMax(moduleData.graph1.xTicks) - getMin(moduleData.graph1.xTicks)) + getMin(moduleData.graph1.xTicks)),
-                y: (((mouse.y - moduleData.divBoundGraph1.y) / moduleData.divBoundGraph1.height)*
+                y: (((mouse.y - moduleData.graph1.graphDimensions.y) / moduleData.graph1.graphDimensions.height)*
                     (getMin(moduleData.graph1.yTicks) - getMax(moduleData.graph1.yTicks)) + getMax(moduleData.graph1.yTicks))
             }
             ctx.beginPath();
@@ -445,12 +437,12 @@ function tick(){
     if (moduleData.graph2){
 
         //dose label for graph 2
-        if ((mouse.x > moduleData.divBoundGraph2.x) && (mouse.x < moduleData.divBoundGraph2.x + moduleData.divBoundGraph2.width)
-            && (mouse.y > moduleData.divBoundGraph2.y) && (mouse.y < moduleData.divBoundGraph2.y + moduleData.divBoundGraph2.height)){
+        if ((mouse.x > moduleData.graph2.graphDimensions.x) && (mouse.x < moduleData.graph2.graphDimensions.x + moduleData.graph2.graphDimensions.width)
+            && (mouse.y > moduleData.graph2.graphDimensions.y) && (mouse.y < moduleData.graph2.graphDimensions.y + moduleData.graph2.graphDimensions.height)){
             mouseGraphPos = {
-                x: (((mouse.x - moduleData.divBoundGraph2.x) / moduleData.divBoundGraph2.width)*
+                x: (((mouse.x - moduleData.graph2.graphDimensions.x) / moduleData.graph2.graphDimensions.width)*
                     (getMax(moduleData.graph2.xTicks) - getMin(moduleData.graph2.xTicks)) + getMin(moduleData.graph2.xTicks)),
-                y: (((mouse.y - moduleData.divBoundGraph2.y) / moduleData.divBoundGraph2.height)*
+                y: (((mouse.y - moduleData.graph2.graphDimensions.y) / moduleData.graph2.graphDimensions.height)*
                     (getMin(moduleData.graph2.yTicks) - getMax(moduleData.graph2.yTicks)) + getMax(moduleData.graph2.yTicks))
             }
             ctx.beginPath();
@@ -468,21 +460,21 @@ function tick(){
         if (module != "single seed"){
             if (module === "brachytherapy applicators"){
                 if (moduleData.applicatorModel.name != "Vaginal Cylinder"){
-                    drawGraphSeeds(moduleData.graph2,moduleData.divBoundGraph2,"graph2");
+                    moduleData.graph2.drawGraphSeeds();
                 }
             }else{
-                drawGraphSeeds(moduleData.graph2,moduleData.divBoundGraph2,"graph2");
+                moduleData.graph2.drawGraphSeeds();
             }
         }
     }
     if (moduleData.graph3 && (moduleData.applicatorModel.name === "Tandem/Ovoids")){
         //dose label for graph 3
-        if ((mouse.x > moduleData.divBoundGraph3.x) && (mouse.x < moduleData.divBoundGraph3.x + moduleData.divBoundGraph3.width)
-            && (mouse.y > moduleData.divBoundGraph3.y) && (mouse.y < moduleData.divBoundGraph3.y + moduleData.divBoundGraph3.height)){
+        if ((mouse.x > moduleData.graph3.graphDimensions.x) && (mouse.x < moduleData.graph3.graphDimensions.x + moduleData.graph3.graphDimensions.width)
+            && (mouse.y > moduleData.graph3.graphDimensions.y) && (mouse.y < moduleData.graph3.graphDimensions.y + moduleData.graph3.graphDimensions.height)){
             mouseGraphPos = {
-                x: (((mouse.x - moduleData.divBoundGraph3.x) / moduleData.divBoundGraph3.width)*
+                x: (((mouse.x - moduleData.graph3.graphDimensions.x) / moduleData.graph3.graphDimensions.width)*
                     (getMax(moduleData.graph3.xTicks) - getMin(moduleData.graph3.xTicks)) + getMin(moduleData.graph3.xTicks)),
-                y: (((mouse.y - moduleData.divBoundGraph3.y) / moduleData.divBoundGraph3.height)*
+                y: (((mouse.y - moduleData.graph3.graphDimensions.y) / moduleData.graph3.graphDimensions.height)*
                     (getMin(moduleData.graph3.yTicks) - getMax(moduleData.graph3.yTicks)) + getMax(moduleData.graph3.yTicks))
             }
             ctx.beginPath();
@@ -497,12 +489,12 @@ function tick(){
         }
 
         //draw "dwell positions of seeds" graph3
-        drawGraphSeeds(moduleData.graph3,moduleData.divBoundGraph3,"graph3");
+        moduleData.graph3.drawGraphSeeds();
     }
     if ((typeof moduleData.selectedSeed != "undefined") && (moduleData.selectedSeed != -1) && (module === "brachytherapy applicators")){
         // draw Dwell time box in brachy applicators module
         let selectedGraph = moduleData[moduleData.selectedGraph];
-        let seedPos = graphToScreenPos(selectedGraph.perspective(selectedGraph.seeds[moduleData.selectedSeed].pos),selectedGraph,moduleData["divBoundG" + moduleData.selectedGraph.substring(1)]);
+        let seedPos = selectedGraph.graphToScreenPos(selectedGraph.perspective(selectedGraph.seeds[moduleData.selectedSeed].pos));
         let editMenuPos = {x: 0, y: 0};
         if (seedPos.x < canvas.width * 0.5){
             editMenuPos.x = seedPos.x + canvas.width * 0.05;;
@@ -578,13 +570,11 @@ function initModule(mod,previousMod){
         for (let j = -2; j <= 2; j+= 0.0625){ticks.push(j);}
         moduleData = {
             graph1: (
-                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
+                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph1"}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
             ),
-            divBoundGraph1: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
             graph2: (
-                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},GammaMedHDRPlus,airKermaSliderLimits.HDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
+                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},GammaMedHDRPlus,airKermaSliderLimits.HDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph2"}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
             ),
-            divBoundGraph2: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
             graph1ModelDropdown: new Dropdown(
                 new Button({x: 0, y: 0, width: 0, height: 0, bgColor: "black", onClick: () => {},label: {text: "", font: "default", color: "white"}, outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}),[]
             ),
@@ -667,8 +657,7 @@ function initModule(mod,previousMod){
         for (let j = -10; j <= 10; j+= 0.25){xTicks.push(j);}
         for (let j = -2; j <= 2; j += 0.125){yTicks.push(j);}
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x: 0, y: 0, z: 0},{phi: 0, theta: 0},BEBIG_GK60M21,airKermaSliderLimits.HDR.min,0.00833)],xTicks: xTicks, yTicks: yTicks, perspective: (point) => point}),
-            divBoundGraph1: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x: 0, y: 0, z: 0},{phi: 0, theta: 0},BEBIG_GK60M21,airKermaSliderLimits.HDR.min,0.00833)],xTicks: xTicks, yTicks: yTicks, perspective: (point) => point, name: "graph1"}),
             graph1refPoints: [{x: 0, y: 1, z: 0}],
             addSeed: new Button({x: 0, y: 0, width: 0, height: 0, label: {text: "Add Source +",font: "default", color: "black"}, bgColor: "rgb(40, 197, 53)",
                 onClick: () => {
@@ -726,8 +715,7 @@ function initModule(mod,previousMod){
         let graphTick = [];
         for (let j = -5; j <= 5; j+= 0.25){graphTick.push(j);}
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point}),
-            divBoundGraph1: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph1"}),
             graph1refPoints: [{x: 0, y: 0, z: 0}],
             graph1SeedSpacing: 1,
             graph1SeedSpacingSlider: new Slider(0,0,0,0,"black",0,0.5),
@@ -771,8 +759,7 @@ function initModule(mod,previousMod){
                     }
                 },outline: {color: "black",thickness: Math.min(canvas.width,canvas.height) * 0.001}
             }),
-            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point}),
-            divBoundGraph2: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
+            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph2"}),
             graph2refPoints: [{x: 0, y: 0, z: 0}],
             graph2SeedSpacing: 1,
             graph2SeedSpacingSlider: new Slider(0,0,0,0,"black",0,0.5),
@@ -856,10 +843,9 @@ function initModule(mod,previousMod){
     }
     if (mod === "brachytherapy applicators"){
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], perspective: (point) => point}),
-            divBoundGraph1: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], perspective: (point) => point, name: "graph1"}),
             graph1refPoints: [{x: 0, y: 0, z: 0}],
-            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [],
+            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph2",
                 perspective: (point) => {
                     return {
                         x: point.z,
@@ -868,9 +854,8 @@ function initModule(mod,previousMod){
                     };
                 }
             }),
-            divBoundGraph2: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
             graph2refPoints: [{x: 0, y: 0, z: 0}],
-            graph3: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [],
+            graph3: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph3",
                 perspective: (point) => {
                     return {
                         x: point.x,
@@ -879,7 +864,6 @@ function initModule(mod,previousMod){
                     };
                 }
             }),
-            divBoundGraph3: {bottom: 1157, height: 1057, left: 80, right: 1115, top: 100, width: 1035, x: 80, y: 100},
             graph3refPoints: [{x: 0, y: 0, z: 0}],
             graphModelDropdown: new Dropdown(
                 new Button({x: 0, y: 0, width: 0, height: 0, bgColor: "black", onClick: () => {},label: {text: "", font: "default", color: "white"}, outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}),[]
@@ -902,9 +886,9 @@ function initModule(mod,previousMod){
             }),
         }
         moduleData.applicatorModel = {name: "Vaginal Cylinder", length: 4, diameter: 2, angle: 90};
-        adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", boundingBox: moduleData.divBoundGraph1, view: "front"});
-        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", boundingBox: moduleData.divBoundGraph2, view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
-        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", boundingBox: moduleData.divBoundGraph3, view: "top"});
+        adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
+        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
         // fill options for seed model dropdown
         for (let i = 0; i < 3; i++){
             let seedModel = [GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource][i];
@@ -1935,7 +1919,7 @@ function adjustFormatting(){
         if (typeof moduleData.selectedGraph != "undefined"){
             if (moduleData.selectedSeed != -1){
                 let selectedGraph = moduleData[moduleData.selectedGraph];
-                let seedPos = graphToScreenPos(selectedGraph.perspective(selectedGraph.seeds[moduleData.selectedSeed].pos),selectedGraph,moduleData["divBoundG" + moduleData.selectedGraph.substring(1)]);
+                let seedPos = selectedGraph.graphToScreenPos(selectedGraph.perspective(selectedGraph.seeds[moduleData.selectedSeed].pos));
                 let editMenuPos = {x: 0, y: 0};
                 if (seedPos.x < canvas.width * 0.5){
                     editMenuPos.x = seedPos.x + canvas.width * 0.05;;
@@ -1988,12 +1972,12 @@ function adjustFormatting(){
 
         formatApplicatorTypeDropdown(moduleData.applicatorModelDropdown,0);
 
-        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", boundingBox: moduleData.divBoundGraph1, view: "front"});
+        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
         if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", boundingBox: moduleData.divBoundGraph2, view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
         }
         if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", boundingBox: moduleData.divBoundGraph3, view: "top"});
+            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
         }
 
         moduleData.graphModelDropdown.options.forEach((opt,ind) => {
@@ -2018,13 +2002,13 @@ function adjustFormatting(){
         for (let i = 0; i < numGraphs; i++){
             let refPointLabels = moduleData[`graph${i + 1}refPointLabel`];
             refPointLabels.forEach((refPointLabel,ind) => {
-                let divBound = moduleData[`divBoundGraph${i + 1}`];
-                let refPos = graphToScreenPos(moduleData[`graph${i + 1}refPoints`][ind],moduleData[`graph${i + 1}`],divBound);
+                let labeledGraph = moduleData[`graph${i + 1}`];
+                let refPos = labeledGraph.graphToScreenPos(moduleData[`graph${i + 1}refPoints`][ind]);
 
-                refPointLabel.x = refPos.x + Math.min(divBound.width,divBound.height) * 0.02;
+                refPointLabel.x = refPos.x + Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.02;
                 refPointLabel.y = refPos.y;
-                refPointLabel.width = Math.min(divBound.width,divBound.height) * 0.15;
-                refPointLabel.height = Math.min(divBound.width,divBound.height) * 0.075;
+                refPointLabel.width = Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.15;
+                refPointLabel.height = Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.075;
             });
         }
     }
@@ -2086,25 +2070,25 @@ function checkOnMouseDown(){ // run only on mouse down
         moduleData.seedSpacingLabel.checkClicked();
         moduleData.airKermaLabel.checkClicked();
         moduleData.dwellTimeLabel.checkClicked();
-        checkSeedClicked(moduleData.graph1,moduleData.divBoundGraph1,"graph1");
+        checkSeedClicked(moduleData.graph1,"graph1");
     }
     if (module === "planar array of seeds"){
         moduleData.graph1SeedSpacingLabel.checkClicked();
         moduleData.graph2SeedSpacingLabel.checkClicked();
         moduleData.airKermaLabel.checkClicked();
         moduleData.dwellTimeLabel.checkClicked();
-        checkSeedClicked(moduleData.graph1,moduleData.divBoundGraph1,"graph1");
-        checkSeedClicked(moduleData.graph2,moduleData.divBoundGraph2,"graph2");
+        checkSeedClicked(moduleData.graph1,"graph1");
+        checkSeedClicked(moduleData.graph2,"graph2");
     }
     if (module === "brachytherapy applicators"){
         moduleData.dwellTimeLabel.checkClicked();
         moduleData.airKermaLabel.checkClicked();
-        checkSeedClicked(moduleData.graph1,moduleData.divBoundGraph1,"graph1");
+        checkSeedClicked(moduleData.graph1,"graph1");
         if (moduleData.applicatorModel.name != "Vaginal Cylinder"){
-            checkSeedClicked(moduleData.graph2,moduleData.divBoundGraph2,"graph2");
+            checkSeedClicked(moduleData.graph2,"graph2");
         }
         if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-            checkSeedClicked(moduleData.graph3,moduleData.divBoundGraph3,"graph3");
+            checkSeedClicked(moduleData.graph3,"graph3");
         }
     }
     // for every module other than single seed, loop over all reference labels and check for click
@@ -2179,18 +2163,18 @@ addEventListener("mouseup",function (e){
 addEventListener("keydown",function (e) {
     let selectedGraph;
     if (typeof moduleData.graph2 != "undefined"){
-        if ((mouse.x > moduleData.divBoundGraph1.x) && (mouse.x < moduleData.divBoundGraph1.x + moduleData.divBoundGraph1.width)
-            && (mouse.y > moduleData.divBoundGraph1.y) && (mouse.y < moduleData.divBoundGraph1.y + moduleData.divBoundGraph1.height)){
+        if ((mouse.x > moduleData.graph1.graphDimensions.x) && (mouse.x < moduleData.graph1.graphDimensions.x + moduleData.graph1.graphDimensions.width)
+            && (mouse.y > moduleData.graph1.graphDimensions.y) && (mouse.y < moduleData.graph1.graphDimensions.y + moduleData.graph1.graphDimensions.height)){
             selectedGraph = moduleData.graph1;
         }
-        if ((mouse.x > moduleData.divBoundGraph2.x) && (mouse.x < moduleData.divBoundGraph2.x + moduleData.divBoundGraph2.width)
-            && (mouse.y > moduleData.divBoundGraph2.y) && (mouse.y < moduleData.divBoundGraph2.y + moduleData.divBoundGraph2.height)){
+        if ((mouse.x > moduleData.graph2.graphDimensions.x) && (mouse.x < moduleData.graph2.graphDimensions.x + moduleData.graph2.graphDimensions.width)
+            && (mouse.y > moduleData.graph2.graphDimensions.y) && (mouse.y < moduleData.graph2.graphDimensions.y + moduleData.graph2.graphDimensions.height)){
             selectedGraph = moduleData.graph2;
         }
         // this statement not only checks if graph3 is defined, but if the user is in the tandem and ring applicator model type, such as to not falsely select an invisible graph
         if (typeof moduleData.graph3 != "undefined" && ((module === "brachytherapy applicators") ? (moduleData.applicatorModel.name != "Tandem/Ring") : true)){
-            if ((mouse.x > moduleData.divBoundGraph3.x) && (mouse.x < moduleData.divBoundGraph3.x + moduleData.divBoundGraph3.width)
-                && (mouse.y > moduleData.divBoundGraph3.y) && (mouse.y < moduleData.divBoundGraph3.y + moduleData.divBoundGraph3.height)){
+            if ((mouse.x > moduleData.graph3.graphDimensions.x) && (mouse.x < moduleData.graph3.graphDimensions.x + moduleData.graph3.graphDimensions.width)
+                && (mouse.y > moduleData.graph3.graphDimensions.y) && (mouse.y < moduleData.graph3.graphDimensions.y + moduleData.graph3.graphDimensions.height)){
                 selectedGraph = moduleData.graph3;
             }
         }
@@ -2262,14 +2246,14 @@ function getValueFromAirKerma(seed){
 function getValueFromDwellTime(seed){
     return seed.dwellTime / 0.0833333333333;
 }
-function checkSeedClicked(graph,boundingBox,graphName){
+function checkSeedClicked(graph,graphName){
     let seedRadius = Math.min(canvas.width,canvas.height * 0.9) * 0.01; // the radius is double the actual size of the drawn dots for ease of selection
     let ind = graph.seeds.findIndex((seed) => {
-        let seedScreenPos = graphToScreenPos(seed.pos,graph,boundingBox);
+        let seedScreenPos = graph.graphToScreenPos(seed.pos);
         return (Math.sqrt((mouse.x - seedScreenPos.x)**2 + (mouse.y - seedScreenPos.y)**2) <= seedRadius);
     });
     ind = graph.seeds.reduce((closestSeed,seed,currInd) => {
-        let seedScreenPos = graphToScreenPos(graph.perspective(seed.pos),graph,boundingBox);
+        let seedScreenPos = graph.graphToScreenPos(graph.perspective(seed.pos));
         let dist = Math.sqrt((mouse.x - seedScreenPos.x)**2 + (mouse.y - seedScreenPos.y)**2);
         if ((dist <= seedRadius) && ((closestSeed.ind == -1) || (dist < closestSeed.dist))){
             return {dist: dist, ind: currInd};
@@ -2298,42 +2282,16 @@ function checkSeedClicked(graph,boundingBox,graphName){
         }
     }
 }
-function drawSeed(seed,graph,bounds){
-    let centerPos = graphToScreenPos(seed.pos,graph,bounds);
-    let cornerPos = graphToScreenPos({x: (seed.pos.x - (seed.model.sourceLength / 2)), y: (seed.pos.y + (seed.model.sourceDiameter / 2))},graph,bounds);
+function drawSeed(seed,graph){
+    let centerPos = graph.graphToScreenPos(seed.pos);
+    let cornerPos = graph.graphToScreenPos({
+        x: (seed.pos.x - (seed.model.sourceLength / 2)),
+        y: (seed.pos.y + (seed.model.sourceDiameter / 2))
+    });
     ctx.fillStyle = "rgb(58, 58, 58)";
     ctx.beginPath();
     ctx.roundRect(cornerPos.x,cornerPos.y,2 * (centerPos.x - cornerPos.x),2 * (centerPos.y - cornerPos.y),Math.min(centerPos.x - cornerPos.x,centerPos.y - cornerPos.y));
     ctx.fill();
-}
-function drawGraphSeeds(graph,bound,name){
-    let seedRadius = Math.min(canvas.width,canvas.height * 0.9) * 0.005;
-    ctx.lineWidth = seedRadius * 0.5;
-    graph.seeds.forEach((seed) => {
-        let seedPos = graph.perspective(seed.pos);
-        if ((seedPos.x <= getMax(graph.xTicks)) && (seedPos.x >= getMin(graph.xTicks))
-            && (seedPos.y <= getMax(graph.yTicks)) && (seedPos.y >= getMin(graph.yTicks))){
-            if ((!seed.enabled) || (seed.model.HDRsource && (seed.dwellTime == 0))){
-                ctx.fillStyle = "rgb(255, 255, 255)";
-                ctx.strokeStyle = "rgb(0, 0, 0)";
-            }else{
-                ctx.fillStyle = "rgb(0, 0, 0)";
-                ctx.strokeStyle = "rgb(255, 255, 255)";
-            }
-            let screenPos = graphToScreenPos({x: seedPos.x,y: seedPos.y},graph,bound);
-            ctx.beginPath();
-            ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
-            ctx.stroke();
-            ctx.fill();
-        }
-    });
-    if ((typeof moduleData.selectedSeed != "undefined") && (moduleData.selectedSeed != -1) && ((module === "brachytherapy applicators") || (moduleData.selectedGraph === name))){
-        ctx.fillStyle = "rgb(169, 255, 103)";
-        let screenPos = graphToScreenPos(graph.perspective(graph.seeds[moduleData.selectedSeed].pos),graph,bound);
-        ctx.beginPath();
-        ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
-        ctx.fill();
-    }
 }
 function setDoseAtPoint(graph,point,prescription,dwellTimeSlider,airKermaSlider){
     const searchPrecision = 20;
@@ -2374,7 +2332,7 @@ function setDoseAtPoint(graph,point,prescription,dwellTimeSlider,airKermaSlider)
     }
     render = true;
 }
-function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunction: drawFunction,boundingBox: boundingBox, view: view}){
+function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunction: drawFunction, view: view}){
     let seedModel = (moduleData.graph1.seeds.length > 0) ? moduleData.graph1.seeds[0].model : GammaMedHDRPlus;
     let airKerma = airKermaSliderLimits.HDR.min;
     if (model.name === "Vaginal Cylinder"){
@@ -2453,23 +2411,23 @@ function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunct
         }
     }
     graph.zSlice = 0;
-    adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundingBox: boundingBox, view: view});
+    adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction, view: view});
 }
-function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundingBox: boundingBox, view: view}){
+function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction, view: view}){
     moduleData[drawFunction] = function () {
-        let origin = graphToScreenPos({x: 0, y: 0},graph,boundingBox); // origin :)
+        let origin = graph.graphToScreenPos({x: 0, y: 0}); // origin :)
         // draw the tandem bit without the curve
         ctx.strokeStyle = "black";
         ctx.lineWidth = Math.min(canvas.width,canvas.height * 0.9) * 0.005;
         if (model.name === "Vaginal Cylinder"){
             model.angle = 90;
-            drawAngledTandem(model,graph,boundingBox,origin);
+            drawAngledTandem(model,graph,origin);
         }
         if (model.name === "Tandem/Ovoids"){
             if (view === "front"){
                 //draw ovoids
-                let ovoidRight = graphToScreenPos({x: model.ovoidDiameter / 2, y: -model.ovoidDiameter / 2},graph,boundingBox);
-                let ovoidLeft = graphToScreenPos({x: -model.ovoidDiameter / 2, y: -model.ovoidDiameter / 2},graph,boundingBox);
+                let ovoidRight = graph.graphToScreenPos({x: model.ovoidDiameter / 2, y: -model.ovoidDiameter / 2});;
+                let ovoidLeft = graph.graphToScreenPos({x: -model.ovoidDiameter / 2, y: -model.ovoidDiameter / 2});;
                 let startAngle = Math.atan2(Math.sqrt(((model.ovoidDiameter / 2) ** 2) - (((model.diameter - model.ovoidDiameter) / 2) ** 2)),(model.diameter - model.ovoidDiameter) / 2);
                 ctx.beginPath();
                 ctx.ellipse(ovoidRight.x,ovoidRight.y,Math.abs(origin.x - ovoidRight.x),Math.abs(origin.y - ovoidRight.y),0,startAngle,2 * Math.PI - startAngle,true);
@@ -2481,26 +2439,26 @@ function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundi
                 // draw tandem
                 let frontModel = {...model};
                 frontModel.angle = 90; //this makes the tandem straight from this perspective
-                drawAngledTandem(frontModel,graph,boundingBox,origin);
+                drawAngledTandem(frontModel,graph,origin);
             }
             if (view === "side"){
                 // draw ovoid
-                let pos5 = graphToScreenPos({x: -1.5, y: 0},graph,boundingBox);
-                let pos6 = graphToScreenPos({x: 1.5, y: -model.ovoidDiameter},graph,boundingBox);
+                let pos5 = graph.graphToScreenPos({x: -1.5, y: 0});
+                let pos6 = graph.graphToScreenPos({x: 1.5, y: -model.ovoidDiameter});;
                 ctx.beginPath();
                 ctx.roundRect(pos5.x,pos5.y,pos6.x - pos5.x,pos6.y - pos5.y,Math.min((pos6.x - pos5.x) / 3, (pos6.y - pos5.y) / 3));
                 ctx.stroke();
                 // draw tandem
-                drawAngledTandem(model,graph,boundingBox,origin);
+                drawAngledTandem(model,graph,origin);
             }
             if (view === "top"){
-                let pos1 = graphToScreenPos({x: -model.diameter / 2, y: model.diameter / 2},graph,boundingBox); // top left of tandem, used to skew tandem when aspect ratio is incorrect
+                let pos1 = graph.graphToScreenPos({x: -model.diameter / 2, y: model.diameter / 2}); // top left of tandem, used to skew tandem when aspect ratio is incorrect
                 ctx.fillStyle = "black";
                 ctx.beginPath();
                 ctx.ellipse(origin.x,origin.y,origin.x - pos1.x,origin.y - pos1.y,0,0,2 * Math.PI);
                 ctx.fill();
-                let pos2 = graphToScreenPos({x: -model.ovoidDiameter, y: 1.5},graph,boundingBox); // top left of left ovoid
-                let fillet = graphToScreenPos({x: -1, y: 1},graph,boundingBox);
+                let pos2 = graph.graphToScreenPos({x: -model.ovoidDiameter, y: 1.5}); // top left of left ovoid
+                let fillet = graph.graphToScreenPos({x: -1, y: 1});
                 ctx.beginPath();
                 ctx.roundRect(pos2.x,pos2.y,origin.x - pos2.x, 2 * (origin.y - pos2.y), Math.min(origin.x - fillet.x, origin.y - fillet.y));
                 ctx.stroke();
@@ -2510,8 +2468,8 @@ function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundi
             }else{
                 // draw "lip" on the tandem
                 ctx.lineWidth = Math.min(canvas.width,canvas.height * 0.9) * 0.005;
-                let pos3 = graphToScreenPos({x: -0.8, y: 0.2},graph,boundingBox);
-                let pos4 = graphToScreenPos({x: 0.8, y: 0},graph,boundingBox);
+                let pos3 = graph.graphToScreenPos({x: -0.8, y: 0.2});
+                let pos4 = graph.graphToScreenPos({x: 0.8, y: 0});
                 ctx.beginPath();
                 ctx.roundRect(pos3.x,pos3.y,pos4.x - pos3.x,pos4.y - pos3.y, (pos4.y - pos3.y) / 2);
                 ctx.stroke();
@@ -2519,11 +2477,11 @@ function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundi
         }
         if (model.name === "Tandem/Ring"){
             if (view === "front"){
-                let leftRingBoxLeftCorner = graphToScreenPos({x: - (model.ringDiameter / 2) - 0.6, y: 0},graph,boundingBox);
-                let leftRingBoxRightCorner = graphToScreenPos({x: - (model.ringDiameter / 2) + 0.6, y: -0.75},graph,boundingBox);
-                let rightRingBoxLeftCorner = graphToScreenPos({x: (model.ringDiameter / 2) - 0.6, y: 0},graph,boundingBox);
-                let rightRingBoxRightCorner = graphToScreenPos({x: (model.ringDiameter / 2) + 0.6, y: -0.75},graph,boundingBox);
-                let round = graphToScreenPos({x: 0.3, y: 0},graph,boundingBox).x - origin.x;
+                let leftRingBoxLeftCorner = graph.graphToScreenPos({x: - (model.ringDiameter / 2) - 0.6, y: 0});
+                let leftRingBoxRightCorner = graph.graphToScreenPos({x: - (model.ringDiameter / 2) + 0.6, y: -0.75});
+                let rightRingBoxLeftCorner = graph.graphToScreenPos({x: (model.ringDiameter / 2) - 0.6, y: 0});
+                let rightRingBoxRightCorner = graph.graphToScreenPos({x: (model.ringDiameter / 2) + 0.6, y: -0.75});
+                let round = graph.graphToScreenPos({x: 0.3, y: 0}).x - origin.x;
                 ctx.beginPath();
                 ctx.roundRect(leftRingBoxLeftCorner.x,leftRingBoxLeftCorner.y,leftRingBoxRightCorner.x - leftRingBoxLeftCorner.x,leftRingBoxRightCorner.y - leftRingBoxLeftCorner.y,[0,0,round,round]);
                 ctx.roundRect(rightRingBoxLeftCorner.x,rightRingBoxLeftCorner.y,rightRingBoxRightCorner.x - rightRingBoxLeftCorner.x,rightRingBoxRightCorner.y - rightRingBoxLeftCorner.y,[0,0,round,round]);
@@ -2534,13 +2492,13 @@ function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundi
                 ctx.beginPath();
                 ctx.arc((rightRingBoxLeftCorner.x + rightRingBoxRightCorner.x) / 2,rightRingBoxLeftCorner.y,(rightRingBoxRightCorner.x - rightRingBoxLeftCorner.x) / 2,0,Math.PI,true);
                 ctx.stroke();
-                drawAngledTandem(model,graph,boundingBox,origin);
+                drawAngledTandem(model,graph,origin);
             }
             if (view === "top"){
-                let xInnerRadius = graphToScreenPos({x: (model.ringDiameter / 2) - 0.6, y: 0},graph,boundingBox).x - origin.x;
-                let yInnerRadius = origin.y - graphToScreenPos({x: 0, y: (model.ringDiameter / 2) - 0.6},graph,boundingBox).y;
-                let xOuterRadius = graphToScreenPos({x: (model.ringDiameter / 2) + 0.6, y: 0},graph,boundingBox).x - origin.x;
-                let yOuterRadius = origin.y - graphToScreenPos({x: 0, y: (model.ringDiameter / 2) + 0.6},graph,boundingBox).y;
+                let xInnerRadius = graph.graphToScreenPos({x: (model.ringDiameter / 2) - 0.6, y: 0}).x - origin.x;
+                let yInnerRadius = origin.y - graph.graphToScreenPos({x: 0, y: (model.ringDiameter / 2) - 0.6}).y;
+                let xOuterRadius = graph.graphToScreenPos({x: (model.ringDiameter / 2) + 0.6, y: 0}).x - origin.x;
+                let yOuterRadius = origin.y - graph.graphToScreenPos({x: 0, y: (model.ringDiameter / 2) + 0.6}).y;
                 ctx.beginPath();
                 ctx.ellipse(origin.x,origin.y,xInnerRadius,yInnerRadius,0,0,2 * Math.PI);
                 ctx.stroke();
@@ -2551,9 +2509,9 @@ function adjustApplicatorRenderer(graph,model,{drawFunction: drawFunction,boundi
         }
     }
 }
-function drawAngledTandem(model,graph,boundingBox,origin){
-    let pos1 = graphToScreenPos({x: -model.diameter / 2, y: model.length + ((model.name === "Tandem/Ovoids") ? 0.2: 0)},graph,boundingBox); // top left of tandem
-    let pos2 = graphToScreenPos({x: model.diameter / 2, y: ((model.name === "Tandem/Ovoids") ? 0.2 : 0)},graph,boundingBox); // bottom right of tandem
+function drawAngledTandem(model,graph,origin){
+    let pos1 = graph.graphToScreenPos({x: -model.diameter / 2, y: model.length + ((model.name === "Tandem/Ovoids") ? 0.2: 0)}); // top left of tandem
+    let pos2 = graph.graphToScreenPos({x: model.diameter / 2, y: ((model.name === "Tandem/Ovoids") ? 0.2 : 0)}); // bottom right of tandem
     ctx.beginPath();
     ctx.roundRect(pos1.x,pos1.y,pos2.x - pos1.x, pos2.y - pos1.y, [(pos2.x - pos1.x) / 2,(pos2.x - pos1.x) / 2,0,0]);
     ctx.stroke();
@@ -2561,28 +2519,22 @@ function drawAngledTandem(model,graph,boundingBox,origin){
     let pos3;
     let pos4;
     if (model.name === "Tandem/Ovoids"){
-        pos3 = graphToScreenPos({x: 0, y: -model.ovoidDiameter / 2},graph,boundingBox); // point centered between two ovoids
-        pos4 = graphToScreenPos(
-            {
-                x: (model.ovoidDiameter / 2) * Math.cos(radianAngle),
-                y: - (model.ovoidDiameter / 2) + (model.ovoidDiameter / 2) * Math.sin(radianAngle)
-            },
-            graph,boundingBox
-        );
+        pos3 = graph.graphToScreenPos({x: 0, y: -model.ovoidDiameter / 2}); // point centered between two ovoids
+        pos4 = graph.graphToScreenPos({
+            x: (model.ovoidDiameter / 2) * Math.cos(radianAngle),
+            y: - (model.ovoidDiameter / 2) + (model.ovoidDiameter / 2) * Math.sin(radianAngle)
+        });
     }else{
-        pos3 = graphToScreenPos({x: 0, y: -0.5},graph,boundingBox); // point centered between two ovoids
-        pos4 = graphToScreenPos(
-            {
-                x:  Math.cos(radianAngle),
-                y: -0.5 + Math.sin(radianAngle)
-            },
-            graph,boundingBox
-        );
+        pos3 = graph.graphToScreenPos({x: 0, y: -0.5}); // point centered between two ovoids
+        pos4 = graph.graphToScreenPos({
+            x:  Math.cos(radianAngle),
+            y: -0.5 + Math.sin(radianAngle)
+        });
     }
-    let endPos = graphToScreenPos({
+    let endPos = graph.graphToScreenPos({
         x: (getMin(graph.yTicks) / Math.sin(radianAngle)) * Math.cos(radianAngle),
         y: getMin(graph.yTicks)
-    },graph,boundingBox);
+    });
     ctx.lineWidth = pos2.x - pos1.x;
     ctx.beginPath();
     ctx.moveTo(origin.x,origin.y);
