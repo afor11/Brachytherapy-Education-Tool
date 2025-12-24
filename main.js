@@ -1,16 +1,15 @@
-import {drawAnatomy} from './interpolateAnatomy.js';
-import {anatomyData, TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from './constants.js';
+import {TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from './constants.js';
 import {Button} from './UIclasses/Button.js';
 import {Dropdown} from './UIclasses/Dropdown.js';
 import {NumberInput} from './UIclasses/NumberInput.js';
 import {Slider} from './UIclasses/Slider.js';
+import {Seed} from './seed.js';
+import {Graph} from './graph.js';
+import { graphToScreenPos , getFontSize, getMin, getMax, convertUnit} from './utils.js';
 
-let formattedAnatomy = {};
-scaleAnatomyData({x: 0,y: 0},500,10);
-console.log(formattedAnatomy);
-
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
+let canvas = document.getElementById("canvas");
+export let ctx = canvas.getContext("2d");
+export let moduleData = {};
 
 ctx.canvas.width = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
@@ -21,26 +20,8 @@ let scrollPos = {x: 0, y: 0};
 let render = true; // used to indicate if the graphs should be re-drawn
 let resetGraphs = true;
 let module = "single seed";
-let moduleData = {};
 let savedModuleData = {};
 
-const conversionFactors = {
-    µCi: {
-        µCi: 1,
-        Ci: 1000,
-        U: 1,
-    },
-    Ci: {
-        µCi: 0.001,
-        Ci: 1,
-        U: 0.001,
-    },
-    U: {
-        µCi: 1,
-        Ci: 1000,
-        U: 1,
-    },
-};
 const airKermaSliderLimits ={
     HDR: {
         min: convertUnit("1 Ci","U"),
@@ -52,196 +33,6 @@ const airKermaSliderLimits ={
     }
 }
 
-class Seed {
-    constructor (pos, rot, model, airKerma, dwellTime){
-        this.model = model;
-        this.pos = pos; // measured in cm
-        this.rot = rot; // measured in radians
-        this.airKerma = airKerma; // measured in U
-        this.dwellTime = dwellTime; // Measured in hours
-        this.enabled = true;
-        this.directionVec;
-        this.geometryRef = {x: 0, y: 1, z: 0, r: 1, theta: Math.PI / 2};
-        this.recalcDirection();
-    }
-    g(r){
-        if (this.model.pointSource){
-            return interpolateTable(this.model.pointSourcegValues,this.model.pointSourcegMeasurementPoints,r);
-        }
-        return interpolateTable(this.model.gValues,this.model.gMeasurementPoints,r);
-    }
-    F(pos){
-        if (pos.r == 0){
-            return 1;
-        }
-        let transformedTheta;
-        if (this.model.maxAngle > 90){
-            transformedTheta = pos.theta;
-        }else{
-            if (pos.theta > Math.PI / 2){
-                transformedTheta = Math.PI - pos.theta;
-            }else{
-                transformedTheta = pos.theta;
-            }
-        }
-        return biliniarInterpolateTable(
-            this.model.FValues,
-            this.model.FAngleMeasured,
-            this.model.FDistanceMeasured,
-            transformedTheta,
-            pos.r
-        );
-    }
-    geometryFactor(pos){
-        if (pos.r == 0){
-            return 1;
-        }
-        let geometry;
-        if (this.model.pointSource){
-            geometry = 1/(pos.r ** 2);
-        }else{
-            if ((pos.theta == 0) || (pos.theta == Math.PI)){
-                geometry = 1 / ((pos.r ** 2) - ((this.model.sourceLength ** 2) / 4)); // case for if theta == 0, since that would lead to a divide by 0 error
-            }else{
-                let vec1 = {
-                    x: (pos.x - this.pos.x + this.directionVec.x * (this.model.sourceLength / 2)),
-                    y: (pos.y - this.pos.y + this.directionVec.y * (this.model.sourceLength / 2)),
-                    z: (pos.z - this.pos.z + this.directionVec.z * (this.model.sourceLength / 2))
-                }; //calculates vector from one end of the seed to the given pos
-                let vec2 = {
-                    x: (pos.x - this.pos.x - this.directionVec.x * (this.model.sourceLength / 2)),
-                    y: (pos.y - this.pos.y - this.directionVec.y * (this.model.sourceLength / 2)),
-                    z: (pos.z - this.pos.z - this.directionVec.z * (this.model.sourceLength / 2))
-                }; //calculates vector from the opposite end of the seed to the given pos
-                let beta = Math.acos((vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z) / (magnitude(vec1) * magnitude(vec2))) //finds the angle between vec1 and vec2 using dot product
-                geometry = beta / (this.model.sourceLength * pos.r * Math.abs(Math.sin(pos.theta)));
-            }
-        }
-        return geometry;
-    }
-    calculateDose(pos){ //this all assumes the camera is looking such that further away is positive z, so none of these calcs include z
-        if (this.enabled){
-            let doseRate = this.airKerma * this.model.doseRateConstant * (this.geometryFactor(pos)/this.geometryFactor({r: this.geometryRef.r, theta: this.geometryRef.theta, x:this.geometryRef.x + this.pos.x, y:this.geometryRef.y + this.pos.y, z: this.geometryRef.z})) * this.g(pos.r) * this.F(pos);
-            return doseRate * 1.44 * this.model.halfLife * (this.model.HDRsource ? (1 - Math.exp(-this.dwellTime / (1.44 * this.model.halfLife))) : 1) / 100; // this is divided by 100 to convert to Gy
-        }else{
-            return 0;
-        }
-    }
-    recalcDirection(){
-        // calculate direction vec
-        this.directionVec = {
-            x: Math.cos(this.rot.theta) * Math.cos(this.rot.phi),
-            y: Math.sin(this.rot.phi),
-            z: Math.sin(this.rot.theta) * Math.cos(this.rot.phi)
-        };
-        let norm = magnitude(this.directionVec);
-        this.directionVec = {
-            z: this.directionVec.z / norm,
-            x: this.directionVec.x / norm,
-            y: this.directionVec.y / norm,
-        };
-
-        // calculate geometry reference point
-        if (this.directionVec.z == 0) {
-            if (this.directionVec.x == 0) {
-                this.geometryRef = {x: 1, y: ((-this.directionVec.x - this.directionVec.z) / this.directionVec.y), z: 1};
-            }else{
-                this.geometryRef = {x: ((-this.directionVec.y - this.directionVec.z) / this.directionVec.x), y: 1, z: 1};
-            }
-        }else{
-            this.geometryRef = {x: 1, y: 1, z: (-this.directionVec.x - this.directionVec.y) / this.directionVec.z};
-        }
-        norm = magnitude(this.geometryRef);
-        this.geometryRef = {
-            x: this.geometryRef.x / norm,
-            y: this.geometryRef.y / norm,
-            z: this.geometryRef.z / norm,
-            r: 1,
-            theta: Math.PI / 2
-        };
-    }
-}
-class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective}){
-        this.x = x;
-        this.y = y;
-        this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
-        this.width = width;
-        this.height = height;
-        this.seeds = seeds;
-        this.xTicks = xTicks;
-        this.yTicks = yTicks;
-        this.perspective = perspective; //maps coordinates on the graph to coordinates in space (allows to adjust perspective)
-    }
-    getPointDose(pos){
-        return this.seeds.reduce((z,seed) => {
-            let relativePos = {
-                x: (pos.x - seed.pos.x),
-                y: (pos.y - seed.pos.y),
-                z: (pos.z - seed.pos.z)
-            };
-            let dot = (relativePos.x * seed.directionVec.x + relativePos.y * seed.directionVec.y + relativePos.z * seed.directionVec.z) / magnitude(relativePos);
-            dot = Math.min(Math.max(dot,-1),1); // this clamps the dot product between -1 and 1 to reduce floating point error
-            return z + seed.calculateDose({
-                x: pos.x,
-                y: pos.y,
-                z: pos.z,
-                r: magnitude(relativePos),
-                theta: Math.acos(dot)
-            });
-        },0)
-    }
-    getIsodose(refPoint){
-        let isodose = [];
-        let refDose = this.getPointDose(this.perspective({x: refPoint.x, y: refPoint.y, z: this.zSlice}));
-        refDose = ((refDose == 0) ? 1 : refDose);
-        for (let i = 0; i < this.yTicks.length; i++){
-            let slice = [];
-            for (let j = 0; j < this.xTicks.length; j++){
-                slice.push(100 * this.getPointDose(this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice})) / refDose);
-            }
-            isodose.push(slice);
-        }
-        return isodose;
-    }
-    drawGraph(div,refPoints){
-        let data = [];
-        for (let i = 1; i < 128; i *= 2){
-            data.push(
-                {
-                    z: this.getIsodose(refPoints[0]),
-                    x: this.xTicks,
-                    y: this.yTicks,
-                    type: 'contour',
-                    colorscale: "Jet",
-                    contours: {
-                        type: 'constraint',
-                        operation: '=',
-                        value: 100 * i / 8,
-                        coloring: "lines",
-                        showlabels: true,
-                        labelfont: {
-                            family: "Raleway",
-                            size: 12,
-                            color: "black"
-                        }
-                    },
-                    line:{
-                        width: 2,
-                        smoothing: 0.85
-                    },
-                    name: 100 * (i / 8) + "%",
-                },
-            );
-        };
-        div.style.width = this.width + "px";
-        div.style.height = this.height + "px";
-        div.style.left = this.x + "px";
-        div.style.top = this.y + "px";
-        Plotly.newPlot(div.id, data); //does not update after window rescaling
-        return div.children[0].children[0].children[0].children[4].children[0].children[3].getBoundingClientRect();
-    }
-}
 initModule(module);
 setInterval(tick,50);
 
@@ -357,8 +148,6 @@ function tick(){
 
         drawSeed(moduleData.graph1.seeds[0],moduleData.graph1,moduleData.divBoundGraph1);
         drawSeed(moduleData.graph2.seeds[0],moduleData.graph2,moduleData.divBoundGraph2);
-
-        drawAnatomy("axialView",{BladderWidth: 100, CervixWidth: 25}, formattedAnatomy);
     }
     if (module === "string of seeds"){
         ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -593,6 +382,9 @@ function tick(){
                 }
             }
         }
+        //ctx.fillStyle = "black";
+        //ctx.fillRect(moduleData.graph1.x,moduleData.graph1.y,moduleData.graph1.width,moduleData.graph1.height);
+        moduleData.graph1.overlayAnatomy("axialView(Tandem/Ovoids)");
     }
     // draw reference point labels
     let numGraphs;
@@ -1460,34 +1252,12 @@ function initModule(mod,previousMod){
     resetGraphs = true;
     tick();
 }
-function cloneObj(obj){
-    return JSON.parse(JSON.stringify(obj));
-}
-function scaleAnatomyData(origin, screenDist, cmDistance){
-    let scaleFactor = screenDist / cmDistance;
-    let scaledAnatomy = cloneObj(anatomyData);
-    Object.values(scaledAnatomy).forEach((view) => {
-        view.forEach((point) => {
-            point.blocks.forEach((block) => {
-                block.outlineThickness = block.outlineThickness * scaleFactor;
-                block.curves.forEach((curve) => {
-                    for (let i = 1; i < 5; i++){
-                        curve["x" + i] = (curve["x" + i] * scaleFactor) + origin.x;
-                        curve["y" + i] = (curve["y" + i] * scaleFactor) + origin.y;
-                    }
-                });
-            });
-        });
-    });
-    formattedAnatomy = scaledAnatomy;
-}
 function adjustFormatting(){
     // this function adjusts the formatting of various UI elements based on the screen's aspect ratio and the state of the module
 
     //resize canvas
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    scaleAnatomyData({x: (canvas.width / 2), y: (canvas.height / 2)},50,10);
     if (module === "single seed"){
         // resize graph dimenstions
         let graph1 = moduleData.graph1;
@@ -2474,74 +2244,6 @@ function updateMousePos(e){
 	mouse.y = e.clientY + scrollPos.y;
 }
 
-function magnitude(vec){
-    return Math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2);
-}
-function interpolateTable(dataArr,spacingArr,ind){
-    let neighborHigh = Math.min(getInterpolationIndex(spacingArr,ind),spacingArr.length);
-    let neighborLow = Math.max(neighborHigh - 1,0);
-    if (neighborHigh == neighborLow) {
-        return dataArr[neighborLow];
-    }
-    return (
-        lerp(
-            dataArr[neighborLow],
-            dataArr[neighborHigh],
-            (ind - spacingArr[neighborLow]) / (spacingArr[neighborHigh] - spacingArr[neighborLow]))
-    );
-}
-function biliniarInterpolateTable(data,xSpacing,ySpacing,x,y){
-    let x2 = Math.min(getInterpolationIndex(xSpacing,x),xSpacing.length);
-    let x1 = Math.max(x2 - 1,0);
-    let y2 = Math.min(getInterpolationIndex(ySpacing,y),ySpacing.length);
-    let y1 = Math.max(y2 - 1,0);
-    return lerp(
-        lerp(data[x1][y1],data[x2][y1],(x - xSpacing[x1]) / (xSpacing[x2] - xSpacing[x1])),
-        lerp(data[x1][y2],data[x2][y2],(x - xSpacing[x1]) / (xSpacing[x2] - xSpacing[x1])),
-        (y - ySpacing[y1]) / (ySpacing[y2] - ySpacing[y1])
-    );
-}
-function getInterpolationIndex(spacingArr,ind){
-    for (let i = 0; i < spacingArr.length; i++){
-        if (spacingArr[i] >= ind){
-            return i;
-        }
-    }
-    return spacingArr.length - 1;
-}
-function lerp(a,b,t){
-    return (a == b) ? a : (a + (t * (b - a)));
-}
-function getFontSize(width,height,label,font){
-    if (!width || !height || !label || !font){return 0}
-    let metrics = ctx.measureText(label);
-    let size = {min: 0, max: 200};
-    let checkFont = () => {
-        ctx.font = font((size.min + size.max) / 2);
-        metrics = ctx.measureText(label);
-        return ((metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft) < width) && ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) < height)
-    };
-    for (let i = 0; (i < 10) || !checkFont(); i++) { // binary search for best font size based on width and height intil i > 10 and checkFont() is true
-        if (checkFont()){
-            size.min = (size.min + size.max) / 2;
-        }else{
-            size.max = (size.min + size.max) / 2;
-        }
-    }
-    return (size.min + size.max) / 2;
-}
-function getMin(arr){
-    return arr.reduce((minVal,curVal) => ((curVal < minVal) ? curVal : minVal),arr[0]);
-}
-function getMax(arr){
-    return arr.reduce((minVal,curVal) => ((curVal > minVal) ? curVal : minVal),arr[0]);
-}
-function graphToScreenPos(pos,graph,boundingBox){
-    return {
-        x: boundingBox.x + ((pos.x - getMin(graph.xTicks)) / (getMax(graph.xTicks) - getMin(graph.xTicks))) * boundingBox.width,
-        y: boundingBox.y + boundingBox.height - ((pos.y - getMin(graph.yTicks)) / (getMax(graph.yTicks) - getMin(graph.yTicks))) * boundingBox.height,
-    };
-}
 function getAirKermaFromSlider(slider,source){
     if (source.model.HDRsource){
         return airKermaSliderLimits.HDR.min + slider.value * (airKermaSliderLimits.HDR.max - airKermaSliderLimits.HDR.min);
@@ -2559,9 +2261,6 @@ function getValueFromAirKerma(seed){
 }
 function getValueFromDwellTime(seed){
     return seed.dwellTime / 0.0833333333333;
-}
-function convertUnit(unit,newUnit){
-    return parseFloat(unit.split(" ")[0]) * conversionFactors[newUnit][unit.split(" ")[1]];
 }
 function checkSeedClicked(graph,boundingBox,graphName){
     let seedRadius = Math.min(canvas.width,canvas.height * 0.9) * 0.01; // the radius is double the actual size of the drawn dots for ease of selection

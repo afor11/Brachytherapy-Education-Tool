@@ -6,7 +6,7 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "axialView(Tandem+Ovoids)"; // viewname cannot have whitespace
+const viewName = "axialView(Tandem/Ovoids)"; // viewname cannot have whitespace
 const maxUndos = 100;
 let paramSet = {
     tandemLength: [20, 60],
