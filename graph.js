@@ -4,7 +4,7 @@ import { magnitude , cloneObj, getMax, getMin} from './utils.js';
 import { ctx, moduleData , module} from './main.js';
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -16,6 +16,7 @@ export class Graph {
         this.perspective = perspective; //maps coordinates on the graph to coordinates in space (allows to adjust perspective)
         this.graphDimensions = {x: 0, y: 0, width: 0, height: 0};
         this.name = name;
+        this.refpoints = refpoints;
     }
     getPointDose(pos){
         return this.seeds.reduce((z,seed) => {
@@ -48,12 +49,12 @@ export class Graph {
         }
         return isodose;
     }
-    drawGraph(div,refPoints){
+    drawGraph(div){
         let data = [];
         for (let i = 1; i < 128; i *= 2){
             data.push(
                 {
-                    z: this.getIsodose(refPoints[0]),
+                    z: this.getIsodose(this.refpoints[0]),
                     x: this.xTicks,
                     y: this.yTicks,
                     type: 'contour',
@@ -85,7 +86,6 @@ export class Graph {
         Plotly.newPlot(div.id, data); //does not update after window rescaling
         let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
         this.graphDimensions = gridElm.getBoundingClientRect();
-        return gridElm.getBoundingClientRect();
     }
     graphToScreenPos(point){
         return {
@@ -94,7 +94,7 @@ export class Graph {
         };
     }
     overlayAnatomy(view){
-        let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.width, (getMax(this.xTicks) - getMin(this.xTicks)));
+        let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, (getMax(this.xTicks) - getMin(this.xTicks)));
 
         if (formattedAnatomy.hasOwnProperty(view)){
             drawAnatomy(
@@ -144,7 +144,7 @@ export class Graph {
 }
 
 function scaleAnatomyData(origin, screenDist, cmDistance){
-    let scaleFactor = screenDist / cmDistance;
+    let scaleFactor = screenDist / (cmDistance * 10); //factor for converting mm to screen coords
     let scaledAnatomy = cloneObj(anatomyData);
     console.log(scaleFactor);
 

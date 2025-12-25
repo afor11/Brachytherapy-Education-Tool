@@ -47,15 +47,15 @@ function tick(){
         if (render){
             if (module === "brachytherapy applicators"){
                 if (resetGraphs){
-                    adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
+                    adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{drawFunction: "graph1DrawApplicator", view: "front"});
                     if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-                        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+                        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
                     }
                     if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-                        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
+                        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{drawFunction: "graph3DrawApplicator", view: "top"});
                     }
                     moduleData.graph1refPointLabel = [];
-                    moduleData.graph1refPoints.forEach((refPoint) => {
+                    moduleData.graph1.refpoints.forEach((refPoint) => {
                         moduleData.graph1refPointLabel.push(new NumberInput({
                             x: 0, y: 0, width: 0, height: 0,
                             label: {
@@ -78,18 +78,18 @@ function tick(){
                     resetGraphs = false;
                 }
                 adjustFormatting();
-                moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
+                moduleData.graph1.drawGraph(document.getElementById("graph1"));
                 if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-                    moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
+                    moduleData.graph2.drawGraph(document.getElementById("graph2"));
                 }
                 if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-                    moduleData.graph3.drawGraph(document.getElementById("graph3"),moduleData.graph3refPoints);
+                    moduleData.graph3.drawGraph(document.getElementById("graph3"));
                 }
             }else{
                 adjustFormatting();
-                moduleData.graph1.drawGraph(document.getElementById("graph1"),moduleData.graph1refPoints);
+                moduleData.graph1.drawGraph(document.getElementById("graph1"));
                 if (typeof moduleData.graph2 != "undefined"){
-                    moduleData.graph2.drawGraph(document.getElementById("graph2"),moduleData.graph2refPoints);
+                    moduleData.graph2.drawGraph(document.getElementById("graph2"));
                 }
             }
             render = false;
@@ -308,11 +308,11 @@ function tick(){
         //reset dwell times button
         moduleData.resetDwellTimes.draw();
 
-        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
+        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{drawFunction: "graph1DrawApplicator", view: "front"});
         moduleData.graph1DrawApplicator();
         // erase graph2 if applicator is Vaginal Cylinder
         if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
             moduleData.graph2DrawApplicator();
         }else{
             let div = document.getElementById("graph2");
@@ -322,7 +322,7 @@ function tick(){
         }
         // add graph3 if applicator is Tandem/Ovoids
         if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
+            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{drawFunction: "graph3DrawApplicator", view: "top"});
             moduleData.graph3DrawApplicator();
         }else{
             let div = document.getElementById("graph3");
@@ -331,6 +331,10 @@ function tick(){
             }
         }
         moduleData.applicatorModelDropdown.drawDropdown();
+
+        if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
+            moduleData.graph3.overlayAnatomy("axialView(Tandem/Ovoids)");
+        }
 
         // draw model dropdown graphs
         moduleData.graphModelDropdown.drawDropdown();
@@ -376,7 +380,6 @@ function tick(){
                 }
             }
         }
-        //moduleData.graph1.overlayAnatomy("axialView(Tandem/Ovoids)");
     }
     // draw reference point labels
     let numGraphs;
@@ -390,7 +393,7 @@ function tick(){
         moduleData.graph1refPointLabel.forEach((label) => label.draw()); // brachytherapy applicators only have labels for graph 1 (since all graphs are the same) so they are drawn here
     }
     for (let i = 0; i < numGraphs; i++){
-        moduleData[`graph${i + 1}refPoints`].forEach((refPoint,ind) => {
+        moduleData[`graph${i + 1}`].refpoints.forEach((refPoint,ind) => {
             let labeledGraph = moduleData[`graph${i + 1}`];
             let refPos = moduleData[`graph${i + 1}`].graphToScreenPos(moduleData[`graph${i + 1}`].perspective(refPoint));
             let size = Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.01;
@@ -570,10 +573,10 @@ function initModule(mod,previousMod){
         for (let j = -2; j <= 2; j+= 0.0625){ticks.push(j);}
         moduleData = {
             graph1: (
-                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph1"}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
+                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
             ),
             graph2: (
-                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},GammaMedHDRPlus,airKermaSliderLimits.HDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph2"}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
+                new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},GammaMedHDRPlus,airKermaSliderLimits.HDR.min,0.00833)], xTicks: ticks, yTicks: ticks, perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]}) //x,y,width, and height are all set to 0 since they will be later formatted with an adjustFormatting() call
             ),
             graph1ModelDropdown: new Dropdown(
                 new Button({x: 0, y: 0, width: 0, height: 0, bgColor: "black", onClick: () => {},label: {text: "", font: "default", color: "white"}, outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}),[]
@@ -581,8 +584,6 @@ function initModule(mod,previousMod){
             graph2ModelDropdown: new Dropdown(
                 new Button({x: 0, y: 0, width: 0, height: 0, bgColor: "black", onClick: () => {},label: {text: "", font: "default", color: "white"}, outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}),[]
             ),
-            graph1refPoints: [{x: 0, y: 1, z: 0}],
-            graph2refPoints: [{x: 0, y: 1, z: 0}],
             graph1AirKermaSlider: new Slider(0,0,0,0,"black",0,0),
             graph2AirKermaSlider: new Slider(0,0,0,0,"black",0,0),
             graph1DwellTimeSlider: new Slider(0,0,0,0,"black",0,0),
@@ -657,8 +658,7 @@ function initModule(mod,previousMod){
         for (let j = -10; j <= 10; j+= 0.25){xTicks.push(j);}
         for (let j = -2; j <= 2; j += 0.125){yTicks.push(j);}
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x: 0, y: 0, z: 0},{phi: 0, theta: 0},BEBIG_GK60M21,airKermaSliderLimits.HDR.min,0.00833)],xTicks: xTicks, yTicks: yTicks, perspective: (point) => point, name: "graph1"}),
-            graph1refPoints: [{x: 0, y: 1, z: 0}],
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [new Seed({x: 0, y: 0, z: 0},{phi: 0, theta: 0},BEBIG_GK60M21,airKermaSliderLimits.HDR.min,0.00833)],xTicks: xTicks, yTicks: yTicks, perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]}),
             addSeed: new Button({x: 0, y: 0, width: 0, height: 0, label: {text: "Add Source +",font: "default", color: "black"}, bgColor: "rgb(40, 197, 53)",
                 onClick: () => {
                     if ((moduleData.graph1.seeds.length * moduleData.seedSpacing) <= (getMax(moduleData.graph1.xTicks) - getMin(moduleData.graph1.xTicks))){
@@ -715,8 +715,7 @@ function initModule(mod,previousMod){
         let graphTick = [];
         for (let j = -5; j <= 5; j+= 0.25){graphTick.push(j);}
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph1"}),
-            graph1refPoints: [{x: 0, y: 0, z: 0}],
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 0, z: 0}]}),
             graph1SeedSpacing: 1,
             graph1SeedSpacingSlider: new Slider(0,0,0,0,"black",0,0.5),
             graph1ModelDropdown: new Dropdown(
@@ -759,8 +758,7 @@ function initModule(mod,previousMod){
                     }
                 },outline: {color: "black",thickness: Math.min(canvas.width,canvas.height) * 0.001}
             }),
-            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph2"}),
-            graph2refPoints: [{x: 0, y: 0, z: 0}],
+            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: graphTick, yTicks: graphTick, perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 0, z: 0}]}),
             graph2SeedSpacing: 1,
             graph2SeedSpacingSlider: new Slider(0,0,0,0,"black",0,0.5),
             graph2ModelDropdown: new Dropdown(
@@ -843,9 +841,8 @@ function initModule(mod,previousMod){
     }
     if (mod === "brachytherapy applicators"){
         moduleData = {
-            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], perspective: (point) => point, name: "graph1"}),
-            graph1refPoints: [{x: 0, y: 0, z: 0}],
-            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph2",
+            graph1: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 0, z: 0}]}),
+            graph2: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph2", refpoints: [{x: 0, y: 0, z: 0}],
                 perspective: (point) => {
                     return {
                         x: point.z,
@@ -854,8 +851,7 @@ function initModule(mod,previousMod){
                     };
                 }
             }),
-            graph2refPoints: [{x: 0, y: 0, z: 0}],
-            graph3: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph3",
+            graph3: new Graph({x: 0, y: 0, width: 0, height: 0, seeds: [],xTicks: [], yTicks: [], name: "graph3", refpoints: [{x: 0, y: 0, z: 0}],
                 perspective: (point) => {
                     return {
                         x: point.x,
@@ -864,7 +860,6 @@ function initModule(mod,previousMod){
                     };
                 }
             }),
-            graph3refPoints: [{x: 0, y: 0, z: 0}],
             graphModelDropdown: new Dropdown(
                 new Button({x: 0, y: 0, width: 0, height: 0, bgColor: "black", onClick: () => {},label: {text: "", font: "default", color: "white"}, outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}),[]
             ),
@@ -886,9 +881,9 @@ function initModule(mod,previousMod){
             }),
         }
         moduleData.applicatorModel = {name: "Vaginal Cylinder", length: 4, diameter: 2, angle: 90};
-        adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
-        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
-        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
+        adjustApplicatorGraphFormat(moduleData.graph1,moduleData.applicatorModel,{drawFunction: "graph1DrawApplicator", view: "front"});
+        adjustApplicatorGraphFormat(moduleData.graph2,moduleData.applicatorModel,{drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+        adjustApplicatorGraphFormat(moduleData.graph3,moduleData.applicatorModel,{drawFunction: "graph3DrawApplicator", view: "top"});
         // fill options for seed model dropdown
         for (let i = 0; i < 3; i++){
             let seedModel = [GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource][i];
@@ -1134,7 +1129,7 @@ function initModule(mod,previousMod){
     }
     for (let i = 0; i < numGraphs; i++){
         moduleData[`graph${i + 1}refPointLabel`] = [];
-        moduleData[`graph${i + 1}refPoints`].forEach((refPoint) => {
+        moduleData[`graph${i + 1}`].refpoints.forEach((refPoint) => {
             moduleData[`graph${i + 1}refPointLabel`].push(new NumberInput({
                 x: 0, y: 0, width: 0, height: 0,
                 label: {
@@ -1745,7 +1740,7 @@ function adjustFormatting(){
             graph1.width = graph1Stretchfactor * graph1Dimensions.width;
             graph1.height = graph1Stretchfactor * graph1Dimensions.height;
 
-            moduleData.graph1refPoints = [{
+            moduleData.graph1.refpoints = [{
                 x: (moduleData.applicatorModel.diameter / 2) + 0.5,
                 y: moduleData.applicatorModel.length / 2,
                 z: 0,
@@ -1779,9 +1774,9 @@ function adjustFormatting(){
             graph3.width = graph3Stretchfactor * graph3Dimensions.width;
             graph3.height = graph3Stretchfactor * graph3Dimensions.height;
 
-            moduleData.graph1refPoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
-            moduleData.graph2refPoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
-            moduleData.graph3refPoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
+            moduleData.graph1.refpoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
+            moduleData.graph2.refpoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
+            moduleData.graph3.refpoints = [{x: 2,y: 2,z: 0},{x: -2,y: 2,z: 0}];
         }
         if (moduleData.applicatorModel.name === "Tandem/Ring"){
             // get format based on aspect ratio of graph1
@@ -1805,8 +1800,8 @@ function adjustFormatting(){
             graph2.width = graph2Stretchfactor * graph2Dimensions.width;
             graph2.height = graph2Stretchfactor * graph2Dimensions.height;
 
-            moduleData.graph1refPoints = [{x: 2,y: 2.2,z: 0},{x: -2,y: 2.2,z: 0}];
-            moduleData.graph2refPoints = [{x: 2,y: 2.2,z: 0},{x: -2,y: 2.2,z: 0}];
+            moduleData.graph1.refpoints = [{x: 2,y: 2.2,z: 0},{x: -2,y: 2.2,z: 0}];
+            moduleData.graph2.refpoints = [{x: 2,y: 2.2,z: 0},{x: -2,y: 2.2,z: 0}];
         }
         if (format === "sideUI"){
             if (moduleData.applicatorModel.name === "Vaginal Cylinder"){
@@ -1972,12 +1967,12 @@ function adjustFormatting(){
 
         formatApplicatorTypeDropdown(moduleData.applicatorModelDropdown,0);
 
-        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{refPoints: "graph1refPoints", drawFunction: "graph1DrawApplicator", view: "front"});
+        adjustApplicatorRenderer(moduleData.graph1,moduleData.applicatorModel,{drawFunction: "graph1DrawApplicator", view: "front"});
         if (!(moduleData.applicatorModel.name === "Vaginal Cylinder")){
-            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{refPoints: "graph2refPoints", drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
+            adjustApplicatorRenderer(moduleData.graph2,moduleData.applicatorModel,{drawFunction: "graph2DrawApplicator", view: ((moduleData.applicatorModel.name === "Tandem/Ring") ? "top" : "side")});
         }
         if (moduleData.applicatorModel.name === "Tandem/Ovoids"){
-            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{refPoints: "graph3refPoints", drawFunction: "graph3DrawApplicator", view: "top"});
+            adjustApplicatorRenderer(moduleData.graph3,moduleData.applicatorModel,{drawFunction: "graph3DrawApplicator", view: "top"});
         }
 
         moduleData.graphModelDropdown.options.forEach((opt,ind) => {
@@ -2003,7 +1998,7 @@ function adjustFormatting(){
             let refPointLabels = moduleData[`graph${i + 1}refPointLabel`];
             refPointLabels.forEach((refPointLabel,ind) => {
                 let labeledGraph = moduleData[`graph${i + 1}`];
-                let refPos = labeledGraph.graphToScreenPos(moduleData[`graph${i + 1}refPoints`][ind]);
+                let refPos = labeledGraph.graphToScreenPos(moduleData[`graph${i + 1}`].refpoints[ind]);
 
                 refPointLabel.x = refPos.x + Math.min(labeledGraph.graphDimensions.width,labeledGraph.graphDimensions.height) * 0.02;
                 refPointLabel.y = refPos.y;
@@ -2332,7 +2327,7 @@ function setDoseAtPoint(graph,point,prescription,dwellTimeSlider,airKermaSlider)
     }
     render = true;
 }
-function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunction: drawFunction, view: view}){
+function adjustApplicatorGraphFormat(graph,model,{drawFunction: drawFunction, view: view}){
     let seedModel = (moduleData.graph1.seeds.length > 0) ? moduleData.graph1.seeds[0].model : GammaMedHDRPlus;
     let airKerma = airKermaSliderLimits.HDR.min;
     if (model.name === "Vaginal Cylinder"){
@@ -2347,7 +2342,7 @@ function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunct
         for (let i = -2; i <= model.length + 2; i += 0.125){yTick.push(i);}
         graph.xTicks = xTick;
         graph.yTicks = yTick;
-        moduleData[refPoints] = [{x: model.diameter / 2 + 0.5, y: (model.length - 0.7) / 2, z: 0}];
+        graph.refpoints = [{x: model.diameter / 2 + 0.5, y: (model.length - 0.7) / 2, z: 0}];
     }
     if (model.name === "Tandem/Ovoids"){
         let adjustedSeeds = [];
@@ -2365,7 +2360,7 @@ function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunct
         for (let i = -model.ovoidDiameter - 2; i <= model.length + 2; i += 0.125){yTick.push(i);}
         graph.xTicks = xTick;
         graph.yTicks = yTick;
-        moduleData[refPoints] = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
+        graph.refpoints = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
     }
     if (model.name === "Tandem/Ring"){
         let adjustedSeeds = [];
@@ -2387,7 +2382,7 @@ function adjustApplicatorGraphFormat(graph,model,{refPoints: refPoints,drawFunct
         }
         graph.xTicks = xTick;
         graph.yTicks = yTick;
-        moduleData[refPoints] = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
+        graph.refpoints = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
     }
     if (view === "front"){
         graph.perspective = (point) => point;
