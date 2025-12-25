@@ -1,5 +1,3 @@
-import { ctx } from './main.js';
-
 export class Module {
     constructor ({
         graphs,
@@ -8,7 +6,7 @@ export class Module {
         labels,
         buttons,
         onUpdate,
-        onRescale
+        onReload
     }){
         this.graphs = graphs;
         this.sliders = sliders;
@@ -16,6 +14,6 @@ export class Module {
         this.labels = labels;
         this.buttons = buttons;
         this.onUpdate = onUpdate;
-        this.onRescale = onRescale;
+        this.onReload = onReload;
     }
 }

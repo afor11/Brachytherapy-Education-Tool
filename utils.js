@@ -1,4 +1,5 @@
-import { ctx } from './main.js';
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
 
 export function magnitude(vec){
     return Math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2);
@@ -71,7 +72,8 @@ export function getMax(arr){
     return arr.reduce((minVal,curVal) => ((curVal > minVal) ? curVal : minVal),arr[0]);
 }
 
-const conversionFactors = {
+export function convertUnit(unit,newUnit){
+    const conversionFactors = {
         µCi: {
             µCi: 1,
             Ci: 1000,
@@ -88,11 +90,13 @@ const conversionFactors = {
             U: 1,
         },
     };
-
-export function convertUnit(unit,newUnit){
     return parseFloat(unit.split(" ")[0]) * conversionFactors[newUnit][unit.split(" ")[1]];
 }
 
 export function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
+}
+
+export function clamp(value, min, max){
+    return Math.min(Math.max(value, min), max);
 }

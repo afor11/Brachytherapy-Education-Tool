@@ -1,7 +1,6 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin} from './utils.js';
-import { ctx, moduleData , module} from './main.js';
 
 export class Graph {
     constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints}){
@@ -17,6 +16,7 @@ export class Graph {
         this.graphDimensions = {x: 0, y: 0, width: 0, height: 0};
         this.name = name;
         this.refpoints = refpoints;
+        this.selectedSeed = -1;
     }
     getPointDose(pos){
         return this.seeds.reduce((z,seed) => {
@@ -93,16 +93,16 @@ export class Graph {
             y: this.graphDimensions.y + this.graphDimensions.height - ((point.y - getMin(this.yTicks)) / (getMax(this.yTicks) - getMin(this.yTicks))) * this.graphDimensions.height,
         };
     }
-    overlayAnatomy(view){
+    overlayAnatomy(view, params){
         let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, (getMax(this.xTicks) - getMin(this.xTicks)));
 
         if (formattedAnatomy.hasOwnProperty(view)){
             drawAnatomy(
                 view,
                 {
-                    tandemLength: moduleData.applicatorModel.length * 10,
-                    tandemAngle: moduleData.applicatorModel.angle,
-                    ovoidSize: moduleData.applicatorModel.ovoidDiameter * 10
+                    tandemLength: params.applicatorModel.length * 10,
+                    tandemAngle: params.applicatorModel.angle,
+                    ovoidSize: params.applicatorModel.ovoidDiameter * 10
                 },
                 formattedAnatomy
             );
@@ -129,13 +129,9 @@ export class Graph {
                 ctx.fill();
             }
         });
-        if (
-            (typeof moduleData.selectedSeed != "undefined")
-            && (moduleData.selectedSeed != -1)
-            && ((module === "brachytherapy applicators") || (moduleData.selectedGraph === this.name))
-        ){
+        if (this.selectedSeed != -1){
             ctx.fillStyle = "rgb(169, 255, 103)";
-            let screenPos = this.graphToScreenPos(this.perspective(this.seeds[moduleData.selectedSeed].pos));
+            let screenPos = this.graphToScreenPos(this.perspective(this.seeds[this.selectedSeed].pos));
             ctx.beginPath();
             ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
             ctx.fill();

@@ -7,15 +7,11 @@ export class Dropdown {
         this.options = options;
         this.showing = false;
     }
-    drawDropdown(){
+    draw(){
         if (this.showing){
             this.button.draw();
             this.options.forEach((opt) => {
-                if (opt.options){
-                    opt.drawDropdown();
-                }else{
-                    opt.draw();
-                }
+                opt.draw();
             });
         }else{
             this.button.draw();

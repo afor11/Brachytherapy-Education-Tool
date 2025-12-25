@@ -1,4 +1,4 @@
-import {TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from './constants.js';
+/*import {TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource} from './constants.js';
 import {Button} from './UIclasses/Button.js';
 import {Dropdown} from './UIclasses/Dropdown.js';
 import {NumberInput} from './UIclasses/NumberInput.js';
@@ -22,7 +22,7 @@ let render = true; // used to indicate if the graphs should be re-drawn
 let resetGraphs = true;
 let savedModuleData = {};
 
-const airKermaSliderLimits ={
+const airKermaSliderLimits = {
     HDR: {
         min: convertUnit("1 Ci","U"),
         max: convertUnit("10 Ci","U")
@@ -347,15 +347,14 @@ function tick(){
         if (numGraphs > 1){
             for (let i = 0; i < numGraphs; i++){
                 for (let j = 0; j < numGraphs; j++){
-                    /*
-                    Transforms ((zSlice of graph k) + 1, (zSlice of graph k) + 1,zSlice of graph k) from the of
-                    perspective of graph k to the actual point in space then transforms that new point based on
-                    the perspective of graph i. For example if i = 1 and k = 3 then this new point would be
-                    ((zSlice of graph k) k + 1, zSlice of graph k, (zSlice of graph k) k + 1)). Notice that this
-                    transformation will swap zSlice with the x or y position, assuming i != k, and we can check
-                    which coords were swapped by comparing them with the known zSlice value. This allows us to
-                    color that axis at the specified zSlice value.
-                    */
+                    \\Transforms ((zSlice of graph k) + 1, (zSlice of graph k) + 1,zSlice of graph k) from the of
+                    \\perspective of graph k to the actual point in space then transforms that new point based on
+                    \\the perspective of graph i. For example if i = 1 and k = 3 then this new point would be
+                    \\((zSlice of graph k) k + 1, zSlice of graph k, (zSlice of graph k) k + 1)). Notice that this
+                    \\transformation will swap zSlice with the x or y position, assuming i != k, and we can check
+                    \\which coords were swapped by comparing them with the known zSlice value. This allows us to
+                    \\color that axis at the specified zSlice value.
+                    
                     if (i != j){
                         let transformedSlice = moduleData[`graph${i + 1}`].perspective(
                             moduleData[`graph${j + 1}`].perspective({
@@ -2575,4 +2574,4 @@ function formatApplicatorTypeDropdown(dropdown,depth){
             child.font = getMin(fontSizes) * 0.8 + "px monospace";
         }
     });
-}
+}*/
