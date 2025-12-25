@@ -1,3 +1,30 @@
+export const conversionFactors = {
+    µCi: {
+        µCi: 1,
+        Ci: 1000,
+        U: 1,
+    },
+    Ci: {
+        µCi: 0.001,
+        Ci: 1,
+        U: 0.001,
+    },
+    U: {
+        µCi: 1,
+        Ci: 1000,
+        U: 1,
+    },
+};
+export const airKermaSliderLimits = {
+    HDR: {
+        min: 1000,
+        max: 10000
+    },
+    LDR: {
+        min: 1,
+        max: 5
+    }
+};
 export const TheraSeed200 = {
     name: "TheraSeed200",
     doseRateConstant: 0.686, // in cGy/h/U

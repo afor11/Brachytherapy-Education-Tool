@@ -6,9 +6,26 @@ export class Dropdown {
         }
         this.options = options;
         this.showing = false;
+        this.uniformFont = true;
     }
     draw(){
         if (this.showing){
+            if (this.uniformFont){
+                let font = this.options.reduce((minFont,option) => {
+                    if (typeof option.button !== "undefined"){
+                        return Math.min(minFont,option.button.getDefaultFont());
+                    }else{
+                        return Math.min(minFont,option.getDefaultFont());
+                    }
+                }, Infinity) + "px monospace";
+                this.options.forEach((option) => {
+                    if (typeof option.button !== "undefined"){
+                        option.button.font = font;
+                    }else{
+                        option.font = font;
+                    }
+                });
+            }
             this.button.draw();
             this.options.forEach((opt) => {
                 opt.draw();
@@ -17,28 +34,13 @@ export class Dropdown {
             this.button.draw();
         }
     }
-    checkDropdownClicked(){
+    checkClicked(){
         this.button.checkClicked();
         if (this.showing){
-            this.options.forEach((button,ind) => {
-                if (button.options){
-                    if (button.checkDropdownClicked()){ // if the element selected is another dropdown, this closes any other dropdowns that are open
-                        this.options.forEach((neighborDropdown,ind2) => {
-                            if (neighborDropdown.showing && (ind != ind2)){
-                                neighborDropdown.collapseDropdown();
-                            }
-                        });
-                    }
-                }else{
-                    if (button.checkClicked()){ //this checks if any of the children buttons are clicked
-                        this.showing = false;
-                    }
-                }
+            this.options.forEach((button) => {
+                button.checkClicked();
             });
-        }else{
-            this.collapseDropdown();
         }
-        return this.showing;
     }
     collapseDropdown(){
         this.showing = false;

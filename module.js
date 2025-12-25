@@ -6,7 +6,8 @@ export class Module {
         labels,
         buttons,
         onUpdate,
-        onReload
+        onReload,
+        onClick
     }){
         this.graphs = graphs;
         this.sliders = sliders;
@@ -15,5 +16,17 @@ export class Module {
         this.buttons = buttons;
         this.onUpdate = onUpdate;
         this.onReload = onReload;
+        this.onClick;
+        if (typeof onClick === "undefined"){
+            this.onClick = function () {
+                ["dropDowns","sliders","labels","buttons"].forEach((obj) => {
+                    Object.values(this[obj]).forEach((attribute) => {
+                        attribute.checkClicked();
+                    });
+                });
+            }
+        }else{
+            this.onClick = onClick;
+        }
     }
 }

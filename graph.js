@@ -2,6 +2,9 @@ import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin} from './utils.js';
 
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
 export class Graph {
     constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints}){
         this.x = x;
@@ -86,6 +89,21 @@ export class Graph {
         Plotly.newPlot(div.id, data); //does not update after window rescaling
         let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
         this.graphDimensions = gridElm.getBoundingClientRect();
+    }
+    drawRefPoints(){
+        let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;
+        this.refpoints.forEach((refpoint,ind) => {
+            let screenPos = this.graphToScreenPos(this.perspective(refpoint));
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.003;
+            ctx.beginPath();
+            ctx.moveTo(screenPos.x + size,screenPos.y + size);
+            ctx.lineTo(screenPos.x - size,screenPos.y - size);
+            ctx.lineTo(screenPos.x,screenPos.y);
+            ctx.lineTo(screenPos.x - size,screenPos.y + size);
+            ctx.lineTo(screenPos.x + size,screenPos.y - size);
+            ctx.stroke();
+        });
     }
     graphToScreenPos(point){
         return {

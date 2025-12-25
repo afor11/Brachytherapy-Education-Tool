@@ -1,3 +1,9 @@
+import { conversionFactors, airKermaSliderLimits } from './constants.js';
+import { Button } from './UIclasses/Button.js';
+import { Dropdown } from './UIclasses/Dropdown.js';
+import { NumberInput } from './UIclasses/NumberInput.js';
+import { Slider } from './UIclasses/Slider.js';
+
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
@@ -73,23 +79,6 @@ export function getMax(arr){
 }
 
 export function convertUnit(unit,newUnit){
-    const conversionFactors = {
-        µCi: {
-            µCi: 1,
-            Ci: 1000,
-            U: 1,
-        },
-        Ci: {
-            µCi: 0.001,
-            Ci: 1,
-            U: 0.001,
-        },
-        U: {
-            µCi: 1,
-            Ci: 1000,
-            U: 1,
-        },
-    };
     return parseFloat(unit.split(" ")[0]) * conversionFactors[newUnit][unit.split(" ")[1]];
 }
 
@@ -99,4 +88,232 @@ export function cloneObj(obj){
 
 export function clamp(value, min, max){
     return Math.min(Math.max(value, min), max);
+}
+
+export function getRegionBound(region, padding = {horizontal: 0, vertical: 0}, aspectRatio = null){
+    let width = region.width * (1 - padding.horizontal);
+    let height = region.height * (1 - padding.vertical);
+    if (aspectRatio !== null){
+        if ((width / aspectRatio) > height){
+            width = height * aspectRatio;
+        }
+        if ((aspectRatio * height) > width){
+            height = width / aspectRatio;
+        }
+    }
+    return {
+        x: region.x + (region.width - width) / 2,
+        y: region.y + (region.height - height) / 2,
+        width: width,
+        height: height
+    };
+}
+
+export function setProps(obj, props){
+    Object.keys(props).forEach((property) => {
+        obj[property] = props[property];
+    });
+}
+
+export function setDropdownProps(dropdown, props){
+    setProps(dropdown.button, props.button);
+    dropdown.options.forEach((_,ind) => {
+        setProps(dropdown.options[ind], props.optionProps(ind));
+    });
+}
+
+export function getRange(min, max, step){
+    let range = [];
+    for (let i = min; i <= max; i+= step){range.push(i);}
+    return range;
+}
+
+export function toggleSeedEnable(thisModule,self,graph,seedInd){
+    return new Button({
+        x: 0, y: 0, width: 0, height: 0, bgColor: "black",
+        onClick: () => {
+            let seedEnabled = thisModule.graphs[graph].seeds[seedInd].enabled;
+            thisModule.graphs[graph].seeds[seedInd].enabled != seedEnabled;
+            thisModule.buttons[self].label.text = (seedEnabled ? "disable seed" : "enable seed");
+            thisModule.onReload();
+        },
+        label: {text: "disable seed", font: "default", color: "white"},
+        outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
+    });
+}
+
+export function referencePointLabel(thisModule, graphName, refPointInd){
+    return new NumberInput({
+        x: 0, y: 0, width: 0, height: 0,
+        label: {
+            text: (value) => `Dose: ${value} Gy`,
+            color: {selected: "white", notSelected: "black"}
+        },bgColor: {selected: "black", notSelected: "white"},
+        getValue: () => thisModule.graphs[graphName].getPointDose(
+            thisModule.graphs[graphName].refpoints[refPointInd]
+        ),
+        onEnter: function (value){
+            setDoseAtPoint(thisModule.graphs[graphName],value,thisModule);
+        },
+        numDecimalsEditing: 3
+    });
+}
+
+function setDoseAtPoint(graph,dose,thisModule){
+    const searchPrecision = 20;
+    if (graph.seeds[0].model.HDRsource){
+        let dwellTime = {min: 0, max: 0.0833333333333};
+        let testingDwellTime = () => (dwellTime.min + dwellTime.max) / 2;
+        for (let i = 0; i < searchPrecision; i++){
+            graph.seeds.forEach((seed) => {
+                if (seed.dwellTime > 0){
+                    seed.dwellTime = testingDwellTime();
+                }
+            });
+            if (graph.getPointDose(point) > dose){
+                dwellTime.max = testingDwellTime();
+            }else{
+                dwellTime.min = testingDwellTime();
+            }
+        }
+    }else{
+        let airKerma = {...airKermaSliderLimits.LDR};
+        let testingAirKerma = () => (airKerma.min + airKerma.max) / 2;
+        for (let i = 0; i < searchPrecision; i++){
+            graph.seeds.forEach((seed) => {
+                seed.airKerma = testingAirKerma();
+            });
+            if (graph.getPointDose(point) > dose){
+                airKerma.max = testingAirKerma();
+            }else{
+                airKerma.min = testingAirKerma();
+            }
+        }
+    }
+    thisModule.onReload();
+}
+
+export function dwellTimeLabel(thisModule, graph){
+    let graphObj = thisModule.graphs[graph];
+    return new NumberInput({
+        x: 0, y: 0, width: 0, height: 0,
+        label: {
+            text: (value) => `Dwell Time: ${value} seconds`,
+            color: {selected: "white", notSelected: "black"}
+        },bgColor: {selected: "black", notSelected: "white"},
+        getValue: () => graphObj.seeds[0].dwellTime * 3600,
+        onEnter: function (value){
+            let clampedVal = Math.max(Math.min(value / 3600,0.0833333333333),0);
+            graphObj.seeds.forEach((seed) => {
+                seed.dwellTime = clampedVal;
+            });
+            thisModule.onReload();
+        },
+        numDecimalsEditing: 3
+    });
+}
+
+export function airKermaLabel(thisModule, graph){
+    let graphObj = thisModule.graphs[graph];
+    return new NumberInput({
+        x: 0, y: 0, width: 0, height: 0,
+        label: {
+            text: (value) => `Air Kerma: ${value}U`,
+            color: {selected: "white", notSelected: "black"}
+        },bgColor: {selected: "black", notSelected: "white"},
+        getValue: () => graphObj.seeds[0].airKerma,
+        onEnter: function (value){
+            let clampedVal = (
+                (graphObj.seeds[0].model.HDRsource) ?
+                    clamp(value, airKermaSliderLimits.HDR.min, airKermaSliderLimits.HDR.max)
+                :
+                    clamp(value, airKermaSliderLimits.LDR.min, airKermaSliderLimits.LDR.max)
+            );
+            graphObj.seeds.forEach((seed) => {
+                seed.airKerma = clampedVal;
+            });
+            thisModule.onReload();
+        },
+        numDecimalsEditing: 3
+    })
+}
+
+export function modelDropdown(modelOptions,thisModule,self,graph,defaultLabel){
+    let dropdown = new Dropdown(
+        new Button({
+            x: 0, y: 0, width: 0, height: 0, bgColor: "black",
+            onClick: () => {},
+            label: {text: defaultLabel, font: "default", color: "white"},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}
+        ),[]
+    );
+    for (let i = 0; i < modelOptions.length; i++){
+        let model = modelOptions[i];
+        dropdown.options.push(new Button({
+            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            label: {text: model.name + " (" + model.isotope + ")", font: "default", color: "black"},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+            onClick: () => {
+                thisModule.graphs[graph].seeds.forEach((seed) => {
+                    seed.model = model;
+                    seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
+                    seed.dwellTime = 0.00833;
+                    seed.enabled = true;
+                });
+                thisModule.dropDowns[self].button.label = model.name + " (" + model.isotope + ")";
+                thisModule.dropDowns[self].collapseDropdown();
+                thisModule.onReload();
+            },
+        }));
+    }
+    return dropdown;
+}
+
+export function airKermaSlider(thisModule,graph){
+    return new Slider({
+        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+        updateValue: (value) => {
+            thisModule.graphs[graph].seeds.forEach((seed) => {
+                seed.airKerma = getAirKermaFromSlider(value,seed);
+            });
+            thisModule.onReload();
+        },
+        getValue: () => getValueFromAirKerma(thisModule.graphs[graph].seeds[0])
+    });
+}
+
+export function dwellTimeSlider(thisModule,graph){
+    return new Slider({
+        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
+        updateValue: (value) => {
+            let dwellTime = getDwellTimeFromSlider(value);
+            thisModule.graphs[graph].seeds.forEach((seed) => {
+                seed.dwellTime = dwellTime;
+            });
+            thisModule.onReload();
+        },
+        getValue: () => getValueFromDwellTime(thisModule.graphs[graph].seeds[0])
+    });
+}
+
+function getAirKermaFromSlider(value,source){
+    if (source.model.HDRsource){
+        return airKermaSliderLimits.HDR.min + value * (airKermaSliderLimits.HDR.max - airKermaSliderLimits.HDR.min);
+    }
+    return airKermaSliderLimits.LDR.min + value * (airKermaSliderLimits.LDR.max - airKermaSliderLimits.LDR.min);
+}
+
+function getValueFromAirKerma(seed){
+    return seed.model.HDRsource ?
+            ((seed.airKerma - airKermaSliderLimits.HDR.min) / (airKermaSliderLimits.HDR.max - airKermaSliderLimits.HDR.min))
+            : 
+            ((seed.airKerma - airKermaSliderLimits.LDR.min) / (airKermaSliderLimits.LDR.max - airKermaSliderLimits.LDR.min))
+}
+
+function getDwellTimeFromSlider(value){
+    return value * 0.0833333333333; // slider from 30 seconds to 10 minutes
+}
+
+function getValueFromDwellTime(seed){
+    return seed.dwellTime / 0.0833333333333;
 }

@@ -1,4 +1,4 @@
-import {getFontSize} from '../utils.js';
+import {getFontSize} from './getFontSize.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -16,11 +16,10 @@ export class Button {
         this.onClick = onClick;
         this.outlineColor = outlineColor;
         this.outlineThickness = outlineThickness;
-        this.clicked = false;
     }
     draw(){
         if (this.font === "default"){
-            ctx.font = (getFontSize(this.width,this.height,this.label,(size) => `${size}px monospace`) * 0.8) + "px monospace";
+            ctx.font = this.getDefaultFont() + "px monospace";
         }else{
             ctx.font = this.font;
         }
@@ -39,15 +38,17 @@ export class Button {
         ctx.fillStyle = this.fontColor;
         ctx.fillText(this.label, this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
     }
+    getDefaultFont(padding = {horizontal: 0.2, vertical: 0.2}){
+        return getFontSize(
+            this.width * (1 - padding.horizontal),
+            this.height * (1 - padding.vertical),
+            this.label,(size) => `${size}px monospace`
+        );
+    }
     checkClicked(){
         if (window.mouse.down && this.hovering()){
-            if (!this.clicked){
-                this.onClick();
-                this.clicked = true;
-                return true;
-            }
-        }else{
-            this.clicked = false;
+            this.onClick();
+            return true;
         }
         return false;
     }
