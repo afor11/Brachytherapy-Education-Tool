@@ -7,7 +7,19 @@ export class Module {
         buttons,
         onUpdate,
         onReload,
-        onClick
+        onClick = function () { //takes in e and moduleData, but since this default function uses neither, they can be excluded
+            ["dropDowns","sliders","labels","buttons"].forEach((obj) => {
+                Object.values(this[obj]).forEach((attribute) => {
+                    attribute.checkClicked();
+                });
+            });
+        },
+        onKeyDown = function (e) { //takes in e and moduleData, but since this default function uses only e, moduleData can be excluded
+            Object.values(this.labels).forEach((label) => {
+                label.checkEntry(e.key);
+                console.log(e.key);
+            });
+        }
     }){
         this.graphs = graphs;
         this.sliders = sliders;
@@ -16,17 +28,8 @@ export class Module {
         this.buttons = buttons;
         this.onUpdate = onUpdate;
         this.onReload = onReload;
-        this.onClick;
-        if (typeof onClick === "undefined"){
-            this.onClick = function () {
-                ["dropDowns","sliders","labels","buttons"].forEach((obj) => {
-                    Object.values(this[obj]).forEach((attribute) => {
-                        attribute.checkClicked();
-                    });
-                });
-            }
-        }else{
-            this.onClick = onClick;
-        }
+        this.onClick = onClick;
+        this.clickHandled = true;
+        this.onKeyDown = onKeyDown;
     }
 }

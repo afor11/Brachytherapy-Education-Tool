@@ -17,7 +17,7 @@ export function refreshNavBar(moduleData){
                 navBar[moduleName].bgColor = "black";
                 navBar[moduleName].label.color = "white";
                 module = moduleName;
-                moduleData[moduleName].onReload();
+                moduleData[moduleName].onReload(moduleData);
             },
             label: {text: moduleName, font: "default", color: "black"},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}

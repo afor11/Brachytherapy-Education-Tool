@@ -31,7 +31,7 @@ Object.keys(moduleData).forEach((module) => {
             Object.keys(moduleData[module][obj]).forEach((attribute) => {
                 let attributefn = moduleData[module][obj][attribute];
                 if (typeof attributefn === "function"){
-                    moduleData[module][obj][attribute] = attributefn(moduleData[module],attribute);
+                    moduleData[module][obj][attribute] = attributefn(moduleData,attribute);
                 }
             });
         }
@@ -40,13 +40,15 @@ Object.keys(moduleData).forEach((module) => {
 
 refreshNavBar(moduleData);
 moduleData[module].onReload(moduleData);
-console.log(moduleData);
 
 setInterval(tick,50);
 
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     moduleData[module].onUpdate(moduleData);
+    if (!moduleData[module].clickHandled){
+        moduleData[module].onClick(moduleData);
+    }
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
             x: 0,
@@ -72,15 +74,15 @@ addEventListener("mousemove",function (e){
 addEventListener("mousedown",function (e){
     updateMousePos(e);
     mouse.down = true;
+    moduleData[module].clickHandled = false;
+    moduleData[module].onClick(moduleData);
 });
 addEventListener("mouseup",function (e){
     updateMousePos(e);
     mouse.down = false;
 });
-addEventListener("click", function(e) {
-    updateMousePos(e);
-    mouse.down = true;
-    moduleData[module].onClick();
+addEventListener("keydown", function (e) {
+    moduleData[module].onKeyDown(e, moduleData);
 });
 
 function updateMousePos(e){

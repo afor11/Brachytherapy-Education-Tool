@@ -1,6 +1,6 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , cloneObj, getMax, getMin} from './utils.js';
+import { magnitude , cloneObj, getMax, getMin, getFontSize } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -111,6 +111,12 @@ export class Graph {
             y: this.graphDimensions.y + this.graphDimensions.height - ((point.y - getMin(this.yTicks)) / (getMax(this.yTicks) - getMin(this.yTicks))) * this.graphDimensions.height,
         };
     }
+    screenToGraphPos(point){
+        return {
+            x: getMin(this.xTicks) + ((point.x - this.graphDimensions.x) / this.graphDimensions.width) * (getMax(this.xTicks) - getMin(this.xTicks)),
+            y: getMax(this.yTicks) + ((point.y - this.graphDimensions.y) / this.graphDimensions.height) * (getMin(this.yTicks) - getMax(this.yTicks))
+        }
+    }
     overlayAnatomy(view, params){
         let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, (getMax(this.xTicks) - getMin(this.xTicks)));
 
@@ -153,6 +159,31 @@ export class Graph {
             ctx.beginPath();
             ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
             ctx.fill();
+        }
+    }
+    drawMouseLabel(){
+        if (
+            (window.mouse.x > this.graphDimensions.x)
+            && (window.mouse.x < this.graphDimensions.x + this.graphDimensions.width)
+            && (window.mouse.y > this.graphDimensions.y)
+            && (window.mouse.y < this.graphDimensions.y + this.graphDimensions.height)
+        ){
+            let doseAtMouse = this.getPointDose(this.perspective({...this.screenToGraphPos(window.mouse), z: 0})).toFixed(2) + "Gy";
+            let boundingBox = {
+                x: window.mouse.x,
+                y: window.mouse.y,
+                width: this.graphDimensions.width * 0.15,
+                height: this.graphDimensions.height * 0.05,
+            };
+
+            ctx.fillStyle = "white";
+            ctx.fillRect(boundingBox.x,boundingBox.y - boundingBox.height,boundingBox.width,boundingBox.height);
+            
+            ctx.fillStyle = "black";
+            ctx.textBaseline = "bottom";
+            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px monospace`) + "px monospace";
+            ctx.fillText(doseAtMouse,boundingBox.x,boundingBox.y);
+            ctx.textBaseline = "alphabetic";
         }
     }
 }

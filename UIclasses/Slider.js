@@ -14,6 +14,7 @@ export class Slider{
         this.updateValue = updateValue;
     }
     draw(){
+        let value = this.getValue();
         ctx.fillStyle = this.color;
         ctx.strokeStyle = this.color;
         ctx.lineWidth = this.thickness;
@@ -23,21 +24,27 @@ export class Slider{
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(
-            this.x + this.getValue() * this.length * Math.cos(this.angle),
-            this.y + this.getValue() * this.length * Math.sin(this.angle), this.thickness, 0, 2 * Math.PI
+            this.x + value * this.length * Math.cos(this.angle),
+            this.y + value * this.length * Math.sin(this.angle), this.thickness, 0, 2 * Math.PI
         );
         ctx.fill();
     }
     checkClicked(){
+        let value = this.getValue();
         if (this.selected){
             let unclampedVal = ((window.mouse.x - this.x) * Math.cos(this.angle) + (window.mouse.y - this.y) * Math.sin(this.angle)) / this.length; // this projects the window.mouse position onto the slider's direction vector, gets the magnitude, and divides by the slider angle to get the new value
-            this.updateValue(Math.min(Math.max(unclampedVal,0),1));
+            let clampedVal = Math.min(Math.max(unclampedVal,0),1);
+            if (clampedVal != value){
+                console.log("updating");
+                this.updateValue(clampedVal);
+            }
         }
-        if ((window.mouse.down && (((window.mouse.x - (this.x + Math.cos(this.angle) * this.length * this.getValue())) ** 2 + (window.mouse.y - (this.y + Math.sin(this.angle) * this.length * this.getValue())) ** 2) <= (this.thickness ** 2)))){
+        if (((window.mouse.x - (this.x + Math.cos(this.angle) * this.length * value)) ** 2 + (window.mouse.y - (this.y + Math.sin(this.angle) * this.length * value)) ** 2) <= (this.thickness ** 2)){
             this.selected = true;
         }
         if (!window.mouse.down){
             this.selected = false;
         }
+        return this.selected;
     }
 }

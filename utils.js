@@ -1,4 +1,5 @@
 import { conversionFactors, airKermaSliderLimits } from './constants.js';
+import { moduleData } from './main.js';
 import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
@@ -115,7 +116,7 @@ export function setProps(obj, props){
     });
 }
 
-export function setDropdownProps(dropdown, props){
+function setDropdownProps(dropdown, props){
     setProps(dropdown.button, props.button);
     dropdown.options.forEach((_,ind) => {
         setProps(dropdown.options[ind], props.optionProps(ind));
@@ -128,38 +129,44 @@ export function getRange(min, max, step){
     return range;
 }
 
-export function toggleSeedEnable(thisModule,self,graph,seedInd){
+export function toggleSeedEnable(thisModule,self,moduleData,graph,seedInd){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: "black",
         onClick: () => {
             let seedEnabled = thisModule.graphs[graph].seeds[seedInd].enabled;
             thisModule.graphs[graph].seeds[seedInd].enabled != seedEnabled;
             thisModule.buttons[self].label.text = (seedEnabled ? "disable seed" : "enable seed");
-            thisModule.onReload();
+            thisModule.onReload(moduleData);
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
     });
 }
 
-export function referencePointLabel(thisModule, graphName, refPointInd){
+export function referencePointLabel(moduleData, thisModule, graphName, refPointInd){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dose: ${value} Gy`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => thisModule.graphs[graphName].getPointDose(
-            thisModule.graphs[graphName].refpoints[refPointInd]
+        getValue: () => moduleData[thisModule].graphs[graphName].getPointDose(
+            moduleData[thisModule].graphs[graphName].refpoints[refPointInd]
         ),
         onEnter: function (value){
-            setDoseAtPoint(thisModule.graphs[graphName],value,thisModule);
+            setDoseAtPoint(
+                moduleData[thisModule].graphs[graphName],
+                value,
+                moduleData,
+                thisModule,
+                moduleData[thisModule].graphs[graphName].refpoints[refPointInd]
+            );
         },
         numDecimalsEditing: 3
     });
 }
 
-function setDoseAtPoint(graph,dose,thisModule){
+function setDoseAtPoint(graph,dose,moduleData,thisModule,point){
     const searchPrecision = 20;
     if (graph.seeds[0].model.HDRsource){
         let dwellTime = {min: 0, max: 0.0833333333333};
@@ -190,11 +197,11 @@ function setDoseAtPoint(graph,dose,thisModule){
             }
         }
     }
-    thisModule.onReload();
+    moduleData[thisModule].onReload(moduleData);
 }
 
-export function dwellTimeLabel(thisModule, graph){
-    let graphObj = thisModule.graphs[graph];
+export function dwellTimeLabel(moduleData, module, graph){
+    let graphObj = moduleData[module].graphs[graph];
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
@@ -207,14 +214,14 @@ export function dwellTimeLabel(thisModule, graph){
             graphObj.seeds.forEach((seed) => {
                 seed.dwellTime = clampedVal;
             });
-            thisModule.onReload();
+            moduleData[module].onReload(moduleData);
         },
         numDecimalsEditing: 3
     });
 }
 
-export function airKermaLabel(thisModule, graph){
-    let graphObj = thisModule.graphs[graph];
+export function airKermaLabel(moduleData, module, graph){
+    let graphObj = moduleData[module].graphs[graph];
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
@@ -232,13 +239,13 @@ export function airKermaLabel(thisModule, graph){
             graphObj.seeds.forEach((seed) => {
                 seed.airKerma = clampedVal;
             });
-            thisModule.onReload();
+            moduleData[module].onReload(moduleData);
         },
         numDecimalsEditing: 3
     })
 }
 
-export function modelDropdown(modelOptions,thisModule,self,graph,defaultLabel){
+export function modelDropdown(modelOptions,moduleData,module,self,graph,defaultLabel){
     let dropdown = new Dropdown(
         new Button({
             x: 0, y: 0, width: 0, height: 0, bgColor: "black",
@@ -254,45 +261,60 @@ export function modelDropdown(modelOptions,thisModule,self,graph,defaultLabel){
             label: {text: model.name + " (" + model.isotope + ")", font: "default", color: "black"},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
             onClick: () => {
-                thisModule.graphs[graph].seeds.forEach((seed) => {
+                moduleData[module].graphs[graph].seeds.forEach((seed) => {
                     seed.model = model;
                     seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
                     seed.dwellTime = 0.00833;
                     seed.enabled = true;
                 });
-                thisModule.dropDowns[self].button.label = model.name + " (" + model.isotope + ")";
-                thisModule.dropDowns[self].collapseDropdown();
-                thisModule.onReload();
+                moduleData[module].dropDowns[self].button.label = model.name + " (" + model.isotope + ")";
+                moduleData[module].dropDowns[self].collapseDropdown();
+                moduleData[module].onReload(moduleData);
             },
         }));
     }
     return dropdown;
 }
 
-export function airKermaSlider(thisModule,graph){
-    return new Slider({
-        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
-        updateValue: (value) => {
-            thisModule.graphs[graph].seeds.forEach((seed) => {
-                seed.airKerma = getAirKermaFromSlider(value,seed);
-            });
-            thisModule.onReload();
-        },
-        getValue: () => getValueFromAirKerma(thisModule.graphs[graph].seeds[0])
+export function rescaleDropdownButtons(dropdown, region, padding){
+    let bound = getRegionBound(region, padding);
+    setDropdownProps(dropdown, {
+        button: bound,
+        optionProps: (ind) => {
+            return {
+                x: bound.x,
+                y: bound.y + bound.height + region.height * ind,
+                width: bound.width,
+                height: region.height
+            };
+        }
     });
 }
 
-export function dwellTimeSlider(thisModule,graph){
+export function airKermaSlider(moduleData,module,graph){
+    return new Slider({
+        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+        updateValue: (value) => {
+            moduleData[module].graphs[graph].seeds.forEach((seed) => {
+                seed.airKerma = getAirKermaFromSlider(value,seed);
+            });
+            moduleData[module].onReload(moduleData);
+        },
+        getValue: () => getValueFromAirKerma(moduleData[module].graphs[graph].seeds[0])
+    });
+}
+
+export function dwellTimeSlider(moduleData,module,graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
         updateValue: (value) => {
             let dwellTime = getDwellTimeFromSlider(value);
-            thisModule.graphs[graph].seeds.forEach((seed) => {
+            moduleData[module].graphs[graph].seeds.forEach((seed) => {
                 seed.dwellTime = dwellTime;
             });
-            thisModule.onReload();
+            moduleData[module].onReload(moduleData);
         },
-        getValue: () => getValueFromDwellTime(thisModule.graphs[graph].seeds[0])
+        getValue: () => getValueFromDwellTime(moduleData[module].graphs[graph].seeds[0])
     });
 }
 

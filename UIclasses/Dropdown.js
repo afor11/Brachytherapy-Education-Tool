@@ -35,12 +35,13 @@ export class Dropdown {
         }
     }
     checkClicked(){
-        this.button.checkClicked();
+        let clicked = this.button.checkClicked();
         if (this.showing){
             this.options.forEach((button) => {
-                button.checkClicked();
+                clicked = clicked || button.checkClicked();
             });
         }
+        return clicked;
     }
     collapseDropdown(){
         this.showing = false;

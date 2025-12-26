@@ -38,7 +38,7 @@ export class Button {
         ctx.fillStyle = this.fontColor;
         ctx.fillText(this.label, this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
     }
-    getDefaultFont(padding = {horizontal: 0.2, vertical: 0.2}){
+    getDefaultFont(padding = {horizontal: 0.2, vertical: 0.4}){
         return getFontSize(
             this.width * (1 - padding.horizontal),
             this.height * (1 - padding.vertical),
