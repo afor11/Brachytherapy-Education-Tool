@@ -49,9 +49,6 @@ setInterval(tick,50);
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     moduleData[module].onUpdate(moduleData);
-    if (!moduleData[module].clickHandled){
-        moduleData[module].onClick(moduleData);
-    }
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
             x: 0,
@@ -73,19 +70,15 @@ addEventListener("scroll",function (e){
 });
 addEventListener("mousemove",function (e){
     updateMousePos(e);
+    moduleData[module].onMouseMove(e, moduleData);
 });
 addEventListener("mousedown",function (e){
     updateMousePos(e);
     mouse.down = true;
-    moduleData[module].clickHandled = false;
     Object.values(navBar).forEach((pageButton) => {
-        if (pageButton.checkClicked()){
-            moduleData[module].clickHandled = true;
-        }
+        pageButton.checkClicked();
     });
-    if (!moduleData[module].clickHandled){
-        moduleData[module].onClick(moduleData);
-    }
+    moduleData[module].onMouseDown(e, moduleData);
 });
 addEventListener("mouseup",function (e){
     updateMousePos(e);

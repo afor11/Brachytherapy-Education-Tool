@@ -45,14 +45,6 @@ export let stringofseedsPage = new Module({
         },
         onUpdate: function () {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            let graph2Div = document.getElementById("graph2");
-            let graph3Div = document.getElementById("graph3");
-            if (graph2Div.innerHTML !== ""){
-                graph2Div.innerHTML = "";
-            }
-            if (graph3Div.innerHTML !== ""){
-                graph3Div.innerHTML = "";
-            }
             this.labels.graph1AirKerma.draw();
             this.labels.graph1Reference.draw();
             this.sliders.graph1AirKerma.draw();
@@ -76,6 +68,16 @@ export let stringofseedsPage = new Module({
         },
         onReload: function (moduleData) {
             refreshNavBar(moduleData);
+
+            let graph2Div = document.getElementById("graph2");
+            let graph3Div = document.getElementById("graph3");
+            if (graph2Div.innerHTML !== ""){
+                graph2Div.innerHTML = "";
+            }
+            if (graph3Div.innerHTML !== ""){
+                graph3Div.innerHTML = "";
+            }
+
             let splitY = view.height * 0.25;
             let splitX = view.width / 2;
 
@@ -155,24 +157,28 @@ export let stringofseedsPage = new Module({
 
             this.onUpdate(moduleData);
         },
-        onClick: function() {
-            //Check for dropdown clicked
-            Object.values(this.dropDowns).forEach((dropdown) => {
-                this.clickHandled = this.clickHandled || dropdown.checkClicked();
-            });
+        defaultInputHandler: {
+            onMouseDown: function() {
+                //##Adjust to self-modify
 
-            //UI around graph1
-            if (!this.dropDowns.graph1Model.showing){
-                this.clickHandled = this.clickHandled || this.labels.graph1AirKerma.checkClicked();
-                this.clickHandled = this.clickHandled || this.sliders.graph1AirKerma.checkClicked();
-                if (this.graphs.graph1.seeds[0].model.HDRsource){
-                    this.clickHandled = this.clickHandled || this.labels.graph1DwellTime.checkClicked();
-                    this.clickHandled = this.clickHandled || this.sliders.graph1DwellTime.checkClicked();
-                }else{
-                    this.clickHandled = this.clickHandled || this.buttons.graph1EnableSeed.checkClicked();
+                //Check for dropdown clicked
+                Object.values(this.dropDowns).forEach((dropdown) => {
+                    this.clickHandled = this.clickHandled || dropdown.checkClicked();
+                });
+
+                //UI around graph1
+                if (!this.dropDowns.graph1Model.showing){
+                    this.clickHandled = this.clickHandled || this.labels.graph1AirKerma.checkClicked();
+                    this.clickHandled = this.clickHandled || this.sliders.graph1AirKerma.checkClicked();
+                    if (this.graphs.graph1.seeds[0].model.HDRsource){
+                        this.clickHandled = this.clickHandled || this.labels.graph1DwellTime.checkClicked();
+                        this.clickHandled = this.clickHandled || this.sliders.graph1DwellTime.checkClicked();
+                    }else{
+                        this.clickHandled = this.clickHandled || this.buttons.graph1EnableSeed.checkClicked();
+                    }
                 }
+                this.clickHandled = this.clickHandled || this.labels.graph1Reference.checkClicked();
+                this.clickHandled = this.clickHandled || this.graphs.graph1.checkClicked();
             }
-            this.clickHandled = this.clickHandled || this.labels.graph1Reference.checkClicked();
-            this.clickHandled = this.clickHandled || this.graphs.graph1.checkClicked();
         }
     })

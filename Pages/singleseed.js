@@ -47,10 +47,6 @@ export let singleSeedPage = new Module({
         },
         onUpdate: function () {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            let graph3Div = document.getElementById("graph3");
-            if (graph3Div.innerHTML !== ""){
-                graph3Div.innerHTML = "";
-            }
             this.labels.graph1AirKerma.draw();
             this.labels.graph2AirKerma.draw();
             this.labels.graph1Reference.draw();
@@ -80,6 +76,12 @@ export let singleSeedPage = new Module({
         },
         onReload: function (moduleData) {
             refreshNavBar(moduleData);
+
+            let graph3Div = document.getElementById("graph3");
+            if (graph3Div.innerHTML !== ""){
+                graph3Div.innerHTML = "";
+            }
+            
             if (view.width / view.height > 1){
                 let splitY = view.height * 0.25;
                 let splitX = view.width / 2;
@@ -308,33 +310,35 @@ export let singleSeedPage = new Module({
             });
             this.onUpdate(moduleData);
         },
-        onClick: function() {
-            //Check for dropdown clicked
-            Object.values(this.dropDowns).forEach((dropdown) => {
-                this.clickHandled = this.clickHandled || dropdown.checkClicked();
-            });
+        defaultInputHandler: {
+            onMouseDown: function() {
+                //Check for dropdown clicked
+                Object.values(this.dropDowns).forEach((dropdown) => {
+                    this.clickHandled = this.clickHandled || dropdown.checkClicked();
+                });
 
-            //UI around graph1
-            if (!this.dropDowns.graph1Model.showing){
-                this.clickHandled = this.clickHandled || this.labels.graph1AirKerma.checkClicked();
-                this.clickHandled = this.clickHandled || this.sliders.graph1AirKerma.checkClicked();
-                if (this.graphs.graph1.seeds[0].model.HDRsource){
-                    this.clickHandled = this.clickHandled || this.labels.graph1DwellTime.checkClicked();
-                    this.clickHandled = this.clickHandled || this.sliders.graph1DwellTime.checkClicked();
+                //UI around graph1
+                if (!this.dropDowns.graph1Model.showing){
+                    this.clickHandled = this.clickHandled || this.labels.graph1AirKerma.checkClicked();
+                    this.clickHandled = this.clickHandled || this.sliders.graph1AirKerma.checkClicked();
+                    if (this.graphs.graph1.seeds[0].model.HDRsource){
+                        this.clickHandled = this.clickHandled || this.labels.graph1DwellTime.checkClicked();
+                        this.clickHandled = this.clickHandled || this.sliders.graph1DwellTime.checkClicked();
+                    }
                 }
-            }
-            this.clickHandled = this.clickHandled || this.labels.graph1Reference.checkClicked();
+                this.clickHandled = this.clickHandled || this.labels.graph1Reference.checkClicked();
 
-            //UI around graph2
-            if (!this.dropDowns.graph2Model.showing){
-                this.clickHandled = this.clickHandled || this.labels.graph2AirKerma.checkClicked();
-                this.clickHandled = this.clickHandled || this.labels.graph2DwellTime.checkClicked();
-                this.clickHandled = this.clickHandled || this.sliders.graph2AirKerma.checkClicked();
-                if (this.graphs.graph2.seeds[0].model.HDRsource){
+                //UI around graph2
+                if (!this.dropDowns.graph2Model.showing){
+                    this.clickHandled = this.clickHandled || this.labels.graph2AirKerma.checkClicked();
                     this.clickHandled = this.clickHandled || this.labels.graph2DwellTime.checkClicked();
-                    this.clickHandled = this.clickHandled || this.sliders.graph2DwellTime.checkClicked();
+                    this.clickHandled = this.clickHandled || this.sliders.graph2AirKerma.checkClicked();
+                    if (this.graphs.graph2.seeds[0].model.HDRsource){
+                        this.clickHandled = this.clickHandled || this.labels.graph2DwellTime.checkClicked();
+                        this.clickHandled = this.clickHandled || this.sliders.graph2DwellTime.checkClicked();
+                    }
                 }
+                this.clickHandled = this.clickHandled || this.labels.graph2Reference.checkClicked();
             }
-            this.clickHandled = this.clickHandled || this.labels.graph2Reference.checkClicked();
         }
     })
