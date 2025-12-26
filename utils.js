@@ -1,5 +1,4 @@
 import { conversionFactors, airKermaSliderLimits } from './constants.js';
-import { moduleData } from './main.js';
 import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
@@ -10,6 +9,19 @@ var ctx = canvas.getContext("2d");
 
 export function magnitude(vec){
     return Math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2);
+}
+
+export function distance(vec1, vec2){
+    return (
+        (vec1.length != vec2.length) ?
+            0
+        :
+            Math.sqrt(vec1.reduce(
+                (dist, component, ind) => dist + (component - vec2[ind]) ** 2
+                ,0
+            )
+        )
+    );
 }
 
 export function interpolateTable(dataArr,spacingArr,ind){
@@ -129,14 +141,18 @@ export function getRange(min, max, step){
     return range;
 }
 
-export function toggleSeedEnable(thisModule,self,moduleData,graph,seedInd){
+export function toggleSeedEnable(moduleData,thisModule,self,graph,seedInd){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: "black",
         onClick: () => {
-            let seedEnabled = thisModule.graphs[graph].seeds[seedInd].enabled;
-            thisModule.graphs[graph].seeds[seedInd].enabled != seedEnabled;
-            thisModule.buttons[self].label.text = (seedEnabled ? "disable seed" : "enable seed");
-            thisModule.onReload(moduleData);
+            let seedIndValue = seedInd.call(moduleData[thisModule]);
+            if (seedIndValue == -1){return}
+
+            let seedEnabled = moduleData[thisModule].graphs[graph].seeds[seedIndValue].enabled;
+            moduleData[thisModule].graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
+            moduleData[thisModule].buttons[self].label = (seedEnabled ? "enable seed" : "disable seed");
+
+            moduleData[thisModule].onReload(moduleData);
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}

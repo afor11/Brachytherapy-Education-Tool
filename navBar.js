@@ -1,4 +1,4 @@
-import { module } from "./main.js";
+import { module, setModule } from "./main.js";
 import { Button } from './UIclasses/Button.js';
 
 export let navBar = {};
@@ -10,16 +10,16 @@ export function refreshNavBar(moduleData){
             y: 0,
             width: (canvas.width / arr.length),
             height: canvas.height * 0.1,
-            bgColor: "white",
+            bgColor: ((moduleName === module) ? "black" : "white"),
             onClick: () => {
                 navBar[module].bgColor = "white";
-                navBar[module].label.color = "black";
+                navBar[module].fontColor = "black";
                 navBar[moduleName].bgColor = "black";
-                navBar[moduleName].label.color = "white";
-                module = moduleName;
+                navBar[moduleName].fontColor = "white";
+                setModule(moduleName);
                 moduleData[moduleName].onReload(moduleData);
             },
-            label: {text: moduleName, font: "default", color: "black"},
+            label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
         });
         return navButtons;

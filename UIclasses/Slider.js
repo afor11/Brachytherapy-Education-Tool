@@ -30,21 +30,20 @@ export class Slider{
         ctx.fill();
     }
     checkClicked(){
+        let lastSelected = this.selected;
         let value = this.getValue();
         if (this.selected){
             let unclampedVal = ((window.mouse.x - this.x) * Math.cos(this.angle) + (window.mouse.y - this.y) * Math.sin(this.angle)) / this.length; // this projects the window.mouse position onto the slider's direction vector, gets the magnitude, and divides by the slider angle to get the new value
             let clampedVal = Math.min(Math.max(unclampedVal,0),1);
             if (clampedVal != value){
-                console.log("updating");
                 this.updateValue(clampedVal);
             }
         }
-        if (((window.mouse.x - (this.x + Math.cos(this.angle) * this.length * value)) ** 2 + (window.mouse.y - (this.y + Math.sin(this.angle) * this.length * value)) ** 2) <= (this.thickness ** 2)){
+        if (window.mouse.down && (this.selected || (((window.mouse.x - (this.x + Math.cos(this.angle) * this.length * value)) ** 2 + (window.mouse.y - (this.y + Math.sin(this.angle) * this.length * value)) ** 2) <= (this.thickness ** 2)))){
             this.selected = true;
-        }
-        if (!window.mouse.down){
+        }else{
             this.selected = false;
         }
-        return this.selected;
+        return lastSelected && !this.selected;
     }
 }

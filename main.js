@@ -1,11 +1,13 @@
 import { singleSeedPage } from './Pages/singleseed.js';
-import { refreshNavBar } from './navBar.js';
+import { stringofseedsPage } from './Pages/stringofseeds.js';
+import { navBar, refreshNavBar } from './navBar.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
 ctx.canvas.width = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
 export let module = "single seed";
+export function setModule(newModule) {module = newModule;}
 let scrollPos = {
     x: 0,
     y: 0
@@ -19,7 +21,8 @@ export let view = {
 
 window.mouse = {x: 0, y: 0, down: false};
 export let moduleData = {
-    "single seed": singleSeedPage
+    "single seed": singleSeedPage,
+    "string of seeds": stringofseedsPage,
 };
 
 //loop over moduleData and evaluate any attribute functions (these are neccisary since attributes that reference
@@ -75,7 +78,14 @@ addEventListener("mousedown",function (e){
     updateMousePos(e);
     mouse.down = true;
     moduleData[module].clickHandled = false;
-    moduleData[module].onClick(moduleData);
+    Object.values(navBar).forEach((pageButton) => {
+        if (pageButton.checkClicked()){
+            moduleData[module].clickHandled = true;
+        }
+    });
+    if (!moduleData[module].clickHandled){
+        moduleData[module].onClick(moduleData);
+    }
 });
 addEventListener("mouseup",function (e){
     updateMousePos(e);

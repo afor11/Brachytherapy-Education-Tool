@@ -2,12 +2,13 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, setProps, getRange, toggleSeedEnable, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, setProps, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view } from "../main.js";
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
+const thisModule = "single seed";
 
 export let singleSeedPage = new Module({
         graphs: {
@@ -27,30 +28,44 @@ export let singleSeedPage = new Module({
             })
         },
         sliders: {
-            graph1AirKerma: function(moduleData) {return airKermaSlider(moduleData,"single seed","graph1")},
-            graph2AirKerma: function(moduleData) {return airKermaSlider(moduleData,"single seed","graph2")},
-            graph1DwellTime: function(moduleData) {return dwellTimeSlider(moduleData,"single seed","graph1");},
-            graph2DwellTime: function(moduleData) {return dwellTimeSlider(moduleData,"single seed","graph2");}
+            graph1AirKerma: function(moduleData) {return airKermaSlider(moduleData,thisModule,"graph1")},
+            graph2AirKerma: function(moduleData) {return airKermaSlider(moduleData,thisModule,"graph2")},
+            graph1DwellTime: function(moduleData) {return dwellTimeSlider(moduleData,thisModule,"graph1");},
+            graph2DwellTime: function(moduleData) {return dwellTimeSlider(moduleData,thisModule,"graph2");}
         },
         dropDowns: {
             graph1Model: function(moduleData,self) {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],moduleData,"single seed",self,"graph1",TheraSeed200.name);},
             graph2Model: function(moduleData,self) {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],moduleData,"single seed",self,"graph2",TheraSeed200.name);}
         },
         labels: {
-            graph1AirKerma: function(moduleData) {return airKermaLabel(moduleData,"single seed","graph1");},
-            graph2AirKerma: function(moduleData) {return airKermaLabel(moduleData,"single seed","graph2");},
-            graph1DwellTime: function(moduleData) {return dwellTimeLabel(moduleData,"single seed","graph1");},
-            graph2DwellTime: function(moduleData) {return dwellTimeLabel(moduleData,"single seed","graph2");},
-            graph1Reference: function(moduleData) {return referencePointLabel(moduleData,"single seed","graph1",0);},
-            graph2Reference: function(moduleData) {return referencePointLabel(moduleData,"single seed","graph2",0);},
-        },
-        buttons: {
-            graph1EnableSeed: function(moduleData,self) {return toggleSeedEnable(moduleData,self,"graph1",0);},
-            graph2EnableSeed: function(moduleData,self) {return toggleSeedEnable(moduleData,self,"graph2",0);}
+            graph1AirKerma: function(moduleData) {return airKermaLabel(moduleData,thisModule,"graph1");},
+            graph2AirKerma: function(moduleData) {return airKermaLabel(moduleData,thisModule,"graph2");},
+            graph1DwellTime: function(moduleData) {return dwellTimeLabel(moduleData,thisModule,"graph1");},
+            graph2DwellTime: function(moduleData) {return dwellTimeLabel(moduleData,thisModule,"graph2");},
+            graph1Reference: function(moduleData) {return referencePointLabel(moduleData,thisModule,"graph1",0);},
+            graph2Reference: function(moduleData) {return referencePointLabel(moduleData,thisModule,"graph2",0);},
         },
         onUpdate: function () {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            ["sliders","labels","dropDowns","buttons"].forEach((obj) => {
+            let graph3Div = document.getElementById("graph3");
+            if (graph3Div.innerHTML !== ""){
+                graph3Div.innerHTML = "";
+            }
+            this.labels.graph1AirKerma.draw();
+            this.labels.graph2AirKerma.draw();
+            this.labels.graph1Reference.draw();
+            this.labels.graph2Reference.draw();
+            this.sliders.graph1AirKerma.draw();
+            this.sliders.graph2AirKerma.draw();
+            if (this.graphs.graph1.seeds[0].model.HDRsource){
+                this.labels.graph1DwellTime.draw();
+                this.sliders.graph1DwellTime.draw();
+            }
+            if (this.graphs.graph2.seeds[0].model.HDRsource){
+                this.labels.graph2DwellTime.draw();
+                this.sliders.graph2DwellTime.draw();
+            }
+            ["dropDowns"].forEach((obj) => {
                 Object.values(this[obj]).forEach((attribute) => {
                     attribute.draw();
                 });
@@ -141,6 +156,20 @@ export let singleSeedPage = new Module({
                     height: splitY / 5
                 }, {horizontal: 0.2, vertical: 0.2}));
 
+                setProps(this.labels.graph1DwellTime, getRegionBound({
+                    x: 0,
+                    y: view.y + (splitY / 5) * 3,
+                    width: splitX,
+                    height: splitY / 5
+                }, {horizontal: 0.2, vertical: 0.2}));
+
+                setProps(this.labels.graph2DwellTime, getRegionBound({
+                    x: splitX,
+                    y: view.y + (splitY / 5) * 3,
+                    width: splitX,
+                    height: splitY / 5
+                }, {horizontal: 0.2, vertical: 0.2}));
+
                 //resize sliders
                 let sliderBounds = getRegionBound({
                     x: 0,
@@ -148,6 +177,7 @@ export let singleSeedPage = new Module({
                     width: splitX,
                     height: splitY / 5
                 }, {horizontal: 0.2, vertical: 0.2});
+
                 setProps(this.sliders.graph1AirKerma, {
                     x: sliderBounds.x,
                     y: sliderBounds.y,
@@ -158,6 +188,20 @@ export let singleSeedPage = new Module({
                 setProps(this.sliders.graph2AirKerma, {
                     x: sliderBounds.x + splitX,
                     y: sliderBounds.y,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.4
+                });
+
+                setProps(this.sliders.graph1DwellTime, {
+                    x: sliderBounds.x,
+                    y: sliderBounds.y + (splitY / 5) * 2,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.4
+                });
+
+                setProps(this.sliders.graph2DwellTime, {
+                    x: sliderBounds.x + splitX,
+                    y: sliderBounds.y + (splitY / 5) * 2,
                     length: sliderBounds.width,
                     thickness: sliderBounds.height * 0.4
                 });
@@ -187,12 +231,63 @@ export let singleSeedPage = new Module({
                     width: splitX,
                     height: splitY * 0.1
                 }, {horizontal: 0.2, vertical: 0.2}));
+
                 setProps(this.labels.graph2AirKerma, getRegionBound({
                     x: 0,
                     y: view.y + splitY * 1.1,
                     width: splitX,
                     height: splitY * 0.1
                 }, {horizontal: 0.2, vertical: 0.2}));
+
+                setProps(this.labels.graph1DwellTime, getRegionBound({
+                    x: 0,
+                    y: view.y + splitY * 0.3,
+                    width: splitX,
+                    height: splitY * 0.1
+                }, {horizontal: 0.2, vertical: 0.2}));
+
+                setProps(this.labels.graph2DwellTime, getRegionBound({
+                    x: 0,
+                    y: view.y + splitY * 1.3,
+                    width: splitX,
+                    height: splitY * 0.1
+                }, {horizontal: 0.2, vertical: 0.2}));
+
+                //resize sliders
+                let sliderBounds = getRegionBound({
+                    x: 0,
+                    y: view.y + splitY * 0.25,
+                    width: splitX,
+                    height: splitY * 0.1
+                }, {horizontal: 0.2, vertical: 0.2});
+
+                setProps(this.sliders.graph1AirKerma, {
+                    x: sliderBounds.x,
+                    y: sliderBounds.y,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.3
+                });
+
+                setProps(this.sliders.graph2AirKerma, {
+                    x: sliderBounds.x,
+                    y: sliderBounds.y + splitY,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.3
+                });
+
+                setProps(this.sliders.graph1DwellTime, {
+                    x: sliderBounds.x,
+                    y: sliderBounds.y + splitY * 0.2,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.3
+                });
+
+                setProps(this.sliders.graph2DwellTime, {
+                    x: sliderBounds.x,
+                    y: sliderBounds.y + splitY * 1.2,
+                    length: sliderBounds.width,
+                    thickness: sliderBounds.height * 0.3
+                });
             }
 
             //resize reference dose labels
@@ -214,24 +309,32 @@ export let singleSeedPage = new Module({
             this.onUpdate(moduleData);
         },
         onClick: function() {
+            //Check for dropdown clicked
             Object.values(this.dropDowns).forEach((dropdown) => {
                 this.clickHandled = this.clickHandled || dropdown.checkClicked();
             });
+
+            //UI around graph1
             if (!this.dropDowns.graph1Model.showing){
                 this.clickHandled = this.clickHandled || this.labels.graph1AirKerma.checkClicked();
-                this.sliders.graph1AirKerma.checkClicked();
-                if (!window.mouse.down){
-                    this.clickHandled = true;
-                }
-            }
-            if (!this.dropDowns.graph2Model.showing){
-                this.clickHandled = this.clickHandled || this.labels.graph2AirKerma.checkClicked();
-                this.sliders.graph2AirKerma.checkClicked();
-                if (!window.mouse.down){
-                    this.clickHandled = true;
+                this.clickHandled = this.clickHandled || this.sliders.graph1AirKerma.checkClicked();
+                if (this.graphs.graph1.seeds[0].model.HDRsource){
+                    this.clickHandled = this.clickHandled || this.labels.graph1DwellTime.checkClicked();
+                    this.clickHandled = this.clickHandled || this.sliders.graph1DwellTime.checkClicked();
                 }
             }
             this.clickHandled = this.clickHandled || this.labels.graph1Reference.checkClicked();
+
+            //UI around graph2
+            if (!this.dropDowns.graph2Model.showing){
+                this.clickHandled = this.clickHandled || this.labels.graph2AirKerma.checkClicked();
+                this.clickHandled = this.clickHandled || this.labels.graph2DwellTime.checkClicked();
+                this.clickHandled = this.clickHandled || this.sliders.graph2AirKerma.checkClicked();
+                if (this.graphs.graph2.seeds[0].model.HDRsource){
+                    this.clickHandled = this.clickHandled || this.labels.graph2DwellTime.checkClicked();
+                    this.clickHandled = this.clickHandled || this.sliders.graph2DwellTime.checkClicked();
+                }
+            }
             this.clickHandled = this.clickHandled || this.labels.graph2Reference.checkClicked();
         }
     })

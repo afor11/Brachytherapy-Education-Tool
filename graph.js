@@ -1,6 +1,6 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , cloneObj, getMax, getMin, getFontSize } from './utils.js';
+import { magnitude , cloneObj, getMax, getMin, getFontSize, distance } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -161,6 +161,36 @@ export class Graph {
             ctx.fill();
         }
     }
+    checkClicked(){
+        if (!window.mouse.down){
+            this.selectedSeed = -1;
+            return false;
+        }
+        if (this.selectedSeed != -1){
+            this.selectedSeed = -1;
+            return true
+        }
+
+        let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
+            let seedPos = this.graphToScreenPos(this.perspective(seed.pos));
+            let seedDist = distance([mouse.x, mouse.y],[seedPos.x, seedPos.y]);
+            if (seedDist < closestSeed.dist){
+                return {
+                    dist: seedDist,
+                    ind: ind
+                };
+            }
+            return closestSeed;
+        },{dist: Infinity});
+
+        if (closestSeed.dist < Math.min(canvas.width,canvas.height * 0.9) * 0.005){
+            this.selectedSeed = closestSeed.ind;
+            return true;
+        }
+
+        this.selectedSeed = -1;
+        return false;
+    }
     drawMouseLabel(){
         if (
             (window.mouse.x > this.graphDimensions.x)
@@ -177,11 +207,13 @@ export class Graph {
             };
 
             ctx.fillStyle = "white";
-            ctx.fillRect(boundingBox.x,boundingBox.y - boundingBox.height,boundingBox.width,boundingBox.height);
+            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px monospace`) + "px monospace";
+            let metrics = ctx.measureText(doseAtMouse);
+            let labelTextWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
+            ctx.fillRect(boundingBox.x,boundingBox.y - boundingBox.height,labelTextWidth,boundingBox.height);
             
             ctx.fillStyle = "black";
             ctx.textBaseline = "bottom";
-            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px monospace`) + "px monospace";
             ctx.fillText(doseAtMouse,boundingBox.x,boundingBox.y);
             ctx.textBaseline = "alphabetic";
         }
