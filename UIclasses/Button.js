@@ -1,4 +1,5 @@
-import {getFontSize} from './getFontSize.js';
+import { getFontSize, buttonPress, nothing } from '../utils.js';
+import { EventFunction } from '../eventFunction.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -19,7 +20,7 @@ export class Button {
     }
     draw(){
         if (this.font === "default"){
-            ctx.font = this.getDefaultFont() + "px monospace";
+            ctx.font = this.getDefaultFont() + "px Arial";
         }else{
             ctx.font = this.font;
         }
@@ -42,15 +43,20 @@ export class Button {
         return getFontSize(
             this.width * (1 - padding.horizontal),
             this.height * (1 - padding.vertical),
-            this.label,(size) => `${size}px monospace`
+            this.label,(size) => `${size}px Arial`
         );
     }
     checkClicked(){
         if (window.mouse.down && this.hovering()){
-            this.onClick();
-            return true;
+            return new EventFunction({
+                self: this,
+                func: function () {
+                    buttonPress.call(this.module);
+                    this.self.onClick.call(this);
+                }
+            })
         }
-        return false;
+        return nothing;
     }
     hovering(){
         return ((window.mouse.x >= this.x) && (window.mouse.x <= this.x + this.width) && (window.mouse.y >= this.y) && (window.mouse.y <= this.y + this.height));

@@ -1,6 +1,6 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , cloneObj, getMax, getMin, getFontSize, distance } from './utils.js';
+import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -20,6 +20,7 @@ export class Graph {
         this.name = name;
         this.refpoints = refpoints;
         this.selectedSeed = -1;
+        this.seedRadius = () => Math.min(canvas.width,canvas.height * 0.9) * 0.01;
     }
     getPointDose(pos){
         return this.seeds.reduce((z,seed) => {
@@ -92,7 +93,7 @@ export class Graph {
     }
     drawRefPoints(){
         let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;
-        this.refpoints.forEach((refpoint,ind) => {
+        this.refpoints.forEach((refpoint) => {
             let screenPos = this.graphToScreenPos(this.perspective(refpoint));
             ctx.strokeStyle = "red";
             ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.003;
@@ -133,7 +134,7 @@ export class Graph {
         }
     }
     drawGraphSeeds(){
-        let seedRadius = Math.min(canvas.width,canvas.height * 0.9) * 0.005;
+        let seedRadius = this.seedRadius();
         ctx.lineWidth = seedRadius * 0.5;
         this.seeds.forEach((seed) => {
             let seedPos = this.perspective(seed.pos);
@@ -164,11 +165,11 @@ export class Graph {
     checkClicked(){
         if (!window.mouse.down){
             this.selectedSeed = -1;
-            return false;
+            return nothing;
         }
         if (this.selectedSeed != -1){
             this.selectedSeed = -1;
-            return true
+            return eventHandled;
         }
 
         let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
@@ -183,13 +184,13 @@ export class Graph {
             return closestSeed;
         },{dist: Infinity});
 
-        if (closestSeed.dist < Math.min(canvas.width,canvas.height * 0.9) * 0.005){
+        if (closestSeed.dist < this.seedRadius() * 1.25){
             this.selectedSeed = closestSeed.ind;
-            return true;
+            return eventHandled;
         }
 
         this.selectedSeed = -1;
-        return false;
+        return nothing;
     }
     drawMouseLabel(){
         if (
@@ -207,7 +208,7 @@ export class Graph {
             };
 
             ctx.fillStyle = "white";
-            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px monospace`) + "px monospace";
+            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px Arial`) + "px Arial";
             let metrics = ctx.measureText(doseAtMouse);
             let labelTextWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
             ctx.fillRect(boundingBox.x,boundingBox.y - boundingBox.height,labelTextWidth,boundingBox.height);

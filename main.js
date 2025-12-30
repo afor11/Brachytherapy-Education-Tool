@@ -1,6 +1,6 @@
 import { singleSeedPage } from './Pages/singleseed.js';
 import { stringofseedsPage } from './Pages/stringofseeds.js';
-import { navBar, refreshNavBar } from './navBar.js';
+import { navBar, refreshNavBar, resetNavBar } from './navBar.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -34,21 +34,21 @@ Object.keys(moduleData).forEach((module) => {
             Object.keys(moduleData[module][obj]).forEach((attribute) => {
                 let attributefn = moduleData[module][obj][attribute];
                 if (typeof attributefn === "function"){
-                    moduleData[module][obj][attribute] = attributefn(moduleData,attribute);
+                    moduleData[module][obj][attribute] = attributefn(attribute);
                 }
             });
         }
     });
 });
 
-refreshNavBar(moduleData);
-moduleData[module].onReload(moduleData);
+resetNavBar(moduleData);
+moduleData[module].onReload();
 
 setInterval(tick,50);
 
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    moduleData[module].onUpdate(moduleData);
+    moduleData[module].onUpdate();
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
             x: 0,
@@ -58,7 +58,7 @@ function tick(){
         };
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        moduleData[module].onReload(moduleData);
+        moduleData[module].onReload();
     }
 }
 
@@ -70,22 +70,30 @@ addEventListener("scroll",function (e){
 });
 addEventListener("mousemove",function (e){
     updateMousePos(e);
-    moduleData[module].onMouseMove(e, moduleData);
+    moduleData[module].eventHandler("onMouseMove",e);
 });
 addEventListener("mousedown",function (e){
     updateMousePos(e);
     mouse.down = true;
     Object.values(navBar).forEach((pageButton) => {
-        pageButton.checkClicked();
+        let buttonClick = pageButton.checkClicked();
+        // if an event function is passed back, execute it
+        if (typeof buttonClick.func !== "undefined"){
+            buttonClick.func.call({
+                module: moduleData[module],
+                self: buttonClick.self
+            });
+        }
     });
-    moduleData[module].onMouseDown(e, moduleData);
+    moduleData[module].eventHandler("onMouseDown",e);
 });
 addEventListener("mouseup",function (e){
     updateMousePos(e);
     mouse.down = false;
+    moduleData[module].eventHandler("onMouseUp",e);
 });
 addEventListener("keydown", function (e) {
-    moduleData[module].onKeyDown(e, moduleData);
+    moduleData[module].eventHandler("onKeyDown",e);
 });
 
 function updateMousePos(e){

@@ -141,18 +141,18 @@ export function getRange(min, max, step){
     return range;
 }
 
-export function toggleSeedEnable(moduleData,thisModule,self,graph,seedInd){
+export function toggleSeedEnable(graph,seedInd){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: "black",
-        onClick: () => {
-            let seedIndValue = seedInd.call(moduleData[thisModule]);
+        onClick: function () {
+            let seedIndValue = seedInd.call(this.module);
             if (seedIndValue == -1){return}
 
-            let seedEnabled = moduleData[thisModule].graphs[graph].seeds[seedIndValue].enabled;
-            moduleData[thisModule].graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
-            moduleData[thisModule].buttons[self].label = (seedEnabled ? "enable seed" : "disable seed");
+            let seedEnabled = this.module.graphs[graph].seeds[seedIndValue].enabled;
+            this.module.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
+            this.self.label = (seedEnabled ? "enable seed" : "disable seed");
 
-            moduleData[thisModule].onReload(moduleData);
+            this.module.onReload();
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
@@ -171,18 +171,17 @@ export function referencePointLabel(moduleData, thisModule, graphName, refPointI
         ),
         onEnter: function (value){
             setDoseAtPoint(
-                moduleData[thisModule].graphs[graphName],
+                this.module.graphs[graphName],
                 value,
-                moduleData,
-                thisModule,
-                moduleData[thisModule].graphs[graphName].refpoints[refPointInd]
+                this.module,
+                this.module.graphs[graphName].refpoints[refPointInd]
             );
         },
         numDecimalsEditing: 3
     });
 }
 
-function setDoseAtPoint(graph,dose,moduleData,thisModule,point){
+function setDoseAtPoint(graph,dose,module,point){
     const searchPrecision = 20;
     if (graph.seeds[0].model.HDRsource){
         let dwellTime = {min: 0, max: 0.0833333333333};
@@ -213,7 +212,7 @@ function setDoseAtPoint(graph,dose,moduleData,thisModule,point){
             }
         }
     }
-    moduleData[thisModule].onReload(moduleData);
+    module.onReload();
 }
 
 export function dwellTimeLabel(moduleData, module, graph){
@@ -230,38 +229,37 @@ export function dwellTimeLabel(moduleData, module, graph){
             graphObj.seeds.forEach((seed) => {
                 seed.dwellTime = clampedVal;
             });
-            moduleData[module].onReload(moduleData);
+            this.module.onReload();
         },
         numDecimalsEditing: 3
     });
 }
 
 export function airKermaLabel(moduleData, module, graph){
-    let graphObj = moduleData[module].graphs[graph];
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Air Kerma: ${value}U`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => graphObj.seeds[0].airKerma,
+        getValue: () => moduleData[module].graphs[graph].seeds[0].airKerma,
         onEnter: function (value){
             let clampedVal = (
-                (graphObj.seeds[0].model.HDRsource) ?
+                (this.module.graphs[graph].seeds[0].model.HDRsource) ?
                     clamp(value, airKermaSliderLimits.HDR.min, airKermaSliderLimits.HDR.max)
                 :
                     clamp(value, airKermaSliderLimits.LDR.min, airKermaSliderLimits.LDR.max)
             );
-            graphObj.seeds.forEach((seed) => {
+            this.module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = clampedVal;
             });
-            moduleData[module].onReload(moduleData);
+            this.module.onReload();
         },
         numDecimalsEditing: 3
     })
 }
 
-export function modelDropdown(modelOptions,moduleData,module,self,graph,defaultLabel){
+export function modelDropdown(modelOptions,graph,defaultLabel){
     let dropdown = new Dropdown(
         new Button({
             x: 0, y: 0, width: 0, height: 0, bgColor: "black",
@@ -274,18 +272,22 @@ export function modelDropdown(modelOptions,moduleData,module,self,graph,defaultL
         let model = modelOptions[i];
         dropdown.options.push(new Button({
             x: 0, y: 0, width: 0, height: 0, bgColor: "white",
-            label: {text: model.name + " (" + model.isotope + ")", font: "default", color: "black"},
+            label: {
+                text: model.name + " (" + model.isotope + ")",
+                font: "default",
+                color: "black"
+            },
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-            onClick: () => {
-                moduleData[module].graphs[graph].seeds.forEach((seed) => {
+            onClick: function () {
+                this.module.graphs[graph].seeds.forEach((seed) => {
                     seed.model = model;
                     seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
                     seed.dwellTime = 0.00833;
                     seed.enabled = true;
                 });
-                moduleData[module].dropDowns[self].button.label = model.name + " (" + model.isotope + ")";
-                moduleData[module].dropDowns[self].collapseDropdown();
-                moduleData[module].onReload(moduleData);
+                this.self.parent.button.label = model.name + " (" + model.isotope + ")";
+                this.self.parent.collapseDropdown();
+                this.module.onReload();
             },
         }));
     }
@@ -310,11 +312,11 @@ export function rescaleDropdownButtons(dropdown, region, padding){
 export function airKermaSlider(moduleData,module,graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
-        updateValue: (value) => {
-            moduleData[module].graphs[graph].seeds.forEach((seed) => {
+        updateValue: function (value) {
+            this.module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = getAirKermaFromSlider(value,seed);
             });
-            moduleData[module].onReload(moduleData);
+            this.module.onReload();
         },
         getValue: () => getValueFromAirKerma(moduleData[module].graphs[graph].seeds[0])
     });
@@ -323,12 +325,12 @@ export function airKermaSlider(moduleData,module,graph){
 export function dwellTimeSlider(moduleData,module,graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
-        updateValue: (value) => {
+        updateValue: function (value) {
             let dwellTime = getDwellTimeFromSlider(value);
-            moduleData[module].graphs[graph].seeds.forEach((seed) => {
+            this.module.graphs[graph].seeds.forEach((seed) => {
                 seed.dwellTime = dwellTime;
             });
-            moduleData[module].onReload(moduleData);
+            this.module.onReload();
         },
         getValue: () => getValueFromDwellTime(moduleData[module].graphs[graph].seeds[0])
     });
@@ -355,3 +357,22 @@ function getDwellTimeFromSlider(value){
 function getValueFromDwellTime(seed){
     return seed.dwellTime / 0.0833333333333;
 }
+
+export function buttonPress () {
+    //nothing more will happen on the next mouse down call (to prevent not double-pressing the same button)
+    this.onMouseDown = nothing;
+
+    // on the next mouse up call, both the mouse down and mouse up functions will be reset
+    this.onMouseUp = function () {
+        this.onMouseDown = this.defaultInputHandler.onMouseDown;
+        this.onMouseUp = this.defaultInputHandler.onMouseUp;
+    }
+}
+
+let nothingSetup = function () {};
+nothingSetup.isNothing = true;
+export const nothing = nothingSetup; //it looks like a useless function, but it's nice for shorthand
+
+// lets the event handler function know that the event has been handled (since the
+// isNothing flag is undefined) but that it shouldn't do anything more
+export const eventHandled = () => {}

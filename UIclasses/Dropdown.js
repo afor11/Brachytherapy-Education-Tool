@@ -1,3 +1,6 @@
+import { EventFunction } from "../eventFunction.js";
+import { buttonPress, nothing } from "../utils.js";
+
 export class Dropdown {
     constructor(button, options){
         this.button = button;
@@ -17,7 +20,7 @@ export class Dropdown {
                     }else{
                         return Math.min(minFont,option.getDefaultFont());
                     }
-                }, Infinity) + "px monospace";
+                }, Infinity) + "px Arial";
                 this.options.forEach((option) => {
                     if (typeof option.button !== "undefined"){
                         option.button.font = font;
@@ -35,11 +38,35 @@ export class Dropdown {
         }
     }
     checkClicked(){
-        let clicked = this.button.checkClicked();
+        //initally nothing is clicked
+        let clicked = nothing;
         if (this.showing){
             this.options.forEach((button) => {
-                clicked = clicked || button.checkClicked();
+                //check if an option button is clicked
+                let buttonClicked = button.checkClicked();
+
+                //if the button is clicked and nothing else is clicked
+                if (!buttonClicked.isNothing && clicked.isNothing){
+                    //set clicked to the buttonClicked function
+                    clicked = buttonClicked;
+                    if (typeof buttonClicked.self !== "undefined"){
+                        if (typeof clicked.self.parent !== "undefined"){
+                            let parent = clicked.self.parent;
+                            while (typeof parent.parent !== "undefined"){
+                                parent = parent.parent;
+                            }
+                            parent.parent = this;
+                        }else{
+                            clicked.self.parent = this;
+                        }
+                    }
+                }
             });
+        }
+        //if nothing is still clicked
+        if (clicked.isNothing){
+            //set clicked to the checkClicked() function of the button
+            return this.button.checkClicked();
         }
         return clicked;
     }
