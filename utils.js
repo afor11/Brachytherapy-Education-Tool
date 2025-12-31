@@ -108,6 +108,18 @@ export function clamp(value, min, max){
     return Math.min(Math.max(value, min), max);
 }
 
+export function arrEqual(arrA, arrB){
+    if (arrA.length != arrB.length){
+        return false;
+    }
+    for (let i = 0; i < arrA.length; i++){
+        if (arrA[i] != arrB[i]){
+            return false;
+        }
+    }
+    return true;
+}
+
 export function getRegionBound(region, padding = {horizontal: 0, vertical: 0}, aspectRatio = null){
     let width = region.width * (1 - padding.horizontal);
     let height = region.height * (1 - padding.vertical);

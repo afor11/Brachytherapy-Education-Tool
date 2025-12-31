@@ -21,37 +21,137 @@ export class Graph {
         this.refpoints = refpoints;
         this.selectedSeed = -1;
         this.seedRadius = () => Math.min(canvas.width,canvas.height * 0.9) * 0.01;
-        this.cachedIsodose = [];
+        this.cachedDose = new Map();
+    }
+    getPointDoseFromSeed(seed, pos){
+        let relativePos = {
+            x: (pos.x - seed.pos.x),
+            y: (pos.y - seed.pos.y),
+            z: (pos.z - seed.pos.z)
+        };
+        let dot = (relativePos.x * seed.directionVec.x + relativePos.y * seed.directionVec.y + relativePos.z * seed.directionVec.z) / magnitude(relativePos);
+        dot = Math.min(Math.max(dot,-1),1); // this clamps the dot product between -1 and 1 to reduce floating point error
+        return seed.calculateDose({
+            x: pos.x,
+            y: pos.y,
+            z: pos.z,
+            r: magnitude(relativePos),
+            theta: Math.acos(dot)
+        });
     }
     getPointDose(pos){
-        return this.seeds.reduce((z,seed) => {
-            let relativePos = {
-                x: (pos.x - seed.pos.x),
-                y: (pos.y - seed.pos.y),
-                z: (pos.z - seed.pos.z)
-            };
-            let dot = (relativePos.x * seed.directionVec.x + relativePos.y * seed.directionVec.y + relativePos.z * seed.directionVec.z) / magnitude(relativePos);
-            dot = Math.min(Math.max(dot,-1),1); // this clamps the dot product between -1 and 1 to reduce floating point error
-            return z + seed.calculateDose({
-                x: pos.x,
-                y: pos.y,
-                z: pos.z,
-                r: magnitude(relativePos),
-                theta: Math.acos(dot)
-            });
-        },0)
+        return this.seeds.reduce((dose,seed) => {
+            return dose + this.getPointDoseFromSeed(seed, pos);
+        },0);
+    }
+    getGraphState(){
+        return JSON.stringify([
+            this.zSlice,
+            this.xTicks,
+            this.yTicks,
+            this.perspective,
+            this.refpoints,
+        ]);
+    }
+    getSeedState(seed){
+        return JSON.stringify([
+            seed.model.name,
+            seed.pos,
+            seed.rot,
+            seed.directionVec,
+            seed.geometryRef
+        ]);
     }
     getIsodose(refPoint){
-        let isodose = [];
+        let usedCaches = new Map();
+        this.cachedDose.forEach((_, seedString) => {
+            usedCaches.set(seedString, false);
+        });
+
+        let defaultDose = Array(this.yTicks.length).fill(Array(this.xTicks.length).fill(0));
+
+        let dose = this.seeds.reduce((totalDose, seed) => {
+            if (!seed.enabled){return totalDose;}
+            let dose = [];
+            let seedString = this.getSeedState(seed);
+            if (this.cachedDose.has(seedString)){
+                // this seed has bee cached
+                let cachedDose = this.cachedDose.get(seedString);
+                
+                // finds the factor to multiply all doses in the cached dose array by (this factor is needed since seeds
+                // with differing air kermas and dwell times are not differentiated, as it would be much more efficent
+                // to just multiply by this factor instead of recalculating the cache values every time air kerma or dwell
+                // time are updated)
+                let airKermaScaleFactor = (seed.airKerma / cachedDose.airKerma);
+                let dwellTimeScaleFactor = (
+                    seed.model.HDRsource ?
+                        (1 - Math.exp(-seed.dwellTime / (1.44 * seed.model.halfLife))) /
+                        (1 - Math.exp(-cachedDose.dwellTime / (1.44 * cachedDose.halfLife)))
+                    :
+                        1
+                );
+                let doseScaleFactor = airKermaScaleFactor * dwellTimeScaleFactor;
+
+                if (cachedDose.graphState === this.getGraphState()){
+                    console.log("using cache");
+                    // the graph state has not changed since the seed has been cached
+                    dose = [];
+                    for (let i = 0; i < this.yTicks.length; i++){
+                        let doseSlice = [];
+                        for (let j = 0; j < this.xTicks.length; j++){
+                            doseSlice.push(totalDose[i][j] + cachedDose.dose[i][j] * doseScaleFactor);
+                        }
+                        dose.push(doseSlice);
+                    }
+                    usedCaches.set(seedString, true);
+                    return dose;
+                }
+            }
+
+            console.log("not using cache");
+
+            let doseCache = {
+                graphState: this.getGraphState(),
+                airKerma: seed.airKerma,
+                dwellTime: seed.dwellTime,
+                halfLife: seed.model.halfLife,
+                dose: []
+            };
+            for (let i = 0; i < this.yTicks.length; i++){
+                let doseSlice = [];
+                let totalDoseSlice = [];
+                for (let j = 0; j < this.xTicks.length; j++){
+                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice}));
+                    doseSlice.push(pointDose);
+                    totalDoseSlice.push(totalDose[i][j] + pointDose);
+                }
+                doseCache.dose.push(doseSlice);
+                dose.push(totalDoseSlice);
+            }
+
+            this.cachedDose.set(seedString, doseCache);
+            usedCaches.set(seedString, true);
+            return dose;
+        },defaultDose);
+
+        this.cachedDose.forEach((_, seedString) => {
+            if (!usedCaches.get(seedString)){
+                this.cachedDose.delete(seedString);
+            }
+        });
+
         let refDose = this.getPointDose(this.perspective({x: refPoint.x, y: refPoint.y, z: this.zSlice}));
-        refDose = ((refDose == 0) ? 1 : refDose);
+        refDose = ((refDose == 0) ? 1 : refDose); // prevent divide by 0 errors
+
+        let isodose = [];
         for (let i = 0; i < this.yTicks.length; i++){
             let slice = [];
             for (let j = 0; j < this.xTicks.length; j++){
-                slice.push(100 * this.getPointDose(this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice})) / refDose);
+                slice.push(100 * dose[i][j] / refDose);
             }
             isodose.push(slice);
         }
+
         return isodose;
     }
     drawGraph(div){
