@@ -8,23 +8,34 @@ import { view, moduleData } from "../main.js";
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
-const thisModule = "single seed";
+const thisModule = "planar array of seeds";
 
-export let singleSeedPage = new Module({
+let initPlanarArray = [];
+for (let x = -1.5; x <= 1.5; x++){
+    for (let y = -1.5; y <= 1.5; y++){
+        initPlanarArray.push(
+            new Seed(
+                {x:x, y:y, z:0},
+                {phi: 0, theta: 0},
+                TheraSeed200,
+                airKermaSliderLimits.LDR.min,
+                0.00833
+            )
+        );
+    }
+}
+
+export let PlanarArrayOfSeeds = new Module({
     graphs: {
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
-            seeds: [
-                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
-            ],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 2, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
+            seeds: [...initPlanarArray],
+            xTicks: getRange(-5, 5, 0.0625), yTicks: getRange(-5, 5, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
-            seeds: [
-                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
-            ],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 2, 0.0625), perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]
+            seeds: [...initPlanarArray],
+            xTicks: getRange(-5, 5, 0.0625), yTicks: getRange(-5, 5, 0.0625), perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]
         })
     },
     sliders: {

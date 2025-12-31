@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, setProps, getRange, toggleSeedEnable, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, setProps, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -25,7 +25,7 @@ export let stringofseedsPage = new Module({
     },
     sliders: {
         graph1AirKerma: function() {return airKermaSlider(moduleData,thisModule,"graph1");},
-        graph1DwellTime: function() {return dwellTimeSlider(moduleData,thisModule,"graph1");},
+        graph1DwellTime: function() {return multSeedDwellTimeSlider(moduleData,thisModule,"graph1");},
         graph1Seedspacing: function() {
             return new Slider({
                 x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
@@ -41,11 +41,11 @@ export let stringofseedsPage = new Module({
         seedSpacing: 1
     },
     dropDowns: {
-        graph1Model: function(self) {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
+        graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
     },
     labels: {
         graph1AirKerma: function() {return airKermaLabel(moduleData,thisModule,"graph1");},
-        graph1DwellTime: function() {return dwellTimeLabel(moduleData,thisModule,"graph1");},
+        graph1DwellTime: function() {return multSeedDwellTimeLabel(moduleData,thisModule,"graph1");},
         graph1Reference: function() {return referencePointLabel(moduleData,thisModule,"graph1",0);},
         graph1Seedspacing: function() {
             return new NumberInput({
@@ -71,16 +71,13 @@ export let stringofseedsPage = new Module({
         },
         graph1AddSeed: function() {
             return new Button({
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 0,
+                x: 0, y: 0, width: 0, height: 0,
                 label: {
                     text: "Add Seed",
                     font: "default",
                     color: "black"
                 },
-                bgColor: "green",
+                bgColor: "#50C878",
                 onClick: function () {
                     let model = this.module.graphs.graph1.seeds[0].model;
                     this.module.graphs.graph1.seeds.push(
@@ -94,10 +91,25 @@ export let stringofseedsPage = new Module({
                     );
                     this.module.onReload();
                 },
-                outline: {
-                    color: "black",
-                    thickness: Math.min(canvas.width,canvas.height) * 0.001
-                }
+                outline: {color: "black", thickness: 0}
+            });
+        },
+        graph1RemoveSeed: function() {
+            return new Button({
+                x: 0, y: 0, width: 0, height: 0,
+                label: {
+                    text: "Remove Seed",
+                    font: "default",
+                    color: "black"
+                },
+                bgColor: "#EE4B2B",
+                onClick: function () {
+                    if (this.module.graphs.graph1.seeds.length > 1){
+                        this.module.graphs.graph1.seeds.pop();
+                        this.module.onReload();
+                    }
+                },
+                outline: {color: "black", thickness: 0}
             });
         }
     },
@@ -120,11 +132,13 @@ export let stringofseedsPage = new Module({
 
         // draw the dwell time slider if using HDR source or
         // enable/disable source toggle otherwise
-        if (this.graphs.graph1.seeds[0].model.HDRsource){
-            this.labels.graph1DwellTime.draw();
-            this.sliders.graph1DwellTime.draw();
-        }else{
-            this.buttons.graph1EnableSeed.draw();
+        if (this.graphs.graph1.selectedSeed != -1){
+            if (this.graphs.graph1.seeds[0].model.HDRsource){
+                this.labels.graph1DwellTime.draw();
+                this.sliders.graph1DwellTime.draw();
+            }else{
+                this.buttons.graph1EnableSeed.draw();
+            }
         }
 
         // draw model dropdown
@@ -138,6 +152,7 @@ export let stringofseedsPage = new Module({
 
         // draw the add seed button
         this.buttons.graph1AddSeed.draw();
+        this.buttons.graph1RemoveSeed.draw();
     },
     onReload: function () {
         refreshNavBar(thisModule);
@@ -262,6 +277,13 @@ export let stringofseedsPage = new Module({
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
+        setProps(this.buttons.graph1RemoveSeed, getRegionBound({
+            x: splitX,
+            y: view.y + (splitY / 5) * 3,
+            width: splitX,
+            height: splitY / 5
+        }, {horizontal: 0.2, vertical: 0.2}));
+
         this.onUpdate();
     },
     defaultInputHandler: {
@@ -273,20 +295,26 @@ export let stringofseedsPage = new Module({
             if (!this.dropDowns.graph1Model.showing){
                 yield this.labels.graph1AirKerma.checkClicked();
                 yield this.sliders.graph1AirKerma.checkClicked();
-                if (this.graphs.graph1.seeds[0].model.HDRsource){
-                    yield this.labels.graph1DwellTime.checkClicked();
-                    yield this.sliders.graph1DwellTime.checkClicked();
-                }else{
-                    yield this.buttons.graph1EnableSeed.checkClicked();
+            
+                if (this.graphs.graph1.selectedSeed != -1){
+                    if (this.graphs.graph1.seeds[0].model.HDRsource){
+                        yield this.labels.graph1DwellTime.checkClicked();
+                        yield this.sliders.graph1DwellTime.checkClicked();
+                    }else{
+                        yield this.buttons.graph1EnableSeed.checkClicked();
+                    }
                 }
             }
             yield this.labels.graph1Reference.checkClicked();
-            yield this.graphs.graph1.checkClicked();
             
             yield this.sliders.graph1Seedspacing.checkClicked();
             yield this.labels.graph1Seedspacing.checkClicked();
 
             yield this.buttons.graph1AddSeed.checkClicked();
+            yield this.buttons.graph1RemoveSeed.checkClicked();
+
+            // checking if the graph seeds are clicked should always be the last yield statement
+            yield this.graphs.graph1.checkClicked();
         }
     }
 })

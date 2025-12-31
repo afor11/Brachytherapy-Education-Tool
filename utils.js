@@ -7,6 +7,7 @@ import { Slider } from './UIclasses/Slider.js';
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
+// get the magintude of a 3D vector
 export function magnitude(vec){
     return Math.sqrt(vec.x ** 2 + vec.y ** 2 + vec.z ** 2);
 }
@@ -34,7 +35,8 @@ export function interpolateTable(dataArr,spacingArr,ind){
         lerp(
             dataArr[neighborLow],
             dataArr[neighborHigh],
-            (ind - spacingArr[neighborLow]) / (spacingArr[neighborHigh] - spacingArr[neighborLow]))
+            (ind - spacingArr[neighborLow]) / (spacingArr[neighborHigh] - spacingArr[neighborLow])
+        )
     );
 }
 
@@ -64,6 +66,9 @@ export function lerp(a,b,t){
     return (a == b) ? a : (a + (t * (b - a)));
 }
 
+
+// binary searches for the best font size to match a given width and height knowing the text to be drawn and a function that takes a
+// font size and returns the string representing that font, for example (size) => `${size}px monospace`
 export function getFontSize(width,height,label,font){
     if (!width || !height || !label || !font){return 0}
     let metrics = ctx.measureText(label);
@@ -215,6 +220,28 @@ function setDoseAtPoint(graph,dose,module,point){
     module.onReload();
 }
 
+export function multSeedDwellTimeLabel(moduleData, module, graph){
+    let graphObj = moduleData[module].graphs[graph];
+    return new NumberInput({
+        x: 0, y: 0, width: 0, height: 0,
+        label: {
+            text: (value) => `Dwell Time: ${value} seconds`,
+            color: {selected: "white", notSelected: "black"}
+        },bgColor: {selected: "black", notSelected: "white"},
+        getValue: () => {
+            if (graphObj.selectedSeed != -1){
+                return graphObj.seeds[graphObj.selectedSeed].dwellTime * 3600;
+            }
+            return 0;
+        },
+        onEnter: function (value){
+            graphObj.seeds[graphObj.selectedSeed].dwellTime = clamp(value / 3600,0,0.0833333333333);
+            this.module.onReload();
+        },
+        numDecimalsEditing: 3
+    });
+}
+
 export function dwellTimeLabel(moduleData, module, graph){
     let graphObj = moduleData[module].graphs[graph];
     return new NumberInput({
@@ -225,10 +252,7 @@ export function dwellTimeLabel(moduleData, module, graph){
         },bgColor: {selected: "black", notSelected: "white"},
         getValue: () => graphObj.seeds[0].dwellTime * 3600,
         onEnter: function (value){
-            let clampedVal = Math.max(Math.min(value / 3600,0.0833333333333),0);
-            graphObj.seeds.forEach((seed) => {
-                seed.dwellTime = clampedVal;
-            });
+            graphObj.seeds[0].dwellTime = clamp(value / 3600,0,0.0833333333333);
             this.module.onReload();
         },
         numDecimalsEditing: 3
@@ -322,14 +346,30 @@ export function airKermaSlider(moduleData,module,graph){
     });
 }
 
+export function multSeedDwellTimeSlider(moduleData,module,graph){
+    let graphObj = moduleData[module].graphs[graph];
+    return new Slider({
+        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
+        updateValue: function (value) {
+            graphObj.seeds[graphObj.selectedSeed].dwellTime = getDwellTimeFromSlider(value);
+            this.module.onReload();
+        },
+        getValue: () => {
+            if (graphObj.selectedSeed != -1){
+                return getValueFromDwellTime(
+                    graphObj.seeds[graphObj.selectedSeed]
+                )
+            }
+            return 0;
+        }
+    });
+}
+
 export function dwellTimeSlider(moduleData,module,graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
         updateValue: function (value) {
-            let dwellTime = getDwellTimeFromSlider(value);
-            this.module.graphs[graph].seeds.forEach((seed) => {
-                seed.dwellTime = dwellTime;
-            });
+            this.module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
             this.module.onReload();
         },
         getValue: () => getValueFromDwellTime(moduleData[module].graphs[graph].seeds[0])

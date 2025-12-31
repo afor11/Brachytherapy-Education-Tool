@@ -1,6 +1,7 @@
 import { singleSeedPage } from './Pages/singleseed.js';
 import { stringofseedsPage } from './Pages/stringofseeds.js';
-import { navBar, refreshNavBar, resetNavBar } from './navBar.js';
+import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
+import { navBar, resetNavBar } from './navBar.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -23,6 +24,7 @@ window.mouse = {x: 0, y: 0, down: false};
 export let moduleData = {
     "single seed": singleSeedPage,
     "string of seeds": stringofseedsPage,
+    "planar array of seeds": PlanarArrayOfSeeds
 };
 
 //loop over moduleData and evaluate any attribute functions (these are neccisary since attributes that reference

@@ -21,6 +21,7 @@ export class Graph {
         this.refpoints = refpoints;
         this.selectedSeed = -1;
         this.seedRadius = () => Math.min(canvas.width,canvas.height * 0.9) * 0.01;
+        this.cachedIsodose = [];
     }
     getPointDose(pos){
         return this.seeds.reduce((z,seed) => {
@@ -189,7 +190,6 @@ export class Graph {
             return eventHandled;
         }
 
-        this.selectedSeed = -1;
         return nothing;
     }
     drawMouseLabel(){
