@@ -22,6 +22,8 @@ export class Graph {
         this.selectedSeed = -1;
         this.seedRadius = () => Math.min(canvas.width,canvas.height * 0.9) * 0.01;
         this.cachedDose = new Map();
+        this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
+        this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units
     }
     getPointDoseFromSeed(seed, pos){
         let relativePos = {
@@ -210,18 +212,18 @@ export class Graph {
     }
     graphToScreenPos(point){
         return {
-            x: this.graphDimensions.x + ((point.x - getMin(this.xTicks)) / (getMax(this.xTicks) - getMin(this.xTicks))) * this.graphDimensions.width,
-            y: this.graphDimensions.y + this.graphDimensions.height - ((point.y - getMin(this.yTicks)) / (getMax(this.yTicks) - getMin(this.yTicks))) * this.graphDimensions.height,
+            x: this.graphDimensions.x + ((point.x - getMin(this.xTicks)) / this.unitWidth()) * this.graphDimensions.width,
+            y: this.graphDimensions.y + this.graphDimensions.height - ((point.y - getMin(this.yTicks)) / this.unitHeight()) * this.graphDimensions.height,
         };
     }
     screenToGraphPos(point){
         return {
-            x: getMin(this.xTicks) + ((point.x - this.graphDimensions.x) / this.graphDimensions.width) * (getMax(this.xTicks) - getMin(this.xTicks)),
+            x: getMin(this.xTicks) + ((point.x - this.graphDimensions.x) / this.graphDimensions.width) * this.unitWidth(),
             y: getMax(this.yTicks) + ((point.y - this.graphDimensions.y) / this.graphDimensions.height) * (getMin(this.yTicks) - getMax(this.yTicks))
         }
     }
     overlayAnatomy(view, params){
-        let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, (getMax(this.xTicks) - getMin(this.xTicks)));
+        let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, this.unitWidth());
 
         if (formattedAnatomy.hasOwnProperty(view)){
             drawAnatomy(
@@ -269,10 +271,6 @@ export class Graph {
             this.selectedSeed = -1;
             return nothing;
         }
-        if (this.selectedSeed != -1){
-            this.selectedSeed = -1;
-            return eventHandled;
-        }
 
         let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
             let seedPos = this.graphToScreenPos(this.perspective(seed.pos));
@@ -289,6 +287,8 @@ export class Graph {
         if (closestSeed.dist < this.seedRadius() * 1.25){
             this.selectedSeed = closestSeed.ind;
             return eventHandled;
+        } else if (this.selectedSeed != -1){
+            this.selectedSeed = -1;
         }
 
         return nothing;

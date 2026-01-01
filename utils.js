@@ -279,7 +279,9 @@ export function airKermaLabel(moduleData, module, graph){
             text: (value) => `Air Kerma: ${value}U`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => moduleData[module].graphs[graph].seeds[0].airKerma,
+        getValue: function () {
+            return moduleData[module].graphs[graph].seeds[0].airKerma;
+        },
         onEnter: function (value){
             let clampedVal = (
                 (this.module.graphs[graph].seeds[0].model.HDRsource) ?
