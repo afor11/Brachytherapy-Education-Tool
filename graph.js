@@ -93,7 +93,6 @@ export class Graph {
                 let doseScaleFactor = airKermaScaleFactor * dwellTimeScaleFactor;
 
                 if (cachedDose.graphState === this.getGraphState()){
-                    console.log("using cache");
                     // the graph state has not changed since the seed has been cached
                     dose = [];
                     for (let i = 0; i < this.yTicks.length; i++){
@@ -108,8 +107,7 @@ export class Graph {
                 }
             }
 
-            console.log("not using cache");
-
+            // if the cache was not use, perpare to add the calculated dose as a cache entry
             let doseCache = {
                 graphState: this.getGraphState(),
                 airKerma: seed.airKerma,
@@ -117,6 +115,8 @@ export class Graph {
                 halfLife: seed.model.halfLife,
                 dose: []
             };
+
+            // calculate dose from the specific seed
             for (let i = 0; i < this.yTicks.length; i++){
                 let doseSlice = [];
                 let totalDoseSlice = [];
@@ -129,6 +129,7 @@ export class Graph {
                 dose.push(totalDoseSlice);
             }
 
+            // update cache
             this.cachedDose.set(seedString, doseCache);
             usedCaches.set(seedString, true);
             return dose;

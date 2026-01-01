@@ -104,20 +104,26 @@ export function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
 }
 
-export function clamp(value, min, max){
-    return Math.min(Math.max(value, min), max);
+export function clone(obj){
+    // handles cloning arrays, objects and functions
+    if (typeof obj.getPrototypeOf !== "undefined"){
+        let newObj = clone(obj);
+        Object.setPrototypeOf(newObj,clone(Object.getPrototypeOf(obj)));
+        return newObj;
+    }
+    if (Array.isArray(obj)){
+        return obj.map((elm) => clone(elm));
+    }
+    if (typeof obj === "object"){
+        return Object.keys(obj).reduce((newObj, key) =>{
+            return Object.assign(newObj,{[key]: clone(obj[key])});
+        },{});
+    }
+    return obj;
 }
 
-export function arrEqual(arrA, arrB){
-    if (arrA.length != arrB.length){
-        return false;
-    }
-    for (let i = 0; i < arrA.length; i++){
-        if (arrA[i] != arrB[i]){
-            return false;
-        }
-    }
-    return true;
+export function clamp(value, min, max){
+    return Math.min(Math.max(value, min), max);
 }
 
 export function getRegionBound(region, padding = {horizontal: 0, vertical: 0}, aspectRatio = null){
@@ -139,16 +145,10 @@ export function getRegionBound(region, padding = {horizontal: 0, vertical: 0}, a
     };
 }
 
-export function setProps(obj, props){
-    Object.keys(props).forEach((property) => {
-        obj[property] = props[property];
-    });
-}
-
 function setDropdownProps(dropdown, props){
-    setProps(dropdown.button, props.button);
+    Object.assign(dropdown.button, props.button);
     dropdown.options.forEach((_,ind) => {
-        setProps(dropdown.options[ind], props.optionProps(ind));
+        Object.assign(dropdown.options[ind], props.optionProps(ind));
     });
 }
 
@@ -164,6 +164,7 @@ export function toggleSeedEnable(graph,seedInd){
         onClick: function () {
             let seedIndValue = seedInd.call(this.module);
             if (seedIndValue == -1){return}
+            console.log(graph);
 
             let seedEnabled = this.module.graphs[graph].seeds[seedIndValue].enabled;
             this.module.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;

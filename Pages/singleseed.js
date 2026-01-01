@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, setProps, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view, moduleData } from "../main.js";
 
@@ -47,28 +47,31 @@ export let singleSeedPage = new Module({
     },
     onUpdate: function () {
         ctx.clearRect(0,0,canvas.width,canvas.height);
-        this.labels.graph1AirKerma.draw();
-        this.labels.graph2AirKerma.draw();
-        this.labels.graph1Reference.draw();
-        this.labels.graph2Reference.draw();
-        this.sliders.graph1AirKerma.draw();
-        this.sliders.graph2AirKerma.draw();
+
+        Object.values(navBar).forEach((button) => {
+            button.draw();
+        });
+
         if (this.graphs.graph1.seeds[0].model.HDRsource){
             this.labels.graph1DwellTime.draw();
             this.sliders.graph1DwellTime.draw();
         }
+
         if (this.graphs.graph2.seeds[0].model.HDRsource){
             this.labels.graph2DwellTime.draw();
             this.sliders.graph2DwellTime.draw();
         }
-        ["dropDowns"].forEach((obj) => {
-            Object.values(this[obj]).forEach((attribute) => {
-                attribute.draw();
-            });
-        });
-        Object.values(navBar).forEach((button) => {
-            button.draw();
-        });
+        
+        this.labels.graph1AirKerma.draw();
+        this.sliders.graph1AirKerma.draw();
+        this.labels.graph1Reference.draw();
+        this.dropDowns.graph1Model.draw();
+
+        this.labels.graph2AirKerma.draw();
+        this.labels.graph2Reference.draw();
+        this.sliders.graph2AirKerma.draw();
+        this.dropDowns.graph2Model.draw();
+
         Object.values(this.graphs).forEach((graph) => {
             graph.drawRefPoints();
             graph.drawMouseLabel();
@@ -87,14 +90,14 @@ export let singleSeedPage = new Module({
             let splitX = view.width / 2;
 
             //resize graphs
-            setProps(this.graphs.graph1, getRegionBound({
+            Object.assign(this.graphs.graph1, getRegionBound({
                 x: 0,
                 y: view.y + splitY,
                 width: splitX,
                 height: view.height - splitY
             }, {horizontal: 0, vertical: 0}, 1));
 
-            setProps(this.graphs.graph2, getRegionBound({
+            Object.assign(this.graphs.graph2, getRegionBound({
                 x: splitX,
                 y: view.y + splitY,
                 width: splitX,
@@ -105,14 +108,14 @@ export let singleSeedPage = new Module({
             let splitX = view.width * 0.25;
 
             //resize graphs
-            setProps(this.graphs.graph1, getRegionBound({
+            Object.assign(this.graphs.graph1, getRegionBound({
                 x: splitX,
                 y: view.y,
                 width: view.width * 0.75,
                 height: splitY
             }, {horizontal: 0, vertical: 0}, 1));
 
-            setProps(this.graphs.graph2, getRegionBound({
+            Object.assign(this.graphs.graph2, getRegionBound({
                 x: splitX,
                 y: view.y + splitY,
                 width: view.width * 0.75,
@@ -144,28 +147,28 @@ export let singleSeedPage = new Module({
             }, {horizontal: 0.2, vertical: 0.2});
 
             //resize labels
-            setProps(this.labels.graph1AirKerma, getRegionBound({
+            Object.assign(this.labels.graph1AirKerma, getRegionBound({
                 x: 0,
                 y: view.y + splitY / 5,
                 width: splitX,
                 height: splitY / 5
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph2AirKerma, getRegionBound({
+            Object.assign(this.labels.graph2AirKerma, getRegionBound({
                 x: splitX,
                 y: view.y + splitY / 5,
                 width: splitX,
                 height: splitY / 5
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph1DwellTime, getRegionBound({
+            Object.assign(this.labels.graph1DwellTime, getRegionBound({
                 x: 0,
                 y: view.y + (splitY / 5) * 3,
                 width: splitX,
                 height: splitY / 5
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph2DwellTime, getRegionBound({
+            Object.assign(this.labels.graph2DwellTime, getRegionBound({
                 x: splitX,
                 y: view.y + (splitY / 5) * 3,
                 width: splitX,
@@ -180,28 +183,28 @@ export let singleSeedPage = new Module({
                 height: splitY / 5
             }, {horizontal: 0.2, vertical: 0.2});
 
-            setProps(this.sliders.graph1AirKerma, {
+            Object.assign(this.sliders.graph1AirKerma, {
                 x: sliderBounds.x,
                 y: sliderBounds.y,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.4
             });
 
-            setProps(this.sliders.graph2AirKerma, {
+            Object.assign(this.sliders.graph2AirKerma, {
                 x: sliderBounds.x + splitX,
                 y: sliderBounds.y,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.4
             });
 
-            setProps(this.sliders.graph1DwellTime, {
+            Object.assign(this.sliders.graph1DwellTime, {
                 x: sliderBounds.x,
                 y: sliderBounds.y + (splitY / 5) * 2,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.4
             });
 
-            setProps(this.sliders.graph2DwellTime, {
+            Object.assign(this.sliders.graph2DwellTime, {
                 x: sliderBounds.x + splitX,
                 y: sliderBounds.y + (splitY / 5) * 2,
                 length: sliderBounds.width,
@@ -227,28 +230,28 @@ export let singleSeedPage = new Module({
             }, {horizontal: 0.2, vertical: 0.2});
 
             //resize labels
-            setProps(this.labels.graph1AirKerma, getRegionBound({
+            Object.assign(this.labels.graph1AirKerma, getRegionBound({
                 x: 0,
                 y: view.y + splitY * 0.1,
                 width: splitX,
                 height: splitY * 0.1
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph2AirKerma, getRegionBound({
+            Object.assign(this.labels.graph2AirKerma, getRegionBound({
                 x: 0,
                 y: view.y + splitY * 1.1,
                 width: splitX,
                 height: splitY * 0.1
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph1DwellTime, getRegionBound({
+            Object.assign(this.labels.graph1DwellTime, getRegionBound({
                 x: 0,
                 y: view.y + splitY * 0.3,
                 width: splitX,
                 height: splitY * 0.1
             }, {horizontal: 0.2, vertical: 0.2}));
 
-            setProps(this.labels.graph2DwellTime, getRegionBound({
+            Object.assign(this.labels.graph2DwellTime, getRegionBound({
                 x: 0,
                 y: view.y + splitY * 1.3,
                 width: splitX,
@@ -263,28 +266,28 @@ export let singleSeedPage = new Module({
                 height: splitY * 0.1
             }, {horizontal: 0.2, vertical: 0.2});
 
-            setProps(this.sliders.graph1AirKerma, {
+            Object.assign(this.sliders.graph1AirKerma, {
                 x: sliderBounds.x,
                 y: sliderBounds.y,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.3
             });
 
-            setProps(this.sliders.graph2AirKerma, {
+            Object.assign(this.sliders.graph2AirKerma, {
                 x: sliderBounds.x,
                 y: sliderBounds.y + splitY,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.3
             });
 
-            setProps(this.sliders.graph1DwellTime, {
+            Object.assign(this.sliders.graph1DwellTime, {
                 x: sliderBounds.x,
                 y: sliderBounds.y + splitY * 0.2,
                 length: sliderBounds.width,
                 thickness: sliderBounds.height * 0.3
             });
 
-            setProps(this.sliders.graph2DwellTime, {
+            Object.assign(this.sliders.graph2DwellTime, {
                 x: sliderBounds.x,
                 y: sliderBounds.y + splitY * 1.2,
                 length: sliderBounds.width,
@@ -294,7 +297,7 @@ export let singleSeedPage = new Module({
 
         //resize reference dose labels
         let labelPos = this.graphs.graph1.graphToScreenPos(this.graphs.graph1.refpoints[0]);
-        setProps(this.labels.graph1Reference, {
+        Object.assign(this.labels.graph1Reference, {
             x: labelPos.x,
             y: labelPos.y,
             width: this.graphs.graph1.graphDimensions.width * 0.27,
@@ -302,7 +305,7 @@ export let singleSeedPage = new Module({
         });
 
         labelPos = this.graphs.graph2.graphToScreenPos(this.graphs.graph2.refpoints[0]);
-        setProps(this.labels.graph2Reference, {
+        Object.assign(this.labels.graph2Reference, {
             x: labelPos.x,
             y: labelPos.y,
             width: this.graphs.graph2.graphDimensions.width * 0.27,

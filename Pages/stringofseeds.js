@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, setProps, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -63,12 +63,7 @@ export let stringofseedsPage = new Module({
         },
     },
     buttons: {
-        graph1EnableSeed: function() {
-            return toggleSeedEnable(
-                "graph1",
-                function () {return this.graphs.graph1.selectedSeed}
-            );
-        },
+        graph1EnableSeed: function() {return toggleSeedEnable("graph1",function () {return this.graphs.graph1.selectedSeed})},
         graph1AddSeed: function() {
             return new Button({
                 x: 0, y: 0, width: 0, height: 0,
@@ -176,7 +171,7 @@ export let stringofseedsPage = new Module({
         let splitX = view.width / 2;
 
         //resize graphs
-        setProps(this.graphs.graph1, getRegionBound({
+        Object.assign(this.graphs.graph1, getRegionBound({
             x: 0,
             y: view.y + splitY,
             width: view.width,
@@ -196,21 +191,21 @@ export let stringofseedsPage = new Module({
         }, {horizontal: 0.2, vertical: 0.2});
 
         //resize labels
-        setProps(this.labels.graph1AirKerma, getRegionBound({
+        Object.assign(this.labels.graph1AirKerma, getRegionBound({
             x: 0,
             y: view.y + splitY / 5,
             width: splitX,
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
-        setProps(this.labels.graph1DwellTime, getRegionBound({
+        Object.assign(this.labels.graph1DwellTime, getRegionBound({
             x: 0,
             y: view.y + (splitY / 5) * 3,
             width: splitX,
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
-        setProps(this.labels.graph1Seedspacing, getRegionBound({
+        Object.assign(this.labels.graph1Seedspacing, getRegionBound({
             x: splitX,
             y: view.y,
             width: splitX,
@@ -225,28 +220,28 @@ export let stringofseedsPage = new Module({
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2});
 
-        setProps(this.sliders.graph1AirKerma, {
+        Object.assign(this.sliders.graph1AirKerma, {
             x: sliderBoundsLeft.x,
             y: sliderBoundsLeft.y,
             length: sliderBoundsLeft.width,
             thickness: sliderBoundsLeft.height * 0.4
         });
 
-        setProps(this.sliders.graph1DwellTime, {
+        Object.assign(this.sliders.graph1DwellTime, {
             x: sliderBoundsLeft.x,
             y: sliderBoundsLeft.y + (splitY / 5) * 2,
             length: sliderBoundsLeft.width,
             thickness: sliderBoundsLeft.height * 0.4
         });
 
-        let sliderBoundsRight =  getRegionBound({
+        let sliderBoundsRight = getRegionBound({
             x: splitX,
             y: view.y,
             width: splitX,
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2});
 
-        setProps(this.sliders.graph1Seedspacing, {
+        Object.assign(this.sliders.graph1Seedspacing, {
             x: sliderBoundsRight.x,
             y: sliderBoundsRight.y + (splitY / 5) * 1.5,
             length: sliderBoundsRight.width,
@@ -255,7 +250,7 @@ export let stringofseedsPage = new Module({
 
         //resize reference dose labels
         let labelPos = this.graphs.graph1.graphToScreenPos(this.graphs.graph1.refpoints[0]);
-        setProps(this.labels.graph1Reference, {
+        Object.assign(this.labels.graph1Reference, {
             x: labelPos.x,
             y: labelPos.y,
             width: this.graphs.graph1.graphDimensions.width * 0.27,
@@ -263,21 +258,21 @@ export let stringofseedsPage = new Module({
         });
 
         //resize buttons
-        setProps(this.buttons.graph1EnableSeed, getRegionBound({
+        Object.assign(this.buttons.graph1EnableSeed, getRegionBound({
             x: 0,
             y: view.y + (splitY / 5) * 3,
             width: splitX,
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
-        setProps(this.buttons.graph1AddSeed, getRegionBound({
+        Object.assign(this.buttons.graph1AddSeed, getRegionBound({
             x: splitX,
             y: view.y + (splitY / 5) * 2,
             width: splitX,
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
-        setProps(this.buttons.graph1RemoveSeed, getRegionBound({
+        Object.assign(this.buttons.graph1RemoveSeed, getRegionBound({
             x: splitX,
             y: view.y + (splitY / 5) * 3,
             width: splitX,

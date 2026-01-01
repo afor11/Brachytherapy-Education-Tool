@@ -64,7 +64,7 @@ function tick(){
     }
 }
 
-addEventListener("scroll",function (e){
+addEventListener("scroll",function (){
     scrollPos = {
         x: window.scrollX,
         y: window.scrollY
