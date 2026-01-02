@@ -1,5 +1,6 @@
-import { getFontSize, buttonPress, nothing } from '../utils.js';
+import { getFontSize, buttonPress, nothing, runFn } from '../utils.js';
 import { EventFunction } from '../eventFunction.js';
+import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -18,7 +19,7 @@ export class Button {
         this.outlineColor = outlineColor;
         this.outlineThickness = outlineThickness;
     }
-    draw(){
+    *draw(){ // this function does not have to be a genertor, but it is one for consistency
         if (this.font === "default"){
             ctx.font = this.getDefaultFont() + "px Arial";
         }else{
@@ -46,17 +47,23 @@ export class Button {
             this.label,(size) => `${size}px Arial`
         );
     }
-    checkClicked(){
+    *checkClicked(){
         if (window.mouse.down && this.hovering()){
-            return new EventFunction({
-                self: this,
-                func: function () {
-                    buttonPress.call(this.module);
-                    this.self.onClick.call(this);
+            let self = this;
+            yield* chainEffectHandler({
+                tryCode: function*(){
+                    let self = yield new AlgebraicEffect("GET SELF");
+                    yield* runFn(self.onClick);
+                },
+                handleCode: function*(effect) {
+                    if (effect === "GET SELF"){
+                        return self;
+                    }
                 }
-            })
+            });
+            return true;
         }
-        return nothing;
+        return false;
     }
     hovering(){
         return ((window.mouse.x >= this.x) && (window.mouse.x <= this.x + this.width) && (window.mouse.y >= this.y) && (window.mouse.y <= this.y + this.height));

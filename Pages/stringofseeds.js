@@ -2,12 +2,13 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
 import { Slider } from '../UIclasses/Slider.js';
 import { NumberInput } from '../UIclasses/NumberInput.js';
+import { AlgebraicEffect, effectHandler } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -24,16 +25,19 @@ export let stringofseedsPage = new Module({
         }),
     },
     sliders: {
-        graph1AirKerma: function() {return airKermaSlider(moduleData,thisModule,"graph1");},
-        graph1DwellTime: function() {return multSeedDwellTimeSlider(moduleData,thisModule,"graph1");},
+        graph1AirKerma: function() {return airKermaSlider("graph1");},
+        graph1DwellTime: function() {return multSeedDwellTimeSlider("graph1");},
         graph1Seedspacing: function() {
             return new Slider({
                 x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
-                updateValue: function (value) {
-                    this.module.seedSpacing = 0.5 + value;
-                    this.module.onReload();
+                updateValue: function* (value) {
+                    let module = yield new AlgebraicEffect("GET MODULE");
+                    module.seedSpacing = 0.5 + value;
+                    module.onReload();
                 },
-                getValue: () => moduleData[thisModule].seedSpacing - 0.5
+                getValue: function* () {
+                    return (yield new AlgebraicEffect("GET MODULE")).seedSpacing - 0.5;
+                }
             });
         }
     },
@@ -44,9 +48,9 @@ export let stringofseedsPage = new Module({
         graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
     },
     labels: {
-        graph1AirKerma: function() {return airKermaLabel(moduleData,thisModule,"graph1");},
-        graph1DwellTime: function() {return multSeedDwellTimeLabel(moduleData,thisModule,"graph1");},
-        graph1Reference: function() {return referencePointLabel(moduleData,thisModule,"graph1",0);},
+        graph1AirKerma: function() {return airKermaLabel("graph1");},
+        graph1DwellTime: function() {return multSeedDwellTimeLabel("graph1");},
+        graph1Reference: function() {return referencePointLabel("graph1",0);},
         graph1Seedspacing: function() {
             return new NumberInput({
                 x: 0, y: 0, width: 0, height: 0,
@@ -54,9 +58,11 @@ export let stringofseedsPage = new Module({
                     text: (value) => `Seed Spacing: ${value} cm`,
                     color: {selected: "white", notSelected: "black"}
                 },bgColor: {selected: "black", notSelected: "white"},
-                getValue: () => moduleData[thisModule].seedSpacing,
-                onEnter: function (value){
-                    this.module.seedSpacing = value;
+                getValue: function* () {
+                    return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
+                },
+                onEnter: function* (value){
+                    (yield new AlgebraicEffect("GET MODULE")).seedSpacing = value;
                 },
                 numDecimalsEditing: 2
             });
@@ -73,18 +79,19 @@ export let stringofseedsPage = new Module({
                     color: "black"
                 },
                 bgColor: "#50C878",
-                onClick: function () {
-                    let model = this.module.graphs.graph1.seeds[0].model;
-                    this.module.graphs.graph1.seeds.push(
+                onClick: function* () {
+                    let module = yield new AlgebraicEffect("GET MODULE");
+                    let model = module.graphs.graph1.seeds[0].model;
+                    module.graphs.graph1.seeds.push(
                         new Seed(
                             {x: 0, y: 0, z: 0},
                             {phi: 0, theta: 0},
-                            this.module.graphs.graph1.seeds[0].model,
+                            model,
                             (model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min),
                             0.00833
                         )
                     );
-                    this.module.onReload();
+                    module.onReload();
                 },
                 outline: {color: "black", thickness: 0}
             });
@@ -98,10 +105,12 @@ export let stringofseedsPage = new Module({
                     color: "black"
                 },
                 bgColor: "#EE4B2B",
-                onClick: function () {
-                    if (this.module.graphs.graph1.seeds.length > 1){
-                        this.module.graphs.graph1.seeds.pop();
-                        this.module.onReload();
+                onClick: function* () {
+                    let module = yield new AlgebraicEffect("GET MODULE");
+                    if (module.graphs.graph1.seeds.length > 1){
+                        module.graphs.graph1.selectedSeed = Math.max(module.graphs.graph1.selectedSeed - 1,0);
+                        module.graphs.graph1.seeds.pop();
+                        module.onReload();
                     }
                 },
                 outline: {color: "black", thickness: 0}
@@ -109,45 +118,58 @@ export let stringofseedsPage = new Module({
         }
     },
     onUpdate: function () {
-        //reset canvas
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        let thisModule = this;
+        effectHandler({
+            tryCode: function* (){
+                let module = yield new AlgebraicEffect("GET MODULE");
 
-        //draw nav bar
-        Object.values(navBar).forEach((button) => {
-            button.draw();
-        });
+                //reset canvas
+                ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        // draw air kerma label and slider
-        this.labels.graph1AirKerma.draw();
-        this.sliders.graph1AirKerma.draw();
+                //draw nav bar
+                let navButtons = Object.values(navBar);
+                for (let i = 0; i < navButtons.length; i++){
+                    yield* navButtons[i].draw();
+                }
 
-        // draw seed spacing label and slider
-        this.sliders.graph1Seedspacing.draw();
-        this.labels.graph1Seedspacing.draw();
+                // draw air kerma label and slider
+                yield* module.labels.graph1AirKerma.draw();
+                yield* module.sliders.graph1AirKerma.draw();
 
-        // draw the dwell time slider if using HDR source or
-        // enable/disable source toggle otherwise
-        if (this.graphs.graph1.selectedSeed != -1){
-            if (this.graphs.graph1.seeds[0].model.HDRsource){
-                this.labels.graph1DwellTime.draw();
-                this.sliders.graph1DwellTime.draw();
-            }else{
-                this.buttons.graph1EnableSeed.draw();
+                // draw seed spacing label and slider
+                yield* module.sliders.graph1Seedspacing.draw();
+                yield* module.labels.graph1Seedspacing.draw();
+
+                // draw the dwell time slider if using HDR source or
+                // enable/disable source toggle otherwise
+                if (module.graphs.graph1.selectedSeed != -1){
+                    if (module.graphs.graph1.seeds[0].model.HDRsource){
+                        yield* module.labels.graph1DwellTime.draw();
+                        yield* module.sliders.graph1DwellTime.draw();
+                    }else{
+                        yield* module.buttons.graph1EnableSeed.draw();
+                    }
+                }
+
+                // draw model dropdown
+                yield* module.dropDowns.graph1Model.draw();
+
+                // draw graph 1 seeds/reference point + label/mouse label
+                module.graphs.graph1.drawGraphSeeds();
+                module.graphs.graph1.drawRefPoints();
+                yield* module.labels.graph1Reference.draw();
+                module.graphs.graph1.drawMouseLabel();
+
+                // draw the add seed button
+                yield* module.buttons.graph1AddSeed.draw();
+                yield* module.buttons.graph1RemoveSeed.draw();
+            },
+            handleCode: (effect) => {
+                if (effect === "GET MODULE"){
+                    return thisModule;
+                }
             }
-        }
-
-        // draw model dropdown
-        this.dropDowns.graph1Model.draw();
-
-        // draw graph 1 seeds/reference point + label/mouse label
-        this.graphs.graph1.drawGraphSeeds();
-        this.graphs.graph1.drawRefPoints();
-        this.labels.graph1Reference.draw();
-        this.graphs.graph1.drawMouseLabel();
-
-        // draw the add seed button
-        this.buttons.graph1AddSeed.draw();
-        this.buttons.graph1RemoveSeed.draw();
+        });
     },
     onReload: function () {
         refreshNavBar(thisModule);
@@ -283,33 +305,46 @@ export let stringofseedsPage = new Module({
     },
     defaultInputHandler: {
         onMouseDown: function* () {
-            //Check for dropdown clicked
-            yield this.dropDowns.graph1Model.checkClicked();
+            yield* runUntilTrue(
+                function* () {
+                    // the yield yield* notation may be a little confusing, so here is a little explination:
+                    // yield* actually gets evaluated first, it turns the generation over to the given generator
+                    // (in these cases, a click check), so that it has access to Algebraic Effects. The first
+                    // yield then simply tells the runUntilTrue function to consider the output of that generator
+                    // function once it finishes; if it is true, runUntilTrue can halt execution. This is useful
+                    // if you don't want the mouse to trigger more than one checkClick generator per onMouseDown
+                    // event call. In human, it ensures the user cannot interact with on more than one element
+                    // per click.
+                    let module = yield new AlgebraicEffect("GET MODULE");
 
-            //UI around graph1
-            if (!this.dropDowns.graph1Model.showing){
-                yield this.labels.graph1AirKerma.checkClicked();
-                yield this.sliders.graph1AirKerma.checkClicked();
-            
-                if (this.graphs.graph1.selectedSeed != -1){
-                    if (this.graphs.graph1.seeds[0].model.HDRsource){
-                        yield this.labels.graph1DwellTime.checkClicked();
-                        yield this.sliders.graph1DwellTime.checkClicked();
-                    }else{
-                        yield this.buttons.graph1EnableSeed.checkClicked();
+                    //UI around graph1
+                    if (!module.dropDowns.graph1Model.showing){
+                        yield yield* module.labels.graph1AirKerma.checkClicked();
+                        yield yield* module.sliders.graph1AirKerma.checkClicked();
+                    
+                        if (module.graphs.graph1.selectedSeed != -1){
+                            if (module.graphs.graph1.seeds[0].model.HDRsource){
+                                yield yield* module.labels.graph1DwellTime.checkClicked();
+                                yield yield* module.sliders.graph1DwellTime.checkClicked();
+                            }else{
+                                yield yield* module.buttons.graph1EnableSeed.checkClicked();
+                            }
+                        }
                     }
+                    //Check for dropdown clicked
+                    yield yield* module.dropDowns.graph1Model.checkClicked();
+                    yield yield* module.labels.graph1Reference.checkClicked();
+                    
+                    yield yield* module.sliders.graph1Seedspacing.checkClicked();
+                    yield yield* module.labels.graph1Seedspacing.checkClicked();
+
+                    yield yield* module.buttons.graph1AddSeed.checkClicked();
+                    yield yield* module.buttons.graph1RemoveSeed.checkClicked();
+
+                    // checking if the graph seeds are clicked should always be the last yield statement
+                    yield yield* module.graphs.graph1.checkClicked();
                 }
-            }
-            yield this.labels.graph1Reference.checkClicked();
-            
-            yield this.sliders.graph1Seedspacing.checkClicked();
-            yield this.labels.graph1Seedspacing.checkClicked();
-
-            yield this.buttons.graph1AddSeed.checkClicked();
-            yield this.buttons.graph1RemoveSeed.checkClicked();
-
-            // checking if the graph seeds are clicked should always be the last yield statement
-            yield this.graphs.graph1.checkClicked();
+            );
         }
     }
 })

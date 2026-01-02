@@ -3,6 +3,7 @@ import { stringofseedsPage } from './Pages/stringofseeds.js';
 import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
 import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/brachytherapyapplicators.js';
 import { navBar, resetNavBar } from './navBar.js';
+import { effectHandler } from './algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -80,14 +81,14 @@ addEventListener("mousedown",function (e){
     updateMousePos(e);
     mouse.down = true;
     Object.values(navBar).forEach((pageButton) => {
-        let buttonClick = pageButton.checkClicked();
-        // if an event function is passed back, execute it
-        if (typeof buttonClick.func !== "undefined"){
-            buttonClick.func.call({
-                module: moduleData[module],
-                self: buttonClick.self
-            });
-        }
+        effectHandler({
+            tryCode: pageButton.checkClicked(),
+            handleCode: function(effect){
+                if (effect === "GET MODULE"){
+                    return moduleData[module];
+                }
+            }
+        })
     });
     moduleData[module].eventHandler("onMouseDown",e);
 });

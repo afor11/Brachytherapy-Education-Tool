@@ -1,5 +1,6 @@
 import { EventFunction } from "../eventFunction.js";
 import { buttonPress, nothing } from "../utils.js";
+import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
 
 export class Dropdown {
     constructor(button, options){
@@ -11,7 +12,7 @@ export class Dropdown {
         this.showing = false;
         this.uniformFont = true;
     }
-    draw(){
+    *draw(){ // this function does not have to be a genertor, but it is one for consistency
         if (this.showing){
             if (this.uniformFont){
                 let font = this.options.reduce((minFont,option) => {
@@ -29,46 +30,42 @@ export class Dropdown {
                     }
                 });
             }
-            this.button.draw();
-            this.options.forEach((opt) => {
-                opt.draw();
-            });
+            yield* this.button.draw();
+            for (let i = 0; i < this.options.length; i++){
+                yield* this.options[i].draw();
+            }
         }else{
-            this.button.draw();
+            yield* this.button.draw();
         }
     }
-    checkClicked(){
-        //initally nothing is clicked
-        let clicked = nothing;
+    *checkClicked(){
         if (this.showing){
-            this.options.forEach((button) => {
-                //check if an option button is clicked
-                let buttonClicked = button.checkClicked();
-
-                //if the button is clicked and nothing else is clicked
-                if (!buttonClicked.isNothing && clicked.isNothing){
-                    //set clicked to the buttonClicked function
-                    clicked = buttonClicked;
-                    if (typeof buttonClicked.self !== "undefined"){
-                        if (typeof clicked.self.parent !== "undefined"){
-                            let parent = clicked.self.parent;
-                            while (typeof parent.parent !== "undefined"){
-                                parent = parent.parent;
+            for (let i = 0; i < this.options.length; i++){
+                let self = this;
+                let buttonClicked = yield* chainEffectHandler({
+                    tryCode: function*(){
+                        return yield* self.options[i].checkClicked();
+                    },
+                    handleCode: function*(effect, ind = 0) {
+                        if (effect === "GET PARENT BY IND"){
+                            if (ind == 0){
+                                return self;
+                            }else{
+                                return (yield new AlgebraicEffect("GET PARENT BY IND", ind - 1));
                             }
-                            parent.parent = this;
-                        }else{
-                            clicked.self.parent = this;
+                        }
+                        if (effect === "GET PARENT"){
+                            return self;
                         }
                     }
+                });
+
+                if (buttonClicked){
+                    return true;
                 }
-            });
+            }
         }
-        //if nothing is still clicked
-        if (clicked.isNothing){
-            //set clicked to the checkClicked() function of the button
-            return this.button.checkClicked();
-        }
-        return clicked;
+        return yield yield* this.button.checkClicked();
     }
     collapseDropdown(){
         this.showing = false;

@@ -1,5 +1,6 @@
-import { nothing } from '../utils.js';
+import { nothing, runFn } from '../utils.js';
 import { EventFunction } from '../eventFunction.js';
+import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -15,8 +16,22 @@ export class Slider{
         this.getValue = getValue;
         this.updateValue = updateValue;
     }
-    draw(){
-        let value = this.getValue();
+    *value(){
+        let self = this;
+        return yield* chainEffectHandler({
+            tryCode: function* (){
+                let self = yield new AlgebraicEffect("GET SELF");
+                return yield* runFn(self.getValue)
+            },
+            handleCode: function* (effect){
+                if (effect === "GET SELF"){
+                    return self;
+                }
+            }
+        });
+    }
+    *draw(){
+        let value = yield* this.value();
         ctx.fillStyle = this.color;
         ctx.strokeStyle = this.color;
         ctx.lineWidth = this.thickness;
@@ -31,8 +46,8 @@ export class Slider{
         );
         ctx.fill();
     }
-    checkClicked(){
-        let value = this.getValue();
+    *checkClicked(){
+        let value = yield* this.value();
 
         if (
             window.mouse.down
@@ -42,42 +57,36 @@ export class Slider{
                 <= (this.thickness ** 2)
             )
         ){
-            return new EventFunction({
-                self: this,
-                func: function() {
-                    // set the onMouseMove function of the module so that when the
-                    // mouse moves, it calls the .update function of the slider
-                    this.module.onMouseMove = new EventFunction({
-                        self: this.self,
-                        func: function() {
-                            // this projects the window.mouse position onto the slider's
-                            // direction vector, gets the magnitude, and divides by the
-                            // slider length to get the new value
+            let module = yield new AlgebraicEffect("GET MODULE");
+            let self = this;
+            // set the onMouseMove function of the module so that when the
+            // mouse moves, it calls the .update function of the slider
+            module.onMouseMove = function*() {
+                // this projects the window.mouse position onto the slider's
+                // direction vector, gets the magnitude, and divides by the
+                // slider length to get the new value
 
-                            let unclampedVal = (
-                                (window.mouse.x - this.self.x) * Math.cos(this.self.angle)
-                                + (window.mouse.y - this.self.y) * Math.sin(this.self.angle)
-                            ) / this.self.length;
+                let unclampedVal = (
+                    (window.mouse.x - self.x) * Math.cos(self.angle)
+                    + (window.mouse.y - self.y) * Math.sin(self.angle)
+                ) / self.length;
 
-                            let clampedVal = Math.min(Math.max(unclampedVal,0),1);
-                            if (clampedVal != this.self.getValue()){
-                                this.self.updateValue.call(this, clampedVal);
-                            }
-                        }
-                    });
-
-                    // set the onMouseUp function such that when the user releases 
-                    // the mouse, it resets the onMouseMove and onMouseUp functions
-                    // you use this instead of this.module to get the module because
-                    // the function is not wrapped in an EventFunction object
-                    this.module.onMouseUp = function () {
-                        this.onMouseMove = this.defaultInputHandler.onMouseMove;
-                        this.onMouseUp = this.defaultInputHandler.onMouseUp;
-                    }
+                let clampedVal = Math.min(Math.max(unclampedVal,0),1);
+                if (clampedVal != (yield* self.value())){
+                    yield* self.updateValue(clampedVal);
                 }
-            });
-        }else{
-            return nothing;
-        }
+            };
+
+            // set the onMouseUp function such that when the user releases 
+            // the mouse, it resets the onMouseMove and onMouseUp functions
+            // you use this instead of this.module to get the module because
+            // the function is not wrapped in an EventFunction object
+            module.onMouseUp = function () {
+                module.onMouseMove = module.defaultInputHandler.onMouseMove;
+                module.onMouseUp = module.defaultInputHandler.onMouseUp;
+            }
+            return true;
+}
+        return false;
     }
 }

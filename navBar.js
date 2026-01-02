@@ -1,3 +1,4 @@
+import { AlgebraicEffect } from "./algebraicEffect.js";
 import { module, setModule } from "./main.js";
 import { Button } from './UIclasses/Button.js';
 
@@ -11,9 +12,10 @@ export function resetNavBar(moduleData){
             width: (canvas.width / arr.length),
             height: canvas.height * 0.1,
             bgColor: ((moduleName === module) ? "black" : "white"),
-            onClick: function () {
-                this.self.bgColor = "white";
-                this.self.fontColor = "black";
+            onClick: function* () {
+                let self = yield new AlgebraicEffect("GET SELF");
+                self.bgColor = "white";
+                self.fontColor = "black";
                 navBar[moduleName].bgColor = "black";
                 navBar[moduleName].fontColor = "white";
                 setModule(moduleName);

@@ -1,4 +1,5 @@
 import { nothing } from "./utils.js";
+import { AlgebraicEffect, effectHandler } from './algebraicEffect.js';
 
 export class Module {
     constructor ({
@@ -60,24 +61,15 @@ export class Module {
     eventHandler(event, e) {
         if (typeof this[event] === "function"){
             if (this[event].constructor.name === "GeneratorFunction"){
-                // if the input event function is a generator function, execute
-                // it until it yeilds a value other than nothing or it's done
-                let inputEventGenerator = this[event].call(this,e);
-                let nextFn = {done: false, value: nothing};
-                while (
-                    (
-                        (typeof nextFn.value === "undefined")
-                        || nextFn.value.isNothing
-                    ) && !nextFn.done
-                ){
-                    nextFn = inputEventGenerator.next();
-                }
-                if (typeof nextFn.value === "function"){
-                    nextFn.value.call(this);
-                }
-                if (typeof nextFn.value === "object"){
-                    nextFn.value.func.call({module: this, self: nextFn.value.self});
-                }
+                // if the event function is a generator function, handle its effects
+                effectHandler({
+                    tryCode: this[event](e),
+                    handleCode: (effect) => {
+                        if (effect === "GET MODULE"){
+                            return this;
+                        }
+                    }
+                });
             }else{
                 // otherwise simply call the function
                 this[event].call(this,e);

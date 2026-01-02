@@ -3,6 +3,7 @@ import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
 import { Slider } from './UIclasses/Slider.js';
+import { AlgebraicEffect, effectHandler } from './algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -23,6 +24,20 @@ export function distance(vec1, vec2){
             )
         )
     );
+}
+
+export function* runUntilTrue(func){
+    let nextValue = {value: undefined, done: false};
+    let generatorFunc = func();
+    let args = undefined;
+    while (!nextValue.done && (nextValue.value != true)){
+        nextValue = generatorFunc.next(args);
+        if (nextValue.value?.constructor.name === "AlgebraicEffect"){
+            args = yield nextValue.value;
+        }else{
+            args = undefined;
+        }
+    }
 }
 
 export function interpolateTable(dataArr,spacingArr,ind){
@@ -161,42 +176,55 @@ export function getRange(min, max, step){
 export function toggleSeedEnable(graph,seedInd){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: "black",
-        onClick: function () {
-            let seedIndValue = seedInd.call(this.module);
+        onClick: function* () {
+            let thisModule = yield new AlgebraicEffect("GET MODULE");
+            let self = yield new AlgebraicEffect("GET SELF");
+            let seedIndValue = seedInd.call(thisModule);
             if (seedIndValue == -1){return}
-            console.log(graph);
 
-            let seedEnabled = this.module.graphs[graph].seeds[seedIndValue].enabled;
-            this.module.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
-            this.self.label = (seedEnabled ? "enable seed" : "disable seed");
+            let seedEnabled = thisModule.graphs[graph].seeds[seedIndValue].enabled;
+            thisModule.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
+            self.label = (seedEnabled ? "enable seed" : "disable seed");
 
-            this.module.onReload();
+            thisModule.onReload();
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
     });
 }
 
-export function referencePointLabel(moduleData, thisModule, graphName, refPointInd){
+export function referencePointLabel(graphName, refPointInd){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dose: ${value} Gy`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => moduleData[thisModule].graphs[graphName].getPointDose(
-            moduleData[thisModule].graphs[graphName].refpoints[refPointInd]
-        ),
-        onEnter: function (value){
+        getValue: function* (){
+            let thisModule = yield new AlgebraicEffect("GET MODULE");
+            return thisModule.graphs[graphName].getPointDose(
+                thisModule.graphs[graphName].refpoints[refPointInd]
+            );
+        },
+        onEnter: function* (value){
+            let thisModule = yield new AlgebraicEffect("GET MODULE");
             setDoseAtPoint(
-                this.module.graphs[graphName],
+                thisModule.graphs[graphName],
                 value,
-                this.module,
-                this.module.graphs[graphName].refpoints[refPointInd]
+                thisModule,
+                thisModule.graphs[graphName].refpoints[refPointInd]
             );
         },
         numDecimalsEditing: 3
     });
+}
+
+export function* runFn(fn,...args){
+    if (fn?.constructor.name === "GeneratorFunction"){
+        return yield* fn(...args);
+    }else{
+        return fn(...args);
+    }
 }
 
 function setDoseAtPoint(graph,dose,module,point){
@@ -233,66 +261,71 @@ function setDoseAtPoint(graph,dose,module,point){
     module.onReload();
 }
 
-export function multSeedDwellTimeLabel(moduleData, module, graph){
-    let graphObj = moduleData[module].graphs[graph];
+export function multSeedDwellTimeLabel(graph){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dwell Time: ${value} seconds`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => {
-            if (graphObj.selectedSeed != -1){
-                return graphObj.seeds[graphObj.selectedSeed].dwellTime * 3600;
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            if (module.graphs[graph].selectedSeed != -1){
+                return module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime * 3600;
             }
             return 0;
         },
-        onEnter: function (value){
-            graphObj.seeds[graphObj.selectedSeed].dwellTime = clamp(value / 3600,0,0.0833333333333);
-            this.module.onReload();
+        onEnter: function* (value){
+            let module = yield new AlgebraicEffect("GET MODULE");
+            module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime = clamp(value / 3600,0,0.0833333333333);
+            module.onReload();
         },
         numDecimalsEditing: 3
     });
 }
 
-export function dwellTimeLabel(moduleData, module, graph){
-    let graphObj = moduleData[module].graphs[graph];
+export function dwellTimeLabel(graph){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dwell Time: ${value} seconds`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: () => graphObj.seeds[0].dwellTime * 3600,
-        onEnter: function (value){
-            graphObj.seeds[0].dwellTime = clamp(value / 3600,0,0.0833333333333);
-            this.module.onReload();
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            return module.graphs[graph].seeds[0].dwellTime * 3600;
+        },
+        onEnter: function* (value){
+            let module = yield new AlgebraicEffect("GET MODULE");
+            module.graphs[graph].seeds[0].dwellTime = clamp(value / 3600,0,0.0833333333333);
+            module.onReload();
         },
         numDecimalsEditing: 3
     });
 }
 
-export function airKermaLabel(moduleData, module, graph){
+export function airKermaLabel(graph){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Air Kerma: ${value}U`,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: function () {
-            return moduleData[module].graphs[graph].seeds[0].airKerma;
+        getValue: function* () {
+            return (yield new AlgebraicEffect("GET MODULE")).graphs[graph].seeds[0].airKerma;
         },
-        onEnter: function (value){
+        onEnter: function* (value){
+            let module = yield new AlgebraicEffect("GET MODULE");
             let clampedVal = (
-                (this.module.graphs[graph].seeds[0].model.HDRsource) ?
+                (module.graphs[graph].seeds[0].model.HDRsource) ?
                     clamp(value, airKermaSliderLimits.HDR.min, airKermaSliderLimits.HDR.max)
                 :
                     clamp(value, airKermaSliderLimits.LDR.min, airKermaSliderLimits.LDR.max)
             );
-            this.module.graphs[graph].seeds.forEach((seed) => {
+            module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = clampedVal;
             });
-            this.module.onReload();
+            module.onReload();
         },
         numDecimalsEditing: 3
     })
@@ -317,16 +350,18 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
                 color: "black"
             },
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-            onClick: function () {
-                this.module.graphs[graph].seeds.forEach((seed) => {
+            onClick: function* () {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                let parent = yield new AlgebraicEffect("GET PARENT");
+                module.graphs[graph].seeds.forEach((seed) => {
                     seed.model = model;
                     seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
                     seed.dwellTime = 0.00833;
                     seed.enabled = true;
                 });
-                this.self.parent.button.label = model.name + " (" + model.isotope + ")";
-                this.self.parent.collapseDropdown();
-                this.module.onReload();
+                parent.button.label = model.name + " (" + model.isotope + ")";
+                parent.collapseDropdown();
+                module.onReload();
             },
         }));
     }
@@ -348,46 +383,57 @@ export function rescaleDropdownButtons(dropdown, region, padding){
     });
 }
 
-export function airKermaSlider(moduleData,module,graph){
+export function airKermaSlider(graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
-        updateValue: function (value) {
-            this.module.graphs[graph].seeds.forEach((seed) => {
+        updateValue: function* (value) {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = getAirKermaFromSlider(value,seed);
             });
-            this.module.onReload();
+            module.onReload();
         },
-        getValue: () => getValueFromAirKerma(moduleData[module].graphs[graph].seeds[0])
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            return getValueFromAirKerma(module.graphs[graph].seeds[0]);
+        }
     });
 }
 
-export function multSeedDwellTimeSlider(moduleData,module,graph){
-    let graphObj = moduleData[module].graphs[graph];
+export function multSeedDwellTimeSlider(graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
-        updateValue: function (value) {
-            graphObj.seeds[graphObj.selectedSeed].dwellTime = getDwellTimeFromSlider(value);
-            this.module.onReload();
+        updateValue: function* (value) {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            if (module.graphs[graph].selectedSeed != -1){
+                module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime = getDwellTimeFromSlider(value);
+                module.onReload();
+            }
         },
-        getValue: () => {
-            if (graphObj.selectedSeed != -1){
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            if (module.graphs[graph].selectedSeed != -1){
                 return getValueFromDwellTime(
-                    graphObj.seeds[graphObj.selectedSeed]
-                )
+                    module.graphs[graph].seeds[module.graphs[graph].selectedSeed]
+                );
             }
             return 0;
         }
     });
 }
 
-export function dwellTimeSlider(moduleData,module,graph){
+export function dwellTimeSlider(graph){
     return new Slider({
         x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
-        updateValue: function (value) {
-            this.module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
-            this.module.onReload();
+        updateValue: function* (value) {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
+            module.onReload();
         },
-        getValue: () => getValueFromDwellTime(moduleData[module].graphs[graph].seeds[0])
+        getValue: function*  () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            return getValueFromDwellTime(module.graphs[graph].seeds[0]);
+        }
     });
 }
 

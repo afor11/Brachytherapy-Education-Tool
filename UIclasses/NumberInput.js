@@ -1,5 +1,6 @@
-import { getFontSize, buttonPress, nothing, eventHandled } from '../utils.js';
+import { getFontSize, buttonPress, nothing, eventHandled, runFn } from '../utils.js';
 import { EventFunction } from '../eventFunction.js';
+import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -14,100 +15,128 @@ export class NumberInput {
         this.bgColor = bgColor;
         this.editing = false;
         this.numDecimalsEditing = numDecimalsEditing;
-        this.value = () => (this.editing ? ((this.editingValue.length > 0) ? this.editingValue : "0") : getValue().toFixed(this.numDecimalsEditing).toString());
+        this.value = function*() {
+            let self = yield new AlgebraicEffect("GET SELF");
+            if (self.editing){
+                if (self.editingValue.length > 0){
+                    return self.editingValue;
+                }else{
+                    return "0";
+                }
+            }
+            let value = yield* runFn(getValue);
+            return value.toFixed(self.numDecimalsEditing).toString();
+        };
         this.valueToText = text;
-        this.label = () => this.valueToText(this.value());
-        this.editingValue = this.value();
-        this.initalValue = this.value();
+        this.label = function* () {
+            let self = yield new AlgebraicEffect("GET SELF");
+            return self.valueToText(yield* self.value());
+        }
+        this.editingValue = 0;
+        this.initalValue = 0;
         this.onEnter = onEnter;
-        this.recalcFont();
     }
-    draw(){
-        this.recalcFont();
+    *getValue(){
+        let self = this;
+        return yield* chainEffectHandler({
+            tryCode: function*() {
+                return yield* self.value();
+            },
+            handleCode: function*(effect){
+                if (effect === "GET SELF"){
+                    return self;
+                }
+            }
+        });
+    }
+    *draw(){
+        let self = this;
+        let label = yield* chainEffectHandler({
+            tryCode: function*(){
+                let self = yield new AlgebraicEffect("GET SELF");
+                return yield* runFn(self.label);
+            },
+            handleCode: function*(effect){
+                if (effect === "GET SELF"){
+                    return self;
+                }
+            }
+        });
+        yield* this.recalcFont(label);
         ctx.fillStyle = this.bgColor[(this.editing ? "selected" : "notSelected")];
         ctx.beginPath();
         ctx.fillRect(this.x,this.y,this.width,this.height);
         ctx.font = this.font;
         ctx.fillStyle = this.color[(this.editing ? "selected" : "notSelected")];
-        let textDimensions = ctx.measureText(this.label());
+        let textDimensions = ctx.measureText(label);
         let textHeight = textDimensions.actualBoundingBoxAscent + textDimensions.actualBoundingBoxDescent;
         ctx.beginPath();
-        ctx.fillText(this.label(), this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
+        ctx.fillText(label, this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
     }
-    checkClicked(){
+    *checkClicked(){
         //if the mouse is not down, return nothing
         if (!window.mouse.down){
-            return nothing;
+            return false;
         }
 
         //if the mouse is down, hovering, and not editing, set inital values
         // and return a button press
         if (this.hovering() && !this.editing){
-            this.editingValue = this.value();
-            this.initalValue = this.value();
+            this.editingValue = yield* this.getValue();
+            this.initalValue = yield* this.getValue();
             this.editing = true;
-            return new EventFunction({
-                self: this,
-                func: function() {
-                    let finishEditing = () => {
-                        if (this.self.getEditedValue() != this.self.initalValue){
-                            this.self.onEnter.call(this, this.self.getEditedValue());
-                        }
-                        this.module.onKeyDown = this.module.defaultInputHandler.onKeyDown;
-                        this.module.onMouseDown = this.module.defaultInputHandler.onMouseDown;
-                        this.self.editing = false;
-                    }
-                    this.module.onKeyDown = new EventFunction({
-                        self: this.self,
-                        func: function (e) {
-                            let numDecimals = (
-                                this.self.editingValue.includes(".") ?
-                                    this.self.editingValue.length - 1 - this.self.editingValue.indexOf(".")
-                                :
-                                    0
-                            );
-                            if ("1234567890".includes(e.key) && (numDecimals < this.self.numDecimalsEditing)){
-                                this.self.editingValue += e.key;
-                                return eventHandled;
-                            }
-                            if ((e.key === ".") && (numDecimals == 0)){
-                                this.self.editingValue += ".";
-                                return eventHandled;
-                            }
-                            if (e.key === "Enter"){
-                                finishEditing();
-                                return eventHandled;
-                            }
-                            if ((e.key === "Backspace") && (this.self.editingValue.length > 0)){
-                                this.self.editingValue = this.self.editingValue.substring(0,this.self.editingValue.length - 1);
-                                return eventHandled;
-                            }
-                        }
-                    });
-
-                    this.module.onMouseDown = function () {
-                        finishEditing();
-                        return eventHandled;
-                    }
+            let module = yield new AlgebraicEffect("GET MODULE");
+            let self = this;
+            let finishEditing = function* (module, self) {
+                if (self.getEditedValue() != self.initalValue){
+                    yield* runFn(self.onEnter,self.getEditedValue());
                 }
-            });
+                module.onKeyDown = module.defaultInputHandler.onKeyDown;
+                module.onMouseDown = module.defaultInputHandler.onMouseDown;
+                self.editing = false;
+            }
+            module.onKeyDown = function* (e) {
+                let numDecimals = (
+                    self.editingValue.includes(".") ?
+                        self.editingValue.length - 1 - self.editingValue.indexOf(".")
+                    :
+                        0
+                );
+                if ("1234567890".includes(e.key) && (numDecimals < self.numDecimalsEditing)){
+                    self.editingValue += e.key;
+                    return true;
+                }
+                if ((e.key === ".") && (numDecimals == 0)){
+                    self.editingValue += ".";
+                    return true;
+                }
+                if (e.key === "Enter"){
+                    yield* finishEditing(module, self);
+                    return true;
+                }
+                if ((e.key === "Backspace") && (self.editingValue.length > 0)){
+                    self.editingValue = self.editingValue.substring(0,self.editingValue.length - 1);
+                    return true;
+                }
+            };
+
+            module.onMouseDown = function* () {
+                yield* finishEditing(module, self);
+                return true;
+            }
+            return true;
         }else{
             //if the editing was not just initalized, finish the editing
             // mode and return buttonPress
             if (this.editing){
                 this.editing = false;
                 if (this.getEditedValue() != this.initalValue){
-                    return new EventFunction({
-                        self: this,
-                        func: function() {
-                            this.self.onEnter(this.self.getEditedValue());
-                        }
-                    });
+                    yield* runFn(this.onEnter,this.getEditedValue());
                 }
-                return buttonPress;
+                return true;
             }
         }
-        return nothing;
+        return false;
     }
     getEditedValue(){
         if (this.editingValue === ""){
@@ -116,8 +145,8 @@ export class NumberInput {
             return parseFloat(this.editingValue)
         }
     }
-    recalcFont(){
-        this.font = getFontSize(this.width * 0.8,this.height * 0.6,this.label(),(size) => `${size}px Arial`) + "px Arial";
+    *recalcFont(label){
+        this.font = getFontSize(this.width * 0.8,this.height * 0.6,label,(size) => `${size}px Arial`) + "px Arial";
     }
     hovering(){
         return ((window.mouse.x >= this.x) && (window.mouse.x <= this.x + this.width) && (window.mouse.y >= this.y) && (window.mouse.y <= this.y + this.height));

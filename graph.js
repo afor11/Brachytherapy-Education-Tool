@@ -266,10 +266,9 @@ export class Graph {
             ctx.fill();
         }
     }
-    checkClicked(){
+    *checkClicked(){
         if (!window.mouse.down){
-            this.selectedSeed = -1;
-            return nothing;
+            return false;
         }
 
         let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
@@ -286,12 +285,12 @@ export class Graph {
 
         if (closestSeed.dist < this.seedRadius() * 1.25){
             this.selectedSeed = closestSeed.ind;
-            return eventHandled;
+            return true;
         } else if (this.selectedSeed != -1){
             this.selectedSeed = -1;
         }
 
-        return nothing;
+        return false;
     }
     drawMouseLabel(){
         if (

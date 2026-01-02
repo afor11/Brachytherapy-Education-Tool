@@ -5,6 +5,7 @@ import { Module } from '../module.js';
 import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view, moduleData } from "../main.js";
+import { AlgebraicEffect, effectHandler } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -28,53 +29,63 @@ export let singleSeedPage = new Module({
         })
     },
     sliders: {
-        graph1AirKerma: function() {return airKermaSlider(moduleData,thisModule,"graph1")},
-        graph2AirKerma: function() {return airKermaSlider(moduleData,thisModule,"graph2")},
-        graph1DwellTime: function() {return dwellTimeSlider(moduleData,thisModule,"graph1");},
-        graph2DwellTime: function() {return dwellTimeSlider(moduleData,thisModule,"graph2");}
+        graph1AirKerma: function() {return airKermaSlider("graph1")},
+        graph2AirKerma: function() {return airKermaSlider("graph2")},
+        graph1DwellTime: function() {return dwellTimeSlider("graph1");},
+        graph2DwellTime: function() {return dwellTimeSlider("graph2");}
     },
     dropDowns: {
         graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
         graph2Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name);}
     },
     labels: {
-        graph1AirKerma: function() {return airKermaLabel(moduleData,thisModule,"graph1");},
-        graph2AirKerma: function() {return airKermaLabel(moduleData,thisModule,"graph2");},
-        graph1DwellTime: function() {return dwellTimeLabel(moduleData,thisModule,"graph1");},
-        graph2DwellTime: function() {return dwellTimeLabel(moduleData,thisModule,"graph2");},
-        graph1Reference: function() {return referencePointLabel(moduleData,thisModule,"graph1",0);},
-        graph2Reference: function() {return referencePointLabel(moduleData,thisModule,"graph2",0);},
+        graph1AirKerma: function() {return airKermaLabel("graph1");},
+        graph2AirKerma: function() {return airKermaLabel("graph2");},
+        graph1DwellTime: function() {return dwellTimeLabel("graph1");},
+        graph2DwellTime: function() {return dwellTimeLabel("graph2");},
+        graph1Reference: function() {return referencePointLabel("graph1",0);},
+        graph2Reference: function() {return referencePointLabel("graph2",0);},
     },
     onUpdate: function () {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        let thisModule = this;
+        effectHandler({
+            tryCode: function* (){
+                let module = yield new AlgebraicEffect("GET MODULE");
+                ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        Object.values(navBar).forEach((button) => {
-            button.draw();
-        });
+                let navButtons = Object.values(navBar);
+                for (let i = 0; i < navButtons.length; i++){
+                    yield* navButtons[i].draw();
+                }
 
-        if (this.graphs.graph1.seeds[0].model.HDRsource){
-            this.labels.graph1DwellTime.draw();
-            this.sliders.graph1DwellTime.draw();
-        }
+                if (module.graphs.graph1.seeds[0].model.HDRsource){
+                    yield* module.labels.graph1DwellTime.draw();
+                    yield* module.sliders.graph1DwellTime.draw();
+                }
 
-        if (this.graphs.graph2.seeds[0].model.HDRsource){
-            this.labels.graph2DwellTime.draw();
-            this.sliders.graph2DwellTime.draw();
-        }
-        
-        this.labels.graph1AirKerma.draw();
-        this.sliders.graph1AirKerma.draw();
-        this.labels.graph1Reference.draw();
-        this.dropDowns.graph1Model.draw();
+                if (module.graphs.graph2.seeds[0].model.HDRsource){
+                    yield* module.labels.graph2DwellTime.draw();
+                    yield* module.sliders.graph2DwellTime.draw();
+                }
+                
+                yield* module.labels.graph1AirKerma.draw();
+                yield* module.sliders.graph1AirKerma.draw();
+                yield* module.labels.graph1Reference.draw();
+                yield* module.dropDowns.graph1Model.draw();
 
-        this.labels.graph2AirKerma.draw();
-        this.labels.graph2Reference.draw();
-        this.sliders.graph2AirKerma.draw();
-        this.dropDowns.graph2Model.draw();
+                yield* module.labels.graph2AirKerma.draw();
+                yield* module.labels.graph2Reference.draw();
+                yield* module.sliders.graph2AirKerma.draw();
+                yield* module.dropDowns.graph2Model.draw();
 
-        Object.values(this.graphs).forEach((graph) => {
-            graph.drawRefPoints();
-            graph.drawMouseLabel();
+                module.graphs.graph1.drawRefPoints();
+                module.graphs.graph2.drawMouseLabel();
+            },
+            handleCode: (effect) => {
+                if (effect === "GET MODULE"){
+                    return thisModule;
+                }
+            }
         });
     },
     onReload: function () {
@@ -315,32 +326,34 @@ export let singleSeedPage = new Module({
     },
     defaultInputHandler: {
         onMouseDown: function* () {
-            //Check for dropdown clicked
-            yield this.dropDowns.graph1Model.checkClicked();
-            yield this.dropDowns.graph2Model.checkClicked();
+            let module = yield new AlgebraicEffect("GET MODULE");
 
             //UI around graph1
-            if (!this.dropDowns.graph1Model.showing){
-                yield this.labels.graph1AirKerma.checkClicked();
-                yield this.sliders.graph1AirKerma.checkClicked();
-                if (this.graphs.graph1.seeds[0].model.HDRsource){
-                    yield this.labels.graph1DwellTime.checkClicked();
-                    yield this.sliders.graph1DwellTime.checkClicked();
+            if (!module.dropDowns.graph1Model.showing){
+                yield* module.labels.graph1AirKerma.checkClicked();
+                yield* module.sliders.graph1AirKerma.checkClicked();
+                if (module.graphs.graph1.seeds[0].model.HDRsource){
+                    yield* module.labels.graph1DwellTime.checkClicked();
+                    yield* module.sliders.graph1DwellTime.checkClicked();
                 }
             }
-            yield this.labels.graph1Reference.checkClicked();
+            yield* module.labels.graph1Reference.checkClicked();
 
             //UI around graph2
-            if (!this.dropDowns.graph2Model.showing){
-                yield this.labels.graph2AirKerma.checkClicked();
-                yield this.labels.graph2DwellTime.checkClicked();
-                yield this.sliders.graph2AirKerma.checkClicked();
-                if (this.graphs.graph2.seeds[0].model.HDRsource){
-                    yield this.labels.graph2DwellTime.checkClicked();
-                    yield this.sliders.graph2DwellTime.checkClicked();
+            if (!module.dropDowns.graph2Model.showing){
+                yield* module.labels.graph2AirKerma.checkClicked();
+                yield* module.labels.graph2DwellTime.checkClicked();
+                yield* module.sliders.graph2AirKerma.checkClicked();
+                if (module.graphs.graph2.seeds[0].model.HDRsource){
+                    yield* module.labels.graph2DwellTime.checkClicked();
+                    yield* module.sliders.graph2DwellTime.checkClicked();
                 }
             }
-            yield this.labels.graph2Reference.checkClicked();
+            yield* module.labels.graph2Reference.checkClicked();
+
+            //Check for dropdown clicked
+            yield* module.dropDowns.graph1Model.checkClicked();
+            yield* module.dropDowns.graph2Model.checkClicked();
         },
     }
 })
