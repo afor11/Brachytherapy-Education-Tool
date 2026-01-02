@@ -293,6 +293,7 @@ export class Graph {
         return false;
     }
     drawMouseLabel(){
+        if (typeof window.mouse === "undefined"){return}
         if (
             (window.mouse.x > this.graphDimensions.x)
             && (window.mouse.x < this.graphDimensions.x + this.graphDimensions.width)

@@ -53,12 +53,12 @@ export let PlanarArrayOfSeeds = new Module({
         })
     },
     sliders: {
-        graph1AirKerma: function() {return airKermaSlider("graph1")},
-        graph2AirKerma: function() {return airKermaSlider("graph2")},
-        graph1DwellTime: function() {return multSeedDwellTimeSlider("graph1");},
-        graph2DwellTime: function() {return multSeedDwellTimeSlider("graph2");},
-        graph1SeedSpacing: function() {return seedSpacingSlider("graph1")},
-        graph2SeedSpacing: function() {return seedSpacingSlider("graph2")}
+        graph1AirKerma: airKermaSlider("graph1"),
+        graph2AirKerma: airKermaSlider("graph2"),
+        graph1DwellTime: multSeedDwellTimeSlider("graph1"),
+        graph2DwellTime: multSeedDwellTimeSlider("graph2"),
+        graph1SeedSpacing: seedSpacingSlider("graph1"),
+        graph2SeedSpacing: seedSpacingSlider("graph2")
     },
     specialVars: {
         seedSpacing: {
@@ -67,26 +67,26 @@ export let PlanarArrayOfSeeds = new Module({
         }
     },
     dropDowns: {
-        graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
-        graph2Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name);}
+        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name),
+        graph2Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name)
     },
     labels: {
-        graph1AirKerma: function() {return airKermaLabel("graph1");},
-        graph2AirKerma: function() {return airKermaLabel("graph2");},
-        graph1DwellTime: function() {return multSeedDwellTimeLabel("graph1");},
-        graph2DwellTime: function() {return multSeedDwellTimeLabel("graph2");},
-        graph1Reference: function() {return referencePointLabel("graph1",0);},
-        graph2Reference: function() {return referencePointLabel("graph2",0);},
-        graph1SeedSpacing: function() {return seedSpacingLabel("graph1")},
-        graph2SeedSpacing: function() {return seedSpacingLabel("graph2")},
+        graph1AirKerma: airKermaLabel("graph1"),
+        graph2AirKerma: airKermaLabel("graph2"),
+        graph1DwellTime: multSeedDwellTimeLabel("graph1"),
+        graph2DwellTime: multSeedDwellTimeLabel("graph2"),
+        graph1Reference: referencePointLabel("graph1",0),
+        graph2Reference: referencePointLabel("graph2",0),
+        graph1SeedSpacing: seedSpacingLabel("graph1"),
+        graph2SeedSpacing: seedSpacingLabel("graph2"),
     },
     buttons: {
-        graph1EnableSeed: function() {return toggleSeedEnable("graph1",function () {return this.graphs.graph1.selectedSeed})},
-        graph2EnableSeed: function() {return toggleSeedEnable("graph2",function () {return this.graphs.graph2.selectedSeed})},
-        graph1ExpandArray: function() {return expandArrayButton("graph1")},
-        graph2ExpandArray: function() {return expandArrayButton("graph2")},
-        graph1ShrinkArray: function() {return shrinkArrayButton("graph1")},
-        graph2ShrinkArray: function() {return shrinkArrayButton("graph2")}
+        graph1EnableSeed: toggleSeedEnable("graph1",function () {return this.graphs.graph1.selectedSeed}),
+        graph2EnableSeed: toggleSeedEnable("graph2",function () {return this.graphs.graph2.selectedSeed}),
+        graph1ExpandArray: expandArrayButton("graph1"),
+        graph2ExpandArray: expandArrayButton("graph2"),
+        graph1ShrinkArray: shrinkArrayButton("graph1"),
+        graph2ShrinkArray: shrinkArrayButton("graph2")
     },
     onUpdate: function () {
         let thisModule = this;
@@ -673,6 +673,9 @@ function shrinkArrayButton(graph){
                         Math.abs(seed.pos.y)
                     ) < newSideLength / 2
                 );
+                if (module.graphs[graph].selectedSeed >= module.graphs[graph].seeds.length){
+                    module.graphs[graph].selectedSeed = -1;
+                }
                 module.onReload();
             }
         },

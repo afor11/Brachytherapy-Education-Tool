@@ -29,22 +29,22 @@ export let singleSeedPage = new Module({
         })
     },
     sliders: {
-        graph1AirKerma: function() {return airKermaSlider("graph1")},
-        graph2AirKerma: function() {return airKermaSlider("graph2")},
-        graph1DwellTime: function() {return dwellTimeSlider("graph1");},
-        graph2DwellTime: function() {return dwellTimeSlider("graph2");}
+        graph1AirKerma: airKermaSlider("graph1"),
+        graph2AirKerma: airKermaSlider("graph2"),
+        graph1DwellTime: dwellTimeSlider("graph1"),
+        graph2DwellTime: dwellTimeSlider("graph2")
     },
     dropDowns: {
-        graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
-        graph2Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name);}
+        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name),
+        graph2Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name)
     },
     labels: {
-        graph1AirKerma: function() {return airKermaLabel("graph1");},
-        graph2AirKerma: function() {return airKermaLabel("graph2");},
-        graph1DwellTime: function() {return dwellTimeLabel("graph1");},
-        graph2DwellTime: function() {return dwellTimeLabel("graph2");},
-        graph1Reference: function() {return referencePointLabel("graph1",0);},
-        graph2Reference: function() {return referencePointLabel("graph2",0);},
+        graph1AirKerma: airKermaLabel("graph1"),
+        graph2AirKerma: airKermaLabel("graph2"),
+        graph1DwellTime: dwellTimeLabel("graph1"),
+        graph2DwellTime: dwellTimeLabel("graph2"),
+        graph1Reference: referencePointLabel("graph1",0),
+        graph2Reference: referencePointLabel("graph2",0),
     },
     onUpdate: function () {
         let thisModule = this;

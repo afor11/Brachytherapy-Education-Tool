@@ -227,7 +227,7 @@ export function* runFn(fn,...args){
     }
 }
 
-function setDoseAtPoint(graph,dose,module,point){
+export function setDoseAtPoint(graph,dose,module,point){
     const searchPrecision = 20;
     if (graph.seeds[0].model.HDRsource){
         let dwellTime = {min: 0, max: 0.0833333333333};

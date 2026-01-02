@@ -25,97 +25,91 @@ export let stringofseedsPage = new Module({
         }),
     },
     sliders: {
-        graph1AirKerma: function() {return airKermaSlider("graph1");},
-        graph1DwellTime: function() {return multSeedDwellTimeSlider("graph1");},
-        graph1Seedspacing: function() {
-            return new Slider({
-                x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
-                updateValue: function* (value) {
-                    let module = yield new AlgebraicEffect("GET MODULE");
-                    module.seedSpacing = 0.5 + value;
-                    module.onReload();
-                },
-                getValue: function* () {
-                    return (yield new AlgebraicEffect("GET MODULE")).seedSpacing - 0.5;
-                }
-            });
-        }
+        graph1AirKerma: airKermaSlider("graph1"),
+        graph1DwellTime: multSeedDwellTimeSlider("graph1"),
+        graph1Seedspacing: new Slider({
+            x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+            updateValue: function* (value) {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                module.seedSpacing = 0.5 + value;
+                module.onReload();
+            },
+            getValue: function* () {
+                return (yield new AlgebraicEffect("GET MODULE")).seedSpacing - 0.5;
+            }
+        })
     },
     specialVars: {
         seedSpacing: 1
     },
     dropDowns: {
-        graph1Model: function() {return modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name);},
+        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name),
     },
     labels: {
-        graph1AirKerma: function() {return airKermaLabel("graph1");},
-        graph1DwellTime: function() {return multSeedDwellTimeLabel("graph1");},
-        graph1Reference: function() {return referencePointLabel("graph1",0);},
-        graph1Seedspacing: function() {
-            return new NumberInput({
-                x: 0, y: 0, width: 0, height: 0,
-                label: {
-                    text: (value) => `Seed Spacing: ${value} cm`,
-                    color: {selected: "white", notSelected: "black"}
-                },bgColor: {selected: "black", notSelected: "white"},
-                getValue: function* () {
-                    return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
-                },
-                onEnter: function* (value){
-                    (yield new AlgebraicEffect("GET MODULE")).seedSpacing = value;
-                },
-                numDecimalsEditing: 2
-            });
-        },
+        graph1AirKerma: airKermaLabel("graph1"),
+        graph1DwellTime: multSeedDwellTimeLabel("graph1"),
+        graph1Reference: referencePointLabel("graph1",0),
+        graph1Seedspacing: new NumberInput({
+            x: 0, y: 0, width: 0, height: 0,
+            label: {
+                text: (value) => `Seed Spacing: ${value} cm`,
+                color: {selected: "white", notSelected: "black"}
+            },bgColor: {selected: "black", notSelected: "white"},
+            getValue: function* () {
+                return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
+            },
+            onEnter: function* (value){
+                (yield new AlgebraicEffect("GET MODULE")).seedSpacing = value;
+            },
+            numDecimalsEditing: 2
+        })
     },
     buttons: {
-        graph1EnableSeed: function() {return toggleSeedEnable("graph1",function () {return this.graphs.graph1.selectedSeed})},
-        graph1AddSeed: function() {
-            return new Button({
-                x: 0, y: 0, width: 0, height: 0,
-                label: {
-                    text: "Add Seed",
-                    font: "default",
-                    color: "black"
-                },
-                bgColor: "#50C878",
-                onClick: function* () {
-                    let module = yield new AlgebraicEffect("GET MODULE");
-                    let model = module.graphs.graph1.seeds[0].model;
-                    module.graphs.graph1.seeds.push(
-                        new Seed(
-                            {x: 0, y: 0, z: 0},
-                            {phi: 0, theta: 0},
-                            model,
-                            (model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min),
-                            0.00833
-                        )
-                    );
-                    module.onReload();
-                },
-                outline: {color: "black", thickness: 0}
-            });
-        },
-        graph1RemoveSeed: function() {
-            return new Button({
-                x: 0, y: 0, width: 0, height: 0,
-                label: {
-                    text: "Remove Seed",
-                    font: "default",
-                    color: "black"
-                },
-                bgColor: "#EE4B2B",
-                onClick: function* () {
-                    let module = yield new AlgebraicEffect("GET MODULE");
-                    if (module.graphs.graph1.seeds.length > 1){
+        graph1EnableSeed: toggleSeedEnable("graph1",function () {return this.graphs.graph1.selectedSeed}),
+        graph1AddSeed: new Button({
+            x: 0, y: 0, width: 0, height: 0,
+            label: {
+                text: "Add Seed",
+                font: "default",
+                color: "black"
+            },
+            bgColor: "#50C878",
+            onClick: function* () {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                let model = module.graphs.graph1.seeds[0].model;
+                module.graphs.graph1.seeds.push(
+                    new Seed(
+                        {x: 0, y: 0, z: 0},
+                        {phi: 0, theta: 0},
+                        model,
+                        (model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min),
+                        0.00833
+                    )
+                );
+                module.onReload();
+            },
+            outline: {color: "black", thickness: 0}
+        }),
+        graph1RemoveSeed: new Button({
+            x: 0, y: 0, width: 0, height: 0,
+            label: {
+                text: "Remove Seed",
+                font: "default",
+                color: "black"
+            },
+            bgColor: "#EE4B2B",
+            onClick: function* () {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                if (module.graphs.graph1.seeds.length > 1){
+                    if (module.graphs.graph1.selectedSeed != -1){
                         module.graphs.graph1.selectedSeed = Math.max(module.graphs.graph1.selectedSeed - 1,0);
-                        module.graphs.graph1.seeds.pop();
-                        module.onReload();
                     }
-                },
-                outline: {color: "black", thickness: 0}
-            });
-        }
+                    module.graphs.graph1.seeds.pop();
+                    module.onReload();
+                }
+            },
+            outline: {color: "black", thickness: 0}
+        })
     },
     onUpdate: function () {
         let thisModule = this;
