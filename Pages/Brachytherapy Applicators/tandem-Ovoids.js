@@ -5,7 +5,7 @@ import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
 import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
-import { view } from '../../main.js';
+import { module, view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
 import { Dropdown } from '../../UIclasses/Dropdown.js';
@@ -18,8 +18,18 @@ export let tandemAndOvoidsPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
         }),
+        graph2: new Graph({
+            x: 0, y: 0, width: 0, height: 0,
+            seeds: [],
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph2", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+        }),
+        graph3: new Graph({
+            x: 0, y: 0, width: 0, height: 0,
+            seeds: [],
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.x, y: point.z, z: point.y}}, name: "graph3", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+        })
     },
     sliders: {
         graph1AirKerma: airKermaSlider("graph1"),
@@ -53,27 +63,8 @@ export let tandemAndOvoidsPage = new Module({
             },
             numDecimalsEditing: 1
         }),
-        graph1Reference: new NumberInput({
-            x: 0, y: 0, width: 0, height: 0,
-            label: {
-                text: (value) => `5mm Depth Dose: ${value} Gy`,
-                color: {selected: "white", notSelected: "black"}
-            },bgColor: {selected: "black", notSelected: "white"},
-            getValue: function* () {
-                let module = yield new AlgebraicEffect("GET MODULE");
-                return module.graphs.graph1.getPointDose(module.graphs.graph1.refpoints[0]);
-            },
-            onEnter: function* (value){
-                let module = yield new AlgebraicEffect("GET MODULE");
-                setDoseAtPoint(
-                    module.graphs.graph1,
-                    value,
-                    module,
-                    module.graphs.graph1.refpoints[0]
-                );
-            },
-            numDecimalsEditing: 3
-        })
+        graph1ReferenceRight: referencePoint("graph1", 0, (value) => `Point A Right: ${value} Gy`),
+        graph1ReferenceLeft: referencePoint("graph1", 1, (value) => `Point A Left: ${value} Gy`)
     },
     buttons: {
         resetDwellTimes: new Button({
@@ -109,8 +100,9 @@ export let tandemAndOvoidsPage = new Module({
             x: 0,
             y: 0,
             width: 0,
-            height: 0
+            height: 0,
         },
+        selectedGraph: "",
         lastApplicatorLoaded: "",
         *refreshApplicator(){
             let module = yield new AlgebraicEffect("GET MODULE");
@@ -154,6 +146,9 @@ export let tandemAndOvoidsPage = new Module({
                         )
                     );
                 }
+
+                module.graphs.graph2.seeds = module.graphs.graph1.seeds;
+                module.graphs.graph3.seeds = module.graphs.graph1.seeds;
             }
 
             module.graphs.graph1.xTicks = getRange(
@@ -167,6 +162,11 @@ export let tandemAndOvoidsPage = new Module({
                 (module.applicator.length / 10) + 2,
                 0.125
             );
+
+            module.graphs.graph2.xTicks = module.graphs.graph1.xTicks;
+            module.graphs.graph2.yTicks = module.graphs.graph1.yTicks;
+            module.graphs.graph3.xTicks = module.graphs.graph1.xTicks;
+            module.graphs.graph3.yTicks = module.graphs.graph1.yTicks;
 
             if (module.graphs.graph1.selectedSeed != -1){
                 module.graphs.graph1.selectedSeed = Math.min(
@@ -246,91 +246,100 @@ export let tandemAndOvoidsPage = new Module({
             yield* navButtons[i].draw();
         }
 
-        if (this.graphs.graph1.selectedSeed != -1){
-            yield* this.labels.graph1DwellTime.draw();
-            yield* this.sliders.graph1DwellTime.draw();
-
-            ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
-            ctx.beginPath();
-            ctx.rect(this.menu.x, this.menu.y, this.menu.width, this.menu.height);
-            ctx.stroke();
-
-            let graph = this.graphs.graph1;
-            let seedScreenPos = graph.graphToScreenPos(
-                graph.perspective(
-                    graph.seeds[graph.selectedSeed].pos
-                )
-            );
-            ctx.beginPath();
-            ctx.moveTo(seedScreenPos.x, seedScreenPos.y);
-            ctx.lineTo(this.menu.x, this.menu.y);
-            ctx.stroke();
-        }
-
-        this.graphs.graph1.drawGraphSeeds();
-        this.graphs.graph1.drawRefPoints();
-        this.graphs.graph1.drawMouseLabel();
+        Object.values(this.graphs).forEach((graph) => {
+            graph.drawGraphSeeds();
+            graph.drawRefPoints();
+            graph.drawMouseLabel();
+        });
 
         yield* this.labels.treatmentTime.draw();
-        yield* this.labels.graph1Reference.draw();
         yield* this.labels.graph1AirKerma.draw();
-
-        yield* this.sliders.graph1AirKerma.draw();
-
+        yield* this.labels.graph1ReferenceLeft.draw();
+        yield* this.labels.graph1ReferenceRight.draw();
         yield* this.buttons.resetDwellTimes.draw();
-
-        yield* this.dropDowns.applicatorDiameter.draw();
-        yield* this.dropDowns.applicatorLength.draw();
-        yield* this.dropDowns.applicatorModel.draw();
-
         yield* this.dropDowns.graph1Model.draw();
     },
     onReload: function* () {
         refreshNavBar("brachytherapy applicators");
 
-        let graph2Div = document.getElementById("graph2");
-        let graph3Div = document.getElementById("graph3");
-        if (graph2Div.innerHTML !== ""){
-            graph2Div.innerHTML = "";
+        let splitY = view.height * 0.25;
+
+        // resize/draw graphs
+        if (((view.height - splitY) / 2) <= (view.width / 3)){
+            Object.values(this.graphs).forEach((graph, ind) => {
+                Object.assign(graph, getRegionBound(
+                    {
+                        x: (view.width / 3) * ind,
+                        y: splitY,
+                        width: view.width / 3,
+                        height: view.height - splitY
+                    },
+                    {horizontal: 0, vertical: 0},
+                    graph.unitWidth() / graph.unitHeight())
+                );
+
+                graph.drawGraph(document.getElementById(graph.name));
+            });
+        }else{
+            Object.values(this.graphs).forEach((graph, ind) => {
+                if (ind == 2){
+                    Object.assign(graph, getRegionBound(
+                        {
+                            x: 0,
+                            y: splitY + (view.height - splitY) / 2,
+                            width: view.width,
+                            height: (view.height - splitY) / 2
+                        },
+                        {horizontal: 0, vertical: 0},
+                        graph.unitWidth() / graph.unitHeight())
+                    );
+
+                    graph.drawGraph(document.getElementById(graph.name));
+                    return;
+                }
+                Object.assign(graph, getRegionBound(
+                    {
+                        x: (view.width / 2) * ind,
+                        y: splitY,
+                        width: view.width / 2,
+                        height: (view.height - splitY) / 2
+                    },
+                    {horizontal: 0, vertical: 0},
+                    graph.unitWidth() / graph.unitHeight())
+                );
+
+                graph.drawGraph(document.getElementById(graph.name));
+            });
         }
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
 
-        let splitX = view.width * 0.2;
-        let yStep = view.height * 0.1;
+        let elmWidth = view.width * 0.25;
+        let elmHeight = splitY / 3;
+        let splitX = [
+            0,
+            elmWidth,
+            elmWidth * 2,
+            elmWidth * 3
+        ];
+        splitY = [
+            view.y,
+            view.y + elmHeight,
+            view.y + elmHeight * 2
+        ];
 
-        //resize graphs
-        Object.assign(this.graphs.graph1, getRegionBound(
-            {
-                x: splitX,
-                y: view.y,
-                width: view.width - splitX,
-                height: view.height
-            },
-            {horizontal: 0, vertical: 0},
-            this.graphs.graph1.unitWidth() / this.graphs.graph1.unitHeight())
-        );
-
-        this.graphs.graph1.drawGraph(document.getElementById("graph1"));
-
-        splitX = this.graphs.graph1.graphDimensions.x;
-
-        // resize elements (in order of height on page, top to bottom)
         [
             this.labels.treatmentTime,
-            this.labels.graph1Reference,
-            this.buttons.resetDwellTimes,
-            this.dropDowns.graph1Model,
             this.labels.graph1AirKerma,
-            this.sliders.graph1AirKerma
+            this.labels.graph1ReferenceLeft,
+            this.labels.graph1ReferenceRight,
+            this.buttons.resetDwellTimes,
+            this.dropDowns.graph1Model
         ].forEach((elm, ind) => {
             let region = [
                 {
-                    x: 0,
-                    y: view.y + yStep * ind,
-                    width: splitX,
-                    height: yStep
+                    x: splitX[ind % splitX.length],
+                    y: splitY[Math.floor(ind / splitX.length)],
+                    width: elmWidth,
+                    height: elmHeight
                 },
                 {horizontal: 0.2, vertical: 0.2}
             ];
@@ -351,118 +360,25 @@ export let tandemAndOvoidsPage = new Module({
             }
             Object.assign(elm, getRegionBound(...region));
         });
-
-        // rescale applicator dropdowns
-        setDropdownProps(this.dropDowns.applicatorModel, {
-            button: getRegionBound({
-                x: 0,
-                y: view.y + yStep * 6,
-                width: splitX,
-                height: yStep
-            }, {horizontal: 0.2, vertical: 0.2}),
-            optionProps: (ind) => getRegionBound({
-                x: splitX * 0.9 + (splitX * 0.3) * ind,
-                y: view.y + yStep * 6,
-                width: splitX * 0.3,
-                height: yStep
-            }, {horizontal: 0, vertical: 0.2})
-        });
-
-        [
-            this.dropDowns.applicatorLength,
-            this.dropDowns.applicatorDiameter
-        ].forEach((appDropdown, yInd) => {
-            setDropdownProps(appDropdown, {
-                button: getRegionBound({
-                    x: 0,
-                    y: view.y + yStep * (7 + yInd),
-                    width: splitX,
-                    height: yStep
-                }, {horizontal: 0.2, vertical: 0.2}),
-                optionProps: (ind) => getRegionBound({
-                    x: splitX * 0.9 + (splitX * 0.15) * ind,
-                    y: view.y + yStep * (7 + yInd),
-                    width: splitX * 0.15,
-                    height: yStep
-                }, {horizontal: 0, vertical: 0.2})
-            });
-        });
-
-        if (this.graphs.graph1.selectedSeed != -1){
-            // get the position of the menu
-            let graph = this.graphs.graph1;
-            let seedScreenPos = graph.graphToScreenPos(
-                graph.perspective(
-                    graph.seeds[graph.selectedSeed].pos
-                )
-            );
-            this.menu = {
-                x: seedScreenPos.x + view.width * 0.2,
-                y: seedScreenPos.y,
-                width: view.width * 0.2,
-                height: view.height * 0.1
-            };
-            if ((this.menu.x + this.menu.width) > view.width){
-                this.menu.x -= this.menu.width + view.width * 0.4;
-            }
-
-            // split the menu into two halves and fit the label and slider to their respective halves
-            let halfMenuBound = {
-                x: this.menu.x,
-                y: this.menu.y,
-                width: this.menu.width,
-                height: this.menu.height / 2
-            };
-            Object.assign(this.labels.graph1DwellTime, getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2}));
-
-            halfMenuBound.y += halfMenuBound.height * 1.25;
-            let regionBound = getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2});
-            Object.assign(this.sliders.graph1DwellTime, {
-                x: regionBound.x,
-                y: regionBound.y,
-                length: regionBound.width,
-                thickness: regionBound.height * 0.2
-            });
-        }
-
-        setEqualFont([
-            this.buttons.resetDwellTimes,
-            this.dropDowns.graph1Model,
-            this.dropDowns.applicatorModel,
-            this.dropDowns.applicatorLength,
-            this.dropDowns.applicatorDiameter,
-        ]);
     },
     defaultInputHandler: {
         onMouseDown: function* () {
+            yield* this.labels.treatmentTime.checkClicked();
+            yield* this.labels.graph1AirKerma.checkClicked();
+            yield* this.labels.graph1ReferenceLeft.checkClicked();
+            yield* this.labels.graph1ReferenceRight.checkClicked();
+            yield* this.buttons.resetDwellTimes.checkClicked();
             yield* runUntilTrue(
                 function* (){
                     let module = yield new AlgebraicEffect("GET MODULE");
 
-                    yield yield* module.labels.treatmentTime.checkClicked();
-                    yield yield* module.labels.graph1Reference.checkClicked();
-
-                    yield yield* module.buttons.resetDwellTimes.checkClicked();
-
-                    if (!module.dropDowns.graph1Model.showing){
-                        yield yield* module.labels.graph1AirKerma.checkClicked();
-                        yield yield* module.sliders.graph1AirKerma.checkClicked();
-
-                        yield yield* module.dropDowns.applicatorModel.checkClicked();
-                        yield yield* module.dropDowns.applicatorLength.checkClicked();
-                        yield yield* module.dropDowns.applicatorDiameter.checkClicked();
-                    }
-
-                    if (module.graphs.graph1.selectedSeed != -1){
-                        yield yield* module.labels.graph1DwellTime.checkClicked();
-                        yield yield* module.sliders.graph1DwellTime.checkClicked();
-                    }
-
                     yield yield* module.dropDowns.graph1Model.checkClicked();
 
-                    if (yield* module.graphs.graph1.checkClicked()){
-                        module.onReload();
-                        return true;
+                    for (let graph of Object.values(module.graphs)){
+                        if (yield* graph.checkClicked()){
+                            module.onReload();
+                            return true;
+                        }
                     }
                 }
             )
@@ -500,4 +416,28 @@ function *addDropdownOptions(dropdown, options, text, onClick, module){
             })
         );
     }
+}
+
+function referencePoint(graph, ind, label){
+    return new NumberInput({
+        x: 0, y: 0, width: 0, height: 0,
+        label: {
+            text: label,
+            color: {selected: "white", notSelected: "black"}
+        },bgColor: {selected: "black", notSelected: "white"},
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            return module.graphs[graph].getPointDose(module.graphs[graph].refpoints[0]);
+        },
+        onEnter: function* (value){
+            let module = yield new AlgebraicEffect("GET MODULE");
+            setDoseAtPoint(
+                module.graphs[graph],
+                value,
+                module,
+                module.graphs[graph].refpoints[ind]
+            );
+        },
+        numDecimalsEditing: 3
+    })
 }

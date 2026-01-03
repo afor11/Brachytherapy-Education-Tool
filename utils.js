@@ -234,8 +234,8 @@ export function* runFn(fn,...args){
     }
 }
 
-export function setDoseAtPoint(graph,dose,module,point){
-    const searchPrecision = 20;
+export function setDoseAtPoint(graph,dose,module,point, searchPrecision = 20){
+    //if (Array.isArray(point))
     if (graph.seeds[0].model.HDRsource){
         let dwellTime = {min: 0, max: 0.0833333333333};
         let testingDwellTime = () => (dwellTime.min + dwellTime.max) / 2;
@@ -368,7 +368,7 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
                 });
                 parent.button.label = model.name + " (" + model.isotope + ")";
                 parent.collapseDropdown();
-                module.onReload();
+                yield* runFn(module.onReload.bind(module));
             },
         }));
     }

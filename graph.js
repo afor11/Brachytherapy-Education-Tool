@@ -20,7 +20,21 @@ export class Graph {
         this.name = name;
         this.refpoints = refpoints;
         this.selectedSeed = -1;
-        this.seedRadius = () => Math.min(canvas.width,canvas.height * 0.9) * 0.01;
+        this.seedRadius = () =>
+            Math.max(
+                0.05 * (
+                    (this.graphDimensions.width == 0) ?
+                        this.graphDimensions.width 
+                    : 
+                        this.width
+                ) / this.unitWidth(),
+                0.1 * (
+                    (this.graphDimensions.height == 0) ?
+                        this.graphDimensions.height 
+                    : 
+                        this.height
+                ) / this.unitHeight()
+        );
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units

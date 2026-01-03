@@ -130,8 +130,10 @@ export class NumberInput {
                 }
             };
 
-            module.onMouseDown = function* () {
+            let currMouseDown = module.onMouseDown;
+            module.onMouseDown = function* (e) {
                 yield* finishEditing(module, self);
+                yield* currMouseDown.call(this, e);
                 return true;
             }
             return true;
