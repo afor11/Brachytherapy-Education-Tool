@@ -3,11 +3,12 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from "../../main.js";
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect, effectHandler } from '../../algebraicEffect.js';
+import { Dropdown } from '../../UIclasses/Dropdown.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -20,7 +21,13 @@ export let vaginalCylinderPage = new Module({
             xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}]
         }),
     },
+    sliders: {
+        graph1AirKerma: airKermaSlider("graph1"),
+        graph1DwellTime: multSeedDwellTimeSlider("graph1"),
+    },
     labels: {
+        graph1AirKerma: airKermaLabel("graph1"),
+        graph1DwellTime: multSeedDwellTimeLabel("graph1"),
         treatmentTime: new NumberInput({
             x: 0, y: 0, width: 0, height: 0,
             label: {
@@ -70,13 +77,13 @@ export let vaginalCylinderPage = new Module({
     },
     buttons: {
         resetDwellTimes: new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "black",
+            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
             label: {
                 text: "Reset Dwell Times",
                 font: "default",
-                color: "white"
+                color: "black"
             },
-            outline: {color: "black", thickness: 0},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.graphs.graph1.seeds.forEach((seed) => {
@@ -87,12 +94,21 @@ export let vaginalCylinderPage = new Module({
         })
     },
     dropDowns: {
-        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name)
+        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
+        applicatorModel: blankDropdown("Vaginal Cylinder"),
+        applicatorLength: blankDropdown("Length: 30mm"),
+        applicatorDiameter: blankDropdown("Diameter: 30mm")
     },
     specialVars: {
         applicator: {
             length: 30,
             diameter: 20
+        },
+        menu: {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0
         },
         *refreshApplicator(){
             let module = yield new AlgebraicEffect("GET MODULE");
@@ -117,6 +133,13 @@ export let vaginalCylinderPage = new Module({
                 );
             }
 
+            if (module.graphs.graph1.selectedSeed != -1){
+                module.graphs.graph1.selectedSeed = Math.min(
+                    module.graphs.graph1.seeds.length - 1,
+                    module.graphs.graph1.selectedSeed
+                );
+            }
+
             // set xTicks and yTicks to fit applicator
             module.graphs.graph1.xTicks = getRange(
                 -(module.applicator.diameter / 10) / 2 - 1,
@@ -134,6 +157,65 @@ export let vaginalCylinderPage = new Module({
                 x: (module.applicator.diameter / 10) / 2 + 0.5,
                 y: ((module.applicator.length / 10) - 0.7) / 2, z: 0}
             ];
+
+            // reset applicator length dropdown
+            module.dropDowns.applicatorLength.button.label = "Length: " + module.applicator.length + "mm";
+            yield* addDropdownOptions(
+                module.dropDowns.applicatorLength,
+                [30, 40, 50, 60],
+                (opt) => `${opt}mm`,
+                (opt) => {
+                    return function* () {
+                        (yield new AlgebraicEffect("GET PARENT")).collapseDropdown();
+
+                        let module = yield new AlgebraicEffect("GET MODULE");
+                        if (module.applicator.length != opt){
+                            module.applicator.length = opt;
+                            yield* module.refreshApplicator();
+                        }
+                    }
+                }
+            );
+
+            // reset applicator diameter dropdown
+            module.dropDowns.applicatorDiameter.button.label = "Diameter: " + module.applicator.diameter + "mm";
+            yield* addDropdownOptions(
+                module.dropDowns.applicatorDiameter,
+                [20, 25, 30, 35],
+                (opt) => `${opt}mm`,
+                (opt) => {
+                    return function* () {
+                        (yield new AlgebraicEffect("GET PARENT")).collapseDropdown();
+
+                        let module = yield new AlgebraicEffect("GET MODULE");
+                        if (module.applicator.diameter != opt){
+                            module.applicator.diameter = opt;
+                            yield* module.refreshApplicator();
+                        }
+                    }
+                }
+            );
+
+            // reset applicator model dropdown
+            module.dropDowns.applicatorModel.button.label = "Applicator: vaginal cylinder";
+            yield* addDropdownOptions(
+                module.dropDowns.applicatorModel,
+                ["vaginal cylinder", "tandem+ovoids","tandem+ring"],
+                (opt) => `${opt}`,
+                (opt) => {
+                    return function* () {
+                        (yield new AlgebraicEffect("GET PARENT")).collapseDropdown();
+
+                        let module = yield new AlgebraicEffect("GET MODULE");
+                        if (opt !== module.applicatorName){
+                            module.applicatorName = opt;
+                            yield* module.changeApplicator(opt);
+                        }
+                    }
+                }
+            );
+
+            module.onReload();
         }
     },
     onUpdate: function () {
@@ -149,15 +231,44 @@ export let vaginalCylinderPage = new Module({
                     yield* navButtons[i].draw();
                 }
 
-                yield* module.labels.treatmentTime.draw();
-                yield* module.labels.graph1Reference.draw();
+                if (module.graphs.graph1.selectedSeed != -1){
+                    yield* module.labels.graph1DwellTime.draw();
+                    yield* module.sliders.graph1DwellTime.draw();
 
-                module.graphs.graph1.drawMouseLabel();
+                    ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
+                    ctx.beginPath();
+                    ctx.rect(module.menu.x, module.menu.y, module.menu.width, module.menu.height);
+                    ctx.stroke();
+
+                    let graph = module.graphs.graph1;
+                    let seedScreenPos = graph.graphToScreenPos(
+                        graph.perspective(
+                            graph.seeds[graph.selectedSeed].pos
+                        )
+                    );
+                    ctx.beginPath();
+                    ctx.moveTo(seedScreenPos.x, seedScreenPos.y);
+                    ctx.lineTo(module.menu.x, module.menu.y);
+                    ctx.stroke();
+                }
+
                 module.graphs.graph1.drawGraphSeeds();
                 module.graphs.graph1.drawRefPoints();
-                yield* module.dropDowns.graph1Model.draw();
+                module.graphs.graph1.drawMouseLabel();
+
+                yield* module.labels.treatmentTime.draw();
+                yield* module.labels.graph1Reference.draw();
+                yield* module.labels.graph1AirKerma.draw();
+
+                yield* module.sliders.graph1AirKerma.draw();
 
                 yield* module.buttons.resetDwellTimes.draw();
+
+                yield* module.dropDowns.applicatorDiameter.draw();
+                yield* module.dropDowns.applicatorLength.draw();
+                yield* module.dropDowns.applicatorModel.draw();
+
+                yield* module.dropDowns.graph1Model.draw();
             },
             handleCode: function (effect) {
                 if (effect === "GET MODULE"){
@@ -202,23 +313,117 @@ export let vaginalCylinderPage = new Module({
             this.labels.treatmentTime,
             this.labels.graph1Reference,
             this.buttons.resetDwellTimes,
-            this.dropDowns.graph1Model
+            this.dropDowns.graph1Model,
+            this.labels.graph1AirKerma,
+            this.sliders.graph1AirKerma
         ].forEach((elm, ind) => {
-            if (elm.constructor.name === "Dropdown"){
-                rescaleDropdownButtons(elm,{
+            let region = [
+                {
                     x: 0,
                     y: view.y + yStep * ind,
                     width: splitX,
                     height: yStep
-                }, {horizontal: 0.2, vertical: 0.2});
+                },
+                {horizontal: 0.2, vertical: 0.2}
+            ];
+
+            if (elm.constructor.name === "Dropdown"){
+                rescaleDropdownButtons(elm,...region);
+                return;
             }
-            Object.assign(elm, getRegionBound({
+            if (elm.constructor.name === "Slider"){
+                let regionBound = getRegionBound(...region);
+                Object.assign(elm, {
+                    x: regionBound.x,
+                    y: regionBound.y + yStep * 0.3,
+                    length: regionBound.width,
+                    thickness: regionBound.height * 0.2
+                });
+                return;
+            }
+            Object.assign(elm, getRegionBound(...region));
+        });
+
+        // rescale applicator dropdowns
+        setDropdownProps(this.dropDowns.applicatorModel, {
+            button: getRegionBound({
                 x: 0,
-                y: view.y + yStep * ind,
+                y: view.y + yStep * 6,
                 width: splitX,
                 height: yStep
-            }, {horizontal: 0.2, vertical: 0.2}));
+            }, {horizontal: 0.2, vertical: 0.2}),
+            optionProps: (ind) => getRegionBound({
+                x: splitX * 0.9 + (splitX * 0.3) * ind,
+                y: view.y + yStep * 6,
+                width: splitX * 0.3,
+                height: yStep
+            }, {horizontal: 0, vertical: 0.2})
         });
+
+        [
+            this.dropDowns.applicatorLength,
+            this.dropDowns.applicatorDiameter
+        ].forEach((appDropdown, yInd) => {
+            setDropdownProps(appDropdown, {
+                button: getRegionBound({
+                    x: 0,
+                    y: view.y + yStep * (7 + yInd),
+                    width: splitX,
+                    height: yStep
+                }, {horizontal: 0.2, vertical: 0.2}),
+                optionProps: (ind) => getRegionBound({
+                    x: splitX * 0.9 + (splitX * 0.15) * ind,
+                    y: view.y + yStep * (7 + yInd),
+                    width: splitX * 0.15,
+                    height: yStep
+                }, {horizontal: 0, vertical: 0.2})
+            });
+        });
+
+        if (this.graphs.graph1.selectedSeed != -1){
+            // get the position of the menu
+            let graph = this.graphs.graph1;
+            let seedScreenPos = graph.graphToScreenPos(
+                graph.perspective(
+                    graph.seeds[graph.selectedSeed].pos
+                )
+            );
+            this.menu = {
+                x: seedScreenPos.x + view.width * 0.2,
+                y: seedScreenPos.y,
+                width: view.width * 0.2,
+                height: view.height * 0.1
+            };
+            if ((this.menu.x + this.menu.width) > view.width){
+                this.menu.x -= this.menu.width + view.width * 0.4;
+            }
+
+            // split the menu into two halves and fit the label and slider to their respective halves
+            let halfMenuBound = {
+                x: this.menu.x,
+                y: this.menu.y,
+                width: this.menu.width,
+                height: this.menu.height / 2
+            };
+            Object.assign(this.labels.graph1DwellTime, getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2}));
+
+            halfMenuBound.y += halfMenuBound.height * 1.25;
+            let regionBound = getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2});
+            Object.assign(this.sliders.graph1DwellTime, {
+                x: regionBound.x,
+                y: regionBound.y,
+                length: regionBound.width,
+                thickness: regionBound.height * 0.2
+            });
+        }
+
+        setEqualFont([
+            this.buttons.resetDwellTimes,
+            this.dropDowns.graph1Model,
+            this.dropDowns.applicatorModel,
+            this.dropDowns.applicatorLength,
+            this.dropDowns.applicatorDiameter,
+        ]);
 
         this.onUpdate();
     },
@@ -228,14 +433,65 @@ export let vaginalCylinderPage = new Module({
                 function* (){
                     let module = yield new AlgebraicEffect("GET MODULE");
 
-                    yield yield* module.dropDowns.graph1Model.checkClicked();
-
                     yield yield* module.labels.treatmentTime.checkClicked();
                     yield yield* module.labels.graph1Reference.checkClicked();
 
                     yield yield* module.buttons.resetDwellTimes.checkClicked();
+
+                    if (!module.dropDowns.graph1Model.showing){
+                        yield yield* module.labels.graph1AirKerma.checkClicked();
+                        yield yield* module.sliders.graph1AirKerma.checkClicked();
+
+                        yield yield* module.dropDowns.applicatorModel.checkClicked();
+                        yield yield* module.dropDowns.applicatorLength.checkClicked();
+                        yield yield* module.dropDowns.applicatorDiameter.checkClicked();
+                    }
+
+                    if (module.graphs.graph1.selectedSeed != -1){
+                        yield yield* module.labels.graph1DwellTime.checkClicked();
+                        yield yield* module.sliders.graph1DwellTime.checkClicked();
+                    }
+
+                    yield yield* module.dropDowns.graph1Model.checkClicked();
+
+                    if (yield* module.graphs.graph1.checkClicked()){
+                        module.onReload();
+                        return true;
+                    }
                 }
             )
         },
     }
 });
+
+function blankDropdown(buttonText){
+    return new Dropdown(
+        new Button({
+            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            onClick: () => {},
+            label: {text: buttonText, font: "default", color: "black"},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
+        ),[]
+    )
+}
+
+function *addDropdownOptions(dropdown, options, text, onClick, module){
+    if (typeof module === "undefined"){
+        module = yield new AlgebraicEffect("GET MODULE");
+    }
+    dropdown.options = [];
+    for (let opt of options){
+        dropdown.options.push(
+            new Button({
+                x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+                label: {
+                    text: text(opt),
+                    font: "default",
+                    color: "black"
+                },
+                outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+                onClick: onClick(opt),
+            })
+        );
+    }
+}

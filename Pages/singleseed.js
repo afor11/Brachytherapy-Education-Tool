@@ -79,6 +79,8 @@ export let singleSeedPage = new Module({
                 yield* module.dropDowns.graph2Model.draw();
 
                 module.graphs.graph1.drawRefPoints();
+                module.graphs.graph1.drawMouseLabel();
+                module.graphs.graph2.drawRefPoints();
                 module.graphs.graph2.drawMouseLabel();
             },
             handleCode: (effect) => {

@@ -160,7 +160,7 @@ export function getRegionBound(region, padding = {horizontal: 0, vertical: 0}, a
     };
 }
 
-function setDropdownProps(dropdown, props){
+export function setDropdownProps(dropdown, props){
     Object.assign(dropdown.button, props.button);
     dropdown.options.forEach((_,ind) => {
         Object.assign(dropdown.options[ind], props.optionProps(ind));
@@ -337,7 +337,7 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
             x: 0, y: 0, width: 0, height: 0, bgColor: "black",
             onClick: () => {},
             label: {text: defaultLabel, font: "default", color: "white"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}}
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
         ),[]
     );
     for (let i = 0; i < modelOptions.length; i++){
@@ -349,7 +349,7 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
                 font: "default",
                 color: "black"
             },
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 let parent = yield new AlgebraicEffect("GET PARENT");
@@ -477,3 +477,41 @@ export const nothing = nothingSetup; //it looks like a useless function, but it'
 // lets the event handler function know that the event has been handled (since the
 // isNothing flag is undefined) but that it shouldn't do anything more
 export const eventHandled = () => {}
+
+export function setEqualFont(elms) {
+    // get font
+    let font = elms.reduce((minFont, elm) => {
+        if (elm.constructor.name === "Dropdown"){
+            return Math.min(minFont, elm.normalizeFont());
+        }
+        if (elm.constructor.name === "Button"){
+            return Math.min(minFont, elm.getDefaultFont());
+        }
+        if (elm.constructor.name === "NumberInput"){
+            let parsedFont = parseFloat(elm.recalcFont(elm.staticLabel));
+            return Math.min(
+                minFont,
+                Number.isNaN(parsedFont) ?
+                    minFont
+                :
+                    Math.min(minFont, parsedFont)
+            );
+        }
+        return minFont;
+    },Infinity);
+
+    // set font
+    elms.forEach((elm) => {
+        if (elm.constructor.name === "Dropdown"){
+            elm.recalcFontOnDraw = false; // ensures the Dropdown class does not try to correct this font size when drawing
+            elm.button.font = font + "px Arial";
+        }
+        if (elm.constructor.name === "Button"){
+            elm.font = font + "px Arial";
+        }
+        if (elm.constructor.name === "NumberInput"){
+            elm.recalcFontOnDraw = false; // ensures the NumberInput class does not try to correct this font size when drawing
+            elm.font = font + "px Arial";
+        }
+    });
+}

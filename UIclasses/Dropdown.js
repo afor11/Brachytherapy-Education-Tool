@@ -11,17 +11,17 @@ export class Dropdown {
         this.options = options;
         this.showing = false;
         this.uniformFont = true;
+        this.recalcFontOnDraw = true;
     }
     *draw(){ // this function does not have to be a genertor, but it is one for consistency
         if (this.showing){
             if (this.uniformFont){
-                let font = this.options.reduce((minFont,option) => {
-                    if (typeof option.button !== "undefined"){
-                        return Math.min(minFont,option.button.getDefaultFont());
-                    }else{
-                        return Math.min(minFont,option.getDefaultFont());
-                    }
-                }, Infinity) + "px Arial";
+                let font;
+                if (this.recalcFontOnDraw){
+                    font = this.normalizeFont() + "px Arial";
+                }else{
+                    font = this.button.font;
+                }
                 this.options.forEach((option) => {
                     if (typeof option.button !== "undefined"){
                         option.button.font = font;
@@ -37,6 +37,15 @@ export class Dropdown {
         }else{
             yield* this.button.draw();
         }
+    }
+    normalizeFont(){
+        return this.options.reduce((minFont,option) => {
+            if (typeof option.button !== "undefined"){
+                return Math.min(minFont,option.button.getDefaultFont());
+            }else{
+                return Math.min(minFont,option.getDefaultFont());
+            }
+        }, Infinity);
     }
     *checkClicked(){
         if (this.showing){

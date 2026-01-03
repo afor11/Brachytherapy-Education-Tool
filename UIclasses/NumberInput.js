@@ -32,9 +32,12 @@ export class NumberInput {
             let self = yield new AlgebraicEffect("GET SELF");
             return self.valueToText(yield* self.value());
         }
+        this.staticLabel = "";
         this.editingValue = 0;
         this.initalValue = 0;
         this.onEnter = onEnter;
+        this.recalcFontOnDraw = true;
+        this.font = "";
     }
     *getValue(){
         let self = this;
@@ -62,10 +65,16 @@ export class NumberInput {
                 }
             }
         });
-        yield* this.recalcFont(label);
+        this.staticLabel = label;
+
+        if (this.recalcFontOnDraw){
+            this.recalcFont(label);
+        }
+
         ctx.fillStyle = this.bgColor[(this.editing ? "selected" : "notSelected")];
         ctx.beginPath();
         ctx.fillRect(this.x,this.y,this.width,this.height);
+
         ctx.font = this.font;
         ctx.fillStyle = this.color[(this.editing ? "selected" : "notSelected")];
         let textDimensions = ctx.measureText(label);
@@ -84,6 +93,7 @@ export class NumberInput {
         if (this.hovering() && !this.editing){
             this.editingValue = yield* this.getValue();
             this.initalValue = yield* this.getValue();
+            this.recalcFontOnDraw = true;
             this.editing = true;
             let module = yield new AlgebraicEffect("GET MODULE");
             let self = this;
@@ -145,7 +155,7 @@ export class NumberInput {
             return parseFloat(this.editingValue)
         }
     }
-    *recalcFont(label){
+    recalcFont(label){
         this.font = getFontSize(this.width * 0.8,this.height * 0.6,label,(size) => `${size}px Arial`) + "px Arial";
     }
     hovering(){

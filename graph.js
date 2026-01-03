@@ -293,7 +293,6 @@ export class Graph {
         return false;
     }
     drawMouseLabel(){
-        if (typeof window.mouse === "undefined"){return}
         if (
             (window.mouse.x > this.graphDimensions.x)
             && (window.mouse.x < this.graphDimensions.x + this.graphDimensions.width)
@@ -312,7 +311,8 @@ export class Graph {
             ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px Arial`) + "px Arial";
             let metrics = ctx.measureText(doseAtMouse);
             let labelTextWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
-            ctx.fillRect(boundingBox.x,boundingBox.y - boundingBox.height,labelTextWidth,boundingBox.height);
+            let labelTextHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+            ctx.fillRect(boundingBox.x,boundingBox.y - labelTextHeight,labelTextWidth,labelTextHeight);
             
             ctx.fillStyle = "black";
             ctx.textBaseline = "bottom";
