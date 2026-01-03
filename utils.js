@@ -120,22 +120,29 @@ export function cloneObj(obj){
 }
 
 export function clone(obj){
+    // (I later found this article: https://medium.com/@ayogesh1214/deep-cloning-objects-in-javascript-without-json-methods-object-assign-ca3aba5e60f6,
+    // which does something very similar, though I did not intend to copy their code as close as I did)
     // handles cloning arrays, objects and functions
-    if (typeof obj.getPrototypeOf !== "undefined"){
-        let newObj = clone(obj);
-        Object.setPrototypeOf(newObj,clone(Object.getPrototypeOf(obj)));
-        return newObj;
-    }
     if (Array.isArray(obj)){
         return obj.map((elm) => clone(elm));
     }
+
     if (typeof obj === "object"){
-        return Object.keys(obj).reduce((newObj, key) =>{
-            return Object.assign(newObj,{[key]: clone(obj[key])});
-        },{});
+        let clonedObj = Object.keys(obj).reduce((newObj, key) =>
+            Object.assign(newObj,{[key]: clone(obj[key])})
+        ,{});
+
+        /*if (Object.getPrototypeOf(obj).cloneable){
+            Object.setPrototypeOf(
+                clonedObj,
+                clone(Object.getPrototypeOf(obj))
+            );
+        }*/
+        return clonedObj;
     }
     return obj;
 }
+
 
 export function clamp(value, min, max){
     return Math.min(Math.max(value, min), max);

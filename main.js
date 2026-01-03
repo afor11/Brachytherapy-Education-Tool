@@ -3,7 +3,7 @@ import { stringofseedsPage } from './Pages/stringofseeds.js';
 import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
 import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/brachytherapyapplicators.js';
 import { navBar, resetNavBar } from './navBar.js';
-import { effectHandler } from './algebraicEffect.js';
+import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -29,6 +29,22 @@ export let moduleData = {
     "planar array of seeds": PlanarArrayOfSeeds,
     "brachytherapy applicators": brachytherapyApplicatorsPage,
 };
+
+effectHandler({
+    tryCode: function* (){
+        let module = yield new AlgebraicEffect("GET MODULE");
+        yield* module.refreshApplicator();
+    },
+    handleCode: (effect) => {
+        console.log(brachytherapyApplicatorsPage);
+        if (effect === "GET MODULE"){
+            return brachytherapyApplicatorsPage.subPages[brachytherapyApplicatorsPage.applicatorName];
+        }
+        if (effect === "GET PARENT MODULE"){
+            return brachytherapyApplicatorsPage;
+        }
+    }
+});
 
 //loop over moduleData and evaluate any attribute functions (these are neccisary since attributes that reference
 //themselves must be intialized after the creation of moduleData, so they are stored in a function and after the
