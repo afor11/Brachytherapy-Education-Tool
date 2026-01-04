@@ -27,11 +27,7 @@ export class Graph {
                 height: this.graphDimensions.height / this.unitHeight()
             }
         };
-        this.seedRadius = () =>
-            Math.max(
-                0.05 * this.unit().width,
-                0.05 * this.unit().height
-        );
+        this.seedRadius = () => Math.min(canvas.width, canvas.height) * 0.005;
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units

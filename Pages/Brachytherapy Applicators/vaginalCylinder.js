@@ -442,7 +442,7 @@ export let vaginalCylinderPage = new Module({
     }
 });
 
-function* drawTandem(graphStr, view){
+export function* drawTandem(graphStr, view){
     let module = yield new AlgebraicEffect("GET MODULE");
     let applicator = module.applicator;
     let graph = module.graphs[graphStr];
@@ -452,6 +452,7 @@ function* drawTandem(graphStr, view){
         height: cm.height / 10
     }
     let origin = graph.graphToScreenPos({x: 0, y: 0});
+    let appDiameter = applicator.diameter ?? 6;
 
     ctx.save();
     ctx.beginPath();
@@ -464,17 +465,22 @@ function* drawTandem(graphStr, view){
     );
     ctx.clip(clippingRegion);
 
-    ctx.lineWidth = (applicator.diameter) * mm.width;
+    ctx.lineWidth = appDiameter * mm.width;
     ctx.strokeStyle = "black";
 
+    // draws the catheter
     ctx.moveTo(origin.x, origin.y);
     if (view === "sagittal"){
         let tandemAngle = (360 - (module.applicator.angle ?? 90)) * (Math.PI / 180);
         ctx.quadraticCurveTo(
-            2 * cm.width * Math.cos(tandemAngle),
-            2 * cm.width * Math.sin(tandemAngle),
-            10 * cm.width * Math.cos(tandemAngle),
-            10 * cm.width * Math.sin(tandemAngle)
+            origin.x,
+            origin.y + cm.height,
+            origin.x + 2 * cm.width * Math.cos(tandemAngle),
+            origin.y + cm.height - 2 * cm.height * Math.sin(tandemAngle) // negated because positive y is down
+        );
+        ctx.lineTo(
+            origin.x + 10 * cm.width * Math.cos(tandemAngle),
+            origin.y + cm.height - 10 * cm.height * Math.sin(tandemAngle)
         );
         ctx.stroke();
 
@@ -482,24 +488,32 @@ function* drawTandem(graphStr, view){
         ctx.lineTo(origin.x, origin.y - 10 * cm.height);
         ctx.stroke();
 
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, appDiameter / 2 * mm.width, 0, 2 * Math.PI);
+        ctx.fill();
+
     } else if (view === "coronal"){
         ctx.lineTo(origin.x, origin.y + 10 * cm.height);
         ctx.stroke();
     }
 
-    ctx.beginPath();
-    ctx.lineWidth = 0.5 * mm.width;
-    ctx.roundRect(
-        origin.x - (applicator.diameter / 2) * mm.width,
-        origin.y - applicator.length * mm.height,
-        applicator.diameter * mm.width,
-        applicator.length * mm.height,
-        [
-            (applicator.diameter / 2) * mm.width, (applicator.diameter / 2) * mm.width,
-            0, 0
-        ]
-    );
-    ctx.stroke();
+    // draws the tandem for sagittal and coronal views (since they look identical)
+    if ((view === "sagittal") || (view === "coronal")){
+        ctx.beginPath();
+        ctx.lineWidth = 0.5 * mm.width;
+        ctx.roundRect(
+            origin.x - (appDiameter / 2) * mm.width,
+            origin.y - applicator.length * mm.height,
+            appDiameter * mm.width,
+            applicator.length * mm.height,
+            [
+                (appDiameter / 2) * mm.width, (appDiameter / 2) * mm.width,
+                0, 0
+            ]
+        );
+        ctx.stroke();
+    }
 
     ctx.restore();
 }

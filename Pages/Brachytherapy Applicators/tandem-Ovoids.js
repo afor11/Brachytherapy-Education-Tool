@@ -9,6 +9,7 @@ import { module, view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
 import { Dropdown } from '../../UIclasses/Dropdown.js';
+import { drawTandem } from './vaginalCylinder.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -260,6 +261,13 @@ export let tandemAndOvoidsPage = new Module({
             yield* navButtons[i].draw();
         }
 
+        yield* drawTandem("graph1","coronal");
+        yield* drawOvoids("graph1","coronal");
+        yield* drawTandem("graph2","sagittal");
+        yield* drawOvoids("graph2","sagittal");
+        yield* drawTandem("graph3","axial");
+        yield* drawOvoids("graph3","axial");
+
         Object.values(this.graphs).forEach((graph) => {
             graph.drawGraphSeeds();
             graph.drawRefPoints();
@@ -423,7 +431,6 @@ export let tandemAndOvoidsPage = new Module({
                             module.graphs.graph2.selectedSeed = graph.selectedSeed;
                             module.graphs.graph3.selectedSeed = graph.selectedSeed;
                             module.selectedGraph = graph.name;
-                            yield* module.onReload.call(module);
                             return true;
                         }
                     }
@@ -432,3 +439,97 @@ export let tandemAndOvoidsPage = new Module({
         },
     }
 });
+
+function* drawOvoids(graphStr, view){
+    let module = yield new AlgebraicEffect("GET MODULE");
+    let applicator = module.applicator;
+    let graph = module.graphs[graphStr];
+    let cm = graph.unit();
+    let mm = {
+        width: cm.width / 10,
+        height: cm.height / 10
+    }
+    let origin = graph.graphToScreenPos({x: 0, y: 0});
+    const curvePercent = 0.5;
+    let roundingRadius = Math.min(
+        curvePercent * 1.5 * cm.width,
+        curvePercent * applicator.ovoidDiameter * mm.height
+    );
+
+    ctx.save();
+    ctx.beginPath();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.strokeStyle = "black";
+
+    if (view === "coronal"){
+        let ovoidRight = {
+            x: origin.x + (applicator.ovoidDiameter / 2) * mm.width,
+            y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
+        };
+        let ovoidLeft = {
+            x: origin.x - (applicator.ovoidDiameter / 2) * mm.width,
+            y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
+        };
+        let startAngle = Math.atan2(
+            Math.sqrt(((applicator.ovoidDiameter / 2) ** 2) - (((6 - applicator.ovoidDiameter) / 2) ** 2)),
+            (6 - applicator.ovoidDiameter) / 2
+        );
+        ctx.beginPath();
+        ctx.ellipse(
+            ovoidRight.x,
+            ovoidRight.y,
+            (applicator.ovoidDiameter / 2) * mm.width,
+            (applicator.ovoidDiameter / 2) * mm.height,
+            0, startAngle, 2 * Math.PI - startAngle , true
+        );
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(
+            ovoidLeft.x,
+            ovoidLeft.y,
+            (applicator.ovoidDiameter / 2) * mm.width,
+            (applicator.ovoidDiameter / 2) * mm.height,
+            0, Math.PI - startAngle, startAngle + Math.PI, false
+        );
+        ctx.stroke();
+    } else if (view === "sagittal"){
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - 1.5 * cm.width,
+            origin.y,
+            3 * cm.width,
+            applicator.ovoidDiameter * mm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+    }else if (view === "axial"){
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - applicator.ovoidDiameter * mm.width,
+            origin.y - 1.5 * cm.height,
+            applicator.ovoidDiameter * mm.width,
+            3 * cm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+        ctx.roundRect(
+            origin.x,
+            origin.y - 1.5 * cm.height,
+            applicator.ovoidDiameter * mm.width,
+            3 * cm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}

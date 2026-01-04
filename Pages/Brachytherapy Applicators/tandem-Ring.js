@@ -9,6 +9,7 @@ import { module, view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
 import { Dropdown } from '../../UIclasses/Dropdown.js';
+import { drawTandem } from './vaginalCylinder.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -18,7 +19,7 @@ export let tandemAndRingPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
@@ -264,6 +265,11 @@ export let tandemAndRingPage = new Module({
             yield* navButtons[i].draw();
         }
 
+        yield* drawTandem("graph1", "sagittal");
+        yield* drawRing("graph1", "sagittal");
+        yield* drawTandem("graph2", "axial");
+        yield* drawRing("graph2", "axial");
+
         Object.values(this.graphs).forEach((graph) => {
             graph.drawGraphSeeds();
             graph.drawRefPoints();
@@ -460,9 +466,7 @@ export let tandemAndRingPage = new Module({
                         if (yield* graph.checkClicked()){
                             module.graphs.graph1.selectedSeed = graph.selectedSeed;
                             module.graphs.graph2.selectedSeed = graph.selectedSeed;
-                            module.graphs.graph3.selectedSeed = graph.selectedSeed;
                             module.selectedGraph = graph.name;
-                            yield* module.onReload.call(module);
                             return true;
                         }
                     }
@@ -471,3 +475,82 @@ export let tandemAndRingPage = new Module({
         },
     }
 });
+
+function* drawRing(graphStr, view){
+    let module = yield new AlgebraicEffect("GET MODULE");
+    let applicator = module.applicator;
+    let graph = module.graphs[graphStr];
+    let cm = graph.unit();
+    let mm = {
+        width: cm.width / 10,
+        height: cm.height / 10
+    }
+    let origin = graph.graphToScreenPos({x: 0, y: 0});
+
+    ctx.save();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.strokeStyle = "black";
+
+    const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
+    const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
+    if (view == "axial"){
+        // draw inner ring
+        ctx.beginPath();
+        ctx.ellipse(
+            origin.x,
+            origin.y,
+            innerRadius * mm.width,
+            innerRadius * mm.height,
+            0, 0, 2 * Math.PI
+        );
+        ctx.stroke();
+
+        // draw outer ring
+        ctx.beginPath();
+        ctx.ellipse(
+            origin.x,
+            origin.y,
+            outerRadius * mm.width,
+            outerRadius * mm.height,
+            0, 0, 2 * Math.PI
+        );
+        ctx.stroke();
+    } else if ((view == "sagittal") || (view == "coronal")){
+        let cornerRadii = [
+            (outerRadius - innerRadius) / 2 * mm.width, (outerRadius - innerRadius) / 2 * mm.width,
+            (outerRadius - innerRadius) * mm.width / 4, (outerRadius - innerRadius) * mm.width / 4
+        ];
+        // draw left part of ring
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - outerRadius * mm.width,
+            origin.y - 0.75 * cm.height,
+            (outerRadius - innerRadius) * mm.width,
+            1.25 * cm.height,
+            cornerRadii
+        );
+        ctx.stroke();
+
+        // draw right part of ring
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x + innerRadius * mm.width,
+            origin.y - 0.75 * cm.height,
+            (outerRadius - innerRadius) * mm.width,
+            1.25 * cm.height,
+            cornerRadii
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}

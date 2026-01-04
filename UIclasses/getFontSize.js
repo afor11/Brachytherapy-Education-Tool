@@ -10,12 +10,14 @@ export function getFontSize(width,height,label,font){
         metrics = ctx.measureText(label);
         return ((metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft) < width) && ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) < height)
     };
-    for (let i = 0; (i < 10) || !checkFont(); i++) { // binary search for best font size based on width and height intil i > 10 and checkFont() is true
-        if (checkFont()){
+    let validFont = false;
+    for (let i = 0; (i < 10) || !validFont; i++) { // binary search for best font size based on width and height intil i > 10 and checkFont() is true
+        if (validFont){
             size.min = (size.min + size.max) / 2;
         }else{
             size.max = (size.min + size.max) / 2;
         }
+        validFont = checkFont()
     }
     return (size.min + size.max) / 2;
 }
