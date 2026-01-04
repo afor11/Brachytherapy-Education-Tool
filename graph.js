@@ -1,4 +1,4 @@
-import { drawAnatomy } from './interpolateAnatomy.js';
+import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled, getRange } from './utils.js';
 
@@ -6,13 +6,12 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, autoAspect = true}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView = "", anatomyApplicator = "", anatomyParams = {}}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
         this.width = width;
         this.height = height;
-        this.autoAspect = autoAspect;
         this.seeds = seeds;
         this.xTicks = xTicks;
         this.yTicks = yTicks;
@@ -31,6 +30,57 @@ export class Graph {
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units
+        if (anatomyView !== ""){
+            this.anatomyView = anatomyView;
+            this.anatomyApplicator = anatomyApplicator;
+            this.anatomyParams = anatomyParams;
+            this.applicatorAnatomy = getAnatomy(
+                this.anatomyView + " " + this.anatomyApplicator,
+                this.anatomyParams,
+                cloneObj(anatomyData)
+            );
+            this.scaledAnatomy = {};
+        }
+    }
+    refreshAnatomy(){
+        if (typeof this.anatomyParams !== "undefined"){
+            this.applicatorAnatomy = getAnatomy(
+                this.anatomyView + " " + this.anatomyApplicator,
+                this.anatomyParams,
+                cloneObj(anatomyData)
+            );
+            console.log(this.applicatorAnatomy);
+            this.rescaleAnatomy();
+        }
+    }
+    rescaleAnatomy(){
+        if (typeof this.anatomyParams !== "undefined"){
+            this.scaledAnatomy = scaleAnatomy(
+                this.graphToScreenPos({x: 0, y: 0}),
+                this.unit().width / 10,
+                this.unit().height / 10,
+                this.applicatorAnatomy
+            );
+            console.log(this.scaledAnatomy);
+        }
+    }
+    overlayAnatomy(){
+        if (typeof this.anatomyParams !== "undefined"){
+            ctx.save();
+
+            let clippingRegion = new Path2D();
+            clippingRegion.rect(
+                this.graphDimensions.x,
+                this.graphDimensions.y,
+                this.graphDimensions.width,
+                this.graphDimensions.height
+            );
+            ctx.clip(clippingRegion);
+
+            drawAnatomy(this.scaledAnatomy);
+
+            ctx.restore();
+        }
     }
     getPointDoseFromSeed(seed, pos){
         let relativePos = {
@@ -250,21 +300,6 @@ export class Graph {
             y: getMax(this.yTicks) + ((point.y - this.graphDimensions.y) / this.graphDimensions.height) * (getMin(this.yTicks) - getMax(this.yTicks))
         }
     }
-    overlayAnatomy(view, params){
-        let formattedAnatomy = scaleAnatomyData(this.graphToScreenPos({x: 0, y: 0}), this.graphDimensions.width, this.unitWidth());
-
-        if (formattedAnatomy.hasOwnProperty(view)){
-            drawAnatomy(
-                view,
-                {
-                    tandemLength: params.applicatorModel.length * 10,
-                    tandemAngle: params.applicatorModel.angle,
-                    ovoidSize: params.applicatorModel.ovoidDiameter * 10
-                },
-                formattedAnatomy
-            );
-        }
-    }
     drawGraphSeeds(){
         let seedRadius = this.seedRadius();
         ctx.lineWidth = seedRadius * 0.5;
@@ -351,25 +386,4 @@ export class Graph {
             ctx.textBaseline = "alphabetic";
         }
     }
-}
-
-function scaleAnatomyData(origin, screenDist, cmDistance){
-    let scaleFactor = screenDist / (cmDistance * 10); //factor for converting mm to screen coords
-    let scaledAnatomy = cloneObj(anatomyData);
-    console.log(scaleFactor);
-
-    Object.values(scaledAnatomy).forEach((view) => {
-        view.forEach((point) => {
-            point.blocks.forEach((block) => {
-                block.outlineThickness = block.outlineThickness * scaleFactor;
-                block.curves.forEach((curve) => {
-                    for (let i = 1; i < 5; i++){
-                        curve["x" + i] = (curve["x" + i] * scaleFactor) + origin.x;
-                        curve["y" + i] = (curve["y" + i] * scaleFactor) + origin.y;
-                    }
-                });
-            });
-        });
-    });
-    return scaledAnatomy;
 }

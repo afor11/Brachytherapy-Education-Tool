@@ -1,6 +1,7 @@
-import { AlgebraicEffect } from "./algebraicEffect.js";
+import { AlgebraicEffect, effectHandler } from "./algebraicEffect.js";
 import { module, setModule } from "./main.js";
 import { Button } from './UIclasses/Button.js';
+import { setEqualFont } from "./utils.js";
 
 export let navBar = {};
 
@@ -38,5 +39,11 @@ export function refreshNavBar(moduleOpen){
         button.bgColor = ((buttonName === moduleOpen) ? "black" : "white");
         button.fontColor = ((buttonName === moduleOpen) ? "white" : "black");
         button.outlineThickness = Math.min(canvas.width,canvas.height) * 0.001;
-    })
+    });
+    effectHandler({
+        tryCode: function* () {
+            yield* setEqualFont(Object.values(navBar));
+        },
+        handleCode: function(){}
+    });
 }

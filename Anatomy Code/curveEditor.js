@@ -6,12 +6,11 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "axialView(Tandem/Ovoids)"; // viewname cannot have whitespace
+const viewName = "coronal Vaginal Cylinder"; // viewname cannot have whitespace
 const maxUndos = 100;
 let paramSet = {
-    tandemLength: [20, 60],
-    tandemAngle: [30, 90],
-    ovoidSize: [20, 35]
+    length: [20, 60],
+    diameter: [20, 35]
 };
 let usingParamSet = true;
 

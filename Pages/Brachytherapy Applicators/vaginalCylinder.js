@@ -1,14 +1,13 @@
-import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
+import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, anatomyData } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, cloneObj } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
-import { Dropdown } from '../../UIclasses/Dropdown.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -18,7 +17,17 @@ export let vaginalCylinderPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => point,
+            name: "graph1",
+            refpoints: [{x: 2, y: 2, z: 0}],
+            anatomyView: "coronal",
+            anatomyApplicator: "Vaginal Cylinder",
+            anatomyParams: {
+                length: 30,
+                diameter: 20
+            }
         }),
     },
     sliders: {
@@ -120,7 +129,7 @@ export let vaginalCylinderPage = new Module({
                 
                 yield* addDropdownOptions(
                     module.dropDowns.applicatorLength,
-                    [30, 40, 50, 60],
+                    [20, 30, 40, 50, 60],
                     (opt) => `${opt}mm`,
                     (opt) => {
                         return function* () {
@@ -170,6 +179,8 @@ export let vaginalCylinderPage = new Module({
                         }
                     }
                 );
+
+                module.graphs.graph1.refreshAnatomy();
             }
 
             if (module.graphs.graph1.selectedSeed != -1){
@@ -211,6 +222,8 @@ export let vaginalCylinderPage = new Module({
         }
 
         yield* drawTandem("graph1", "coronal");
+        
+        this.graphs.graph1.overlayAnatomy();
 
         if (this.graphs.graph1.selectedSeed != -1){
             ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
@@ -282,6 +295,7 @@ export let vaginalCylinderPage = new Module({
         );
 
         this.graphs.graph1.drawGraph(document.getElementById("graph1"));
+        this.graphs.graph1.rescaleAnatomy();
 
         splitX = this.graphs.graph1.graphDimensions.x;
 

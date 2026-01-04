@@ -26,7 +26,6 @@ export let stringofseedsPage = new Module({
             perspective: (point) => point,
             name: "graph1",
             refpoints: [{x: 0, y: 1, z: 0}],
-            autoAspect: false
         }),
     },
     sliders: {

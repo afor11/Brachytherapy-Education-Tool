@@ -218,11 +218,32 @@ function lerpParametrizedCurves(target, points){
     return lerpParametrizedCurves(slicedTarget, lerpedPoints);
 }
 
-export function drawAnatomy(view, target, scaledAnatomyData){
-    // get view data based on parameters
-    let viewData = lerpParametrizedCurves(target, scaledAnatomyData[view]);
+export function getAnatomy(view, target, anatomyData){
+    // get the correct anatomy
+    return lerpParametrizedCurves(target, cloneObj(anatomyData)[view]);
+}
 
+export function scaleAnatomy(origin, scaleX, scaleY, anatomyData){
+    let scaledAnatomy = cloneObj(anatomyData);
+
+    scaledAnatomy.forEach((block) => {
+        block.outlineThickness = block.outlineThickness * (scaleX + scaleY) / 2;
+        block.curves.forEach((curve) => {
+            for (let i = 1; i < 5; i++){
+                curve["x" + i] = (curve["x" + i] * scaleX) + origin.x;
+                curve["y" + i] = (curve["y" + i] * scaleY) + origin.y;
+            }
+        });
+    });
+
+    return scaledAnatomy;
+}
+
+export function drawAnatomy(viewData){
     // draw viewData
+    ctx.lineCap = "round";
+    ctx.lineJoin = "bevel";
+    
     viewData.forEach((block) => {
         ctx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
         ctx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";

@@ -19,12 +19,17 @@ export let tandemAndRingPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.x, y: point.z, z: point.y}}, name: "graph2", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph2", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+        }),
+        graph3: new Graph({
+            x: 0, y: 0, width: 0, height: 0,
+            seeds: [],
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.x, y: point.z, z: point.y}}, name: "graph3", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
         }),
     },
     sliders: {
@@ -147,6 +152,7 @@ export let tandemAndRingPage = new Module({
                 });
 
                 module.graphs.graph2.seeds = module.graphs.graph1.seeds;
+                module.graphs.graph3.seeds = module.graphs.graph1.seeds;
             }
 
             module.graphs.graph1.xTicks = getRange(
@@ -154,17 +160,21 @@ export let tandemAndRingPage = new Module({
                 (module.applicator.ringDiameter / 10) + 2.6,
                 0.125
             );
-            module.graphs.graph2.xTicks = [...module.graphs.graph1.xTicks];
-
             module.graphs.graph1.yTicks = getRange(
                 -3,
                 (module.applicator.length / 10) + 2,
                 0.125
             );
-            module.graphs.graph2.yTicks = [...module.graphs.graph2.xTicks];
+
+            module.graphs.graph2.xTicks = [...module.graphs.graph1.xTicks];
+            module.graphs.graph2.yTicks = [...module.graphs.graph1.yTicks];
+
+            module.graphs.graph3.xTicks = [...module.graphs.graph1.xTicks];
+            module.graphs.graph3.yTicks = [...module.graphs.graph2.xTicks];
 
             module.graphs.graph1.refpoints = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
             module.graphs.graph2.refpoints = module.graphs.graph1.refpoints;
+            module.graphs.graph3.refpoints = module.graphs.graph1.refpoints;
 
             if (module.graphs.graph1.selectedSeed != -1){
                 module.graphs.graph1.selectedSeed = Math.min(
@@ -254,21 +264,18 @@ export let tandemAndRingPage = new Module({
     onUpdate: function* () {
         ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        let graph3Div = document.getElementById("graph3");
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
-
         //draw nav bar
         let navButtons = Object.values(navBar);
         for (let i = 0; i < navButtons.length; i++){
             yield* navButtons[i].draw();
         }
 
-        yield* drawTandem("graph1", "sagittal");
-        yield* drawRing("graph1", "sagittal");
-        yield* drawTandem("graph2", "axial");
-        yield* drawRing("graph2", "axial");
+        yield* drawTandem("graph1", "coronal");
+        yield* drawRing("graph1", "coronal");
+        yield* drawTandem("graph2", "sagittal");
+        yield* drawRing("graph2", "sagittal");
+        yield* drawTandem("graph3", "axial");
+        yield* drawRing("graph3", "axial");
 
         Object.values(this.graphs).forEach((graph) => {
             graph.drawGraphSeeds();
@@ -304,9 +311,9 @@ export let tandemAndRingPage = new Module({
             Object.values(this.graphs).forEach((graph, ind) => {
                 Object.assign(graph, getRegionBound(
                     {
-                        x: (view.width * 0.5) * ind,
+                        x: (view.width / 3) * ind,
                         y: view.y + splitY,
-                        width: view.width * 0.5,
+                        width: view.width / 3,
                         height: view.height - splitY
                     },
                     {horizontal: 0, vertical: 0},
@@ -369,9 +376,9 @@ export let tandemAndRingPage = new Module({
                 Object.assign(graph, getRegionBound(
                     {
                         x: splitX,
-                        y: view.y + ((view.height * 0.5) * ind),
+                        y: view.y + ((view.height / 3) * ind),
                         width: view.width - splitX,
-                        height: (view.height * 0.5)
+                        height: (view.height / 3)
                     },
                     {horizontal: 0, vertical: 0},
                     graph.unitWidth() / graph.unitHeight())
@@ -382,7 +389,8 @@ export let tandemAndRingPage = new Module({
 
             splitX = Math.min(
                 this.graphs.graph1.graphDimensions.x,
-                this.graphs.graph2.graphDimensions.x
+                this.graphs.graph2.graphDimensions.x,
+                this.graphs.graph3.graphDimensions.x
             );
 
             [
@@ -466,6 +474,7 @@ export let tandemAndRingPage = new Module({
                         if (yield* graph.checkClicked()){
                             module.graphs.graph1.selectedSeed = graph.selectedSeed;
                             module.graphs.graph2.selectedSeed = graph.selectedSeed;
+                            module.graphs.graph3.selectedSeed = graph.selectedSeed;
                             module.selectedGraph = graph.name;
                             return true;
                         }
