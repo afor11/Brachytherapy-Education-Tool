@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { module, view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -63,8 +63,8 @@ export let tandemAndOvoidsPage = new Module({
             },
             numDecimalsEditing: 1
         }),
-        graph1ReferenceRight: referencePoint("graph1", 0, (value) => `Point A Right: ${value} Gy`),
-        graph1ReferenceLeft: referencePoint("graph1", 1, (value) => `Point A Left: ${value} Gy`)
+        graph1ReferenceRight: referencePointLabel("graph1", 0, (value) => `Point A Right: ${value} Gy`),
+        graph1ReferenceLeft: referencePointLabel("graph1", 1, (value) => `Point A Left: ${value} Gy`)
     },
     buttons: {
         resetDwellTimes: new Button({
@@ -80,27 +80,22 @@ export let tandemAndOvoidsPage = new Module({
                 module.graphs.graph1.seeds.forEach((seed) => {
                     seed.dwellTime = 0.00833;
                 });
-                module.onReload();
+                yield* module.onReload.call(module);
             },
         })
     },
     dropDowns: {
         graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
         applicatorModel: blankDropdown("Applicator: tandem+ovoid"),
-        applicatorLength: blankDropdown("Length: 30mm"),
-        applicatorDiameter: blankDropdown("Diameter: 30mm")
+        applicatorLength: blankDropdown("Length: 40mm"),
+        ovoidDiameter: blankDropdown("Diameter: 30mm"),
+        applicatorAngle: blankDropdown("Angle: 60mm")
     },
     specialVars: {
         applicator: {
-            length: 20,
+            length: 40,
             ovoidDiameter: 20,
             angle: 60
-        },
-        menu: {
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0,
         },
         selectedGraph: "",
         lastApplicatorLoaded: "",
@@ -198,9 +193,9 @@ export let tandemAndOvoidsPage = new Module({
             );
 
             // reset applicator diameter dropdown
-            module.dropDowns.applicatorDiameter.button.label = "Diameter: " + module.applicator.ovoidDiameter + "mm";
+            module.dropDowns.ovoidDiameter.button.label = "Diameter: " + module.applicator.ovoidDiameter + "mm";
             yield* addDropdownOptions(
-                module.dropDowns.applicatorDiameter,
+                module.dropDowns.ovoidDiameter,
                 [20, 25, 30, 35],
                 (opt) => `${opt}mm`,
                 (opt) => {
@@ -210,6 +205,25 @@ export let tandemAndOvoidsPage = new Module({
                         let module = yield new AlgebraicEffect("GET MODULE");
                         if (module.applicator.ovoidDiameter != opt){
                             module.applicator.ovoidDiameter = opt;
+                            yield* module.refreshApplicator();
+                        }
+                    }
+                }
+            );
+
+            // reset applicator angle dropdown
+            module.dropDowns.applicatorAngle.button.label = "Angle: " + module.applicator.angle + "deg";
+            yield* addDropdownOptions(
+                module.dropDowns.applicatorAngle,
+                [30, 45, 60, 90],
+                (opt) => `${opt}deg`,
+                (opt) => {
+                    return function* () {
+                        (yield new AlgebraicEffect("GET PARENT")).collapseDropdown();
+
+                        let module = yield new AlgebraicEffect("GET MODULE");
+                        if (module.applicator.angle != opt){
+                            module.applicator.angle = opt;
                             yield* module.refreshApplicator();
                         }
                     }
@@ -258,6 +272,17 @@ export let tandemAndOvoidsPage = new Module({
         yield* this.labels.graph1ReferenceRight.draw();
         yield* this.buttons.resetDwellTimes.draw();
         yield* this.dropDowns.graph1Model.draw();
+
+        if (this.graphs.graph1.selectedSeed != -1){
+            yield* this.labels.graph1DwellTime.draw();
+            yield* this.sliders.graph1DwellTime.draw();
+        }
+
+        yield* this.dropDowns.ovoidDiameter.draw();
+        yield* this.dropDowns.applicatorAngle.draw();
+        yield* this.sliders.graph1AirKerma.draw();
+        yield* this.dropDowns.applicatorModel.draw();
+        yield* this.dropDowns.applicatorLength.draw();
     },
     onReload: function* () {
         refreshNavBar("brachytherapy applicators");
@@ -270,7 +295,7 @@ export let tandemAndOvoidsPage = new Module({
                 Object.assign(graph, getRegionBound(
                     {
                         x: (view.width / 3) * ind,
-                        y: splitY,
+                        y: view.y + splitY,
                         width: view.width / 3,
                         height: view.height - splitY
                     },
@@ -286,7 +311,7 @@ export let tandemAndOvoidsPage = new Module({
                     Object.assign(graph, getRegionBound(
                         {
                             x: 0,
-                            y: splitY + (view.height - splitY) / 2,
+                            y: view.y + splitY + (view.height - splitY) / 2,
                             width: view.width,
                             height: (view.height - splitY) / 2
                         },
@@ -300,7 +325,7 @@ export let tandemAndOvoidsPage = new Module({
                 Object.assign(graph, getRegionBound(
                     {
                         x: (view.width / 2) * ind,
-                        y: splitY,
+                        y: view.y + splitY,
                         width: view.width / 2,
                         height: (view.height - splitY) / 2
                     },
@@ -312,13 +337,14 @@ export let tandemAndOvoidsPage = new Module({
             });
         }
 
-        let elmWidth = view.width * 0.25;
+        let elmWidth = view.width / 5;
         let elmHeight = splitY / 3;
         let splitX = [
             0,
             elmWidth,
             elmWidth * 2,
-            elmWidth * 3
+            elmWidth * 3,
+            elmWidth * 4
         ];
         splitY = [
             view.y,
@@ -327,12 +353,9 @@ export let tandemAndOvoidsPage = new Module({
         ];
 
         [
-            this.labels.treatmentTime,
-            this.labels.graph1AirKerma,
-            this.labels.graph1ReferenceLeft,
-            this.labels.graph1ReferenceRight,
-            this.buttons.resetDwellTimes,
-            this.dropDowns.graph1Model
+            this.labels.treatmentTime, this.labels.graph1ReferenceLeft, this.labels.graph1ReferenceRight, this.buttons.resetDwellTimes, this.dropDowns.graph1Model,
+            this.dropDowns.applicatorModel, this.dropDowns.applicatorLength, this.labels.graph1AirKerma, this.labels.graph1DwellTime, {},
+            this.dropDowns.ovoidDiameter, this.dropDowns.applicatorAngle, this.sliders.graph1AirKerma, this.sliders.graph1DwellTime
         ].forEach((elm, ind) => {
             let region = [
                 {
@@ -352,7 +375,7 @@ export let tandemAndOvoidsPage = new Module({
                 let regionBound = getRegionBound(...region);
                 Object.assign(elm, {
                     x: regionBound.x,
-                    y: regionBound.y + yStep * 0.3,
+                    y: regionBound.y + elmHeight * 0.3,
                     length: regionBound.width,
                     thickness: regionBound.height * 0.2
                 });
@@ -360,23 +383,47 @@ export let tandemAndOvoidsPage = new Module({
             }
             Object.assign(elm, getRegionBound(...region));
         });
+
+        yield* setEqualFont([
+            this.labels.treatmentTime, this.labels.graph1ReferenceLeft, this.labels.graph1ReferenceRight, this.buttons.resetDwellTimes, this.dropDowns.graph1Model,
+            this.dropDowns.applicatorModel, this.dropDowns.applicatorLength, this.labels.graph1AirKerma, this.labels.graph1DwellTime,
+            this.dropDowns.ovoidDiameter, this.dropDowns.applicatorAngle, this.sliders.graph1AirKerma, this.sliders.graph1DwellTime
+        ]);
     },
     defaultInputHandler: {
         onMouseDown: function* () {
             yield* this.labels.treatmentTime.checkClicked();
-            yield* this.labels.graph1AirKerma.checkClicked();
             yield* this.labels.graph1ReferenceLeft.checkClicked();
             yield* this.labels.graph1ReferenceRight.checkClicked();
             yield* this.buttons.resetDwellTimes.checkClicked();
+            yield* this.labels.graph1AirKerma.checkClicked();
+            yield* this.sliders.graph1AirKerma.checkClicked();
             yield* runUntilTrue(
                 function* (){
                     let module = yield new AlgebraicEffect("GET MODULE");
 
                     yield yield* module.dropDowns.graph1Model.checkClicked();
 
+                    yield yield* module.dropDowns.applicatorModel.checkClicked();
+                    yield yield* module.dropDowns.applicatorLength.checkClicked();
+
+                    if (!module.dropDowns.applicatorModel.showing){
+                        yield yield* module.dropDowns.ovoidDiameter.checkClicked();
+                    }
+                    if (!module.dropDowns.applicatorLength.showing){
+                        yield yield* module.dropDowns.applicatorAngle.checkClicked();
+                    }
+
+                    yield yield* module.labels.graph1DwellTime.checkClicked();
+                    yield yield* module.sliders.graph1DwellTime.checkClicked();
+
                     for (let graph of Object.values(module.graphs)){
                         if (yield* graph.checkClicked()){
-                            module.onReload();
+                            module.graphs.graph1.selectedSeed = graph.selectedSeed;
+                            module.graphs.graph2.selectedSeed = graph.selectedSeed;
+                            module.graphs.graph3.selectedSeed = graph.selectedSeed;
+                            module.selectedGraph = graph.name;
+                            yield* module.onReload.call(module);
                             return true;
                         }
                     }
@@ -385,59 +432,3 @@ export let tandemAndOvoidsPage = new Module({
         },
     }
 });
-
-function blankDropdown(buttonText){
-    return new Dropdown(
-        new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
-            onClick: () => {},
-            label: {text: buttonText, font: "default", color: "black"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
-        ),[]
-    )
-}
-
-function *addDropdownOptions(dropdown, options, text, onClick, module){
-    if (typeof module === "undefined"){
-        module = yield new AlgebraicEffect("GET MODULE");
-    }
-    dropdown.options = [];
-    for (let opt of options){
-        dropdown.options.push(
-            new Button({
-                x: 0, y: 0, width: 0, height: 0, bgColor: "white",
-                label: {
-                    text: text(opt),
-                    font: "default",
-                    color: "black"
-                },
-                outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-                onClick: onClick(opt),
-            })
-        );
-    }
-}
-
-function referencePoint(graph, ind, label){
-    return new NumberInput({
-        x: 0, y: 0, width: 0, height: 0,
-        label: {
-            text: label,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
-        getValue: function* () {
-            let module = yield new AlgebraicEffect("GET MODULE");
-            return module.graphs[graph].getPointDose(module.graphs[graph].refpoints[0]);
-        },
-        onEnter: function* (value){
-            let module = yield new AlgebraicEffect("GET MODULE");
-            setDoseAtPoint(
-                module.graphs[graph],
-                value,
-                module,
-                module.graphs[graph].refpoints[ind]
-            );
-        },
-        numDecimalsEditing: 3
-    })
-}

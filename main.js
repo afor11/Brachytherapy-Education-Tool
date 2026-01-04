@@ -36,7 +36,6 @@ effectHandler({
         yield* module.refreshApplicator();
     },
     handleCode: (effect) => {
-        console.log(brachytherapyApplicatorsPage);
         if (effect === "GET MODULE"){
             return brachytherapyApplicatorsPage.subPages[brachytherapyApplicatorsPage.applicatorName];
         }

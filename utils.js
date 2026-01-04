@@ -3,7 +3,7 @@ import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
 import { Slider } from './UIclasses/Slider.js';
-import { AlgebraicEffect, effectHandler } from './algebraicEffect.js';
+import { AlgebraicEffect, effectHandler, chainEffectHandler } from './algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -200,30 +200,29 @@ export function toggleSeedEnable(graph,seedInd){
     });
 }
 
-export function referencePointLabel(graphName, refPointInd){
+export function referencePointLabel(graph, ind, label = (value) => `Dose: ${value} Gy`){
+    console.log(label);
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
-            text: (value) => `Dose: ${value} Gy`,
+            text: label,
             color: {selected: "white", notSelected: "black"}
         },bgColor: {selected: "black", notSelected: "white"},
-        getValue: function* (){
-            let thisModule = yield new AlgebraicEffect("GET MODULE");
-            return thisModule.graphs[graphName].getPointDose(
-                thisModule.graphs[graphName].refpoints[refPointInd]
-            );
+        getValue: function* () {
+            let module = yield new AlgebraicEffect("GET MODULE");
+            return module.graphs[graph].getPointDose(module.graphs[graph].refpoints[ind]);
         },
         onEnter: function* (value){
-            let thisModule = yield new AlgebraicEffect("GET MODULE");
+            let module = yield new AlgebraicEffect("GET MODULE");
             setDoseAtPoint(
-                thisModule.graphs[graphName],
+                module.graphs[graph],
                 value,
-                thisModule,
-                thisModule.graphs[graphName].refpoints[refPointInd]
+                module,
+                module.graphs[graph].refpoints[ind]
             );
         },
         numDecimalsEditing: 3
-    });
+    })
 }
 
 export function* runFn(fn,...args){
@@ -285,7 +284,7 @@ export function multSeedDwellTimeLabel(graph){
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime = clamp(value / 3600,0,0.0833333333333);
-            module.onReload();
+            yield* runFn(module.onReload.bind(module));
         },
         numDecimalsEditing: 3
     });
@@ -332,7 +331,7 @@ export function airKermaLabel(graph){
             module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = clampedVal;
             });
-            module.onReload();
+            yield* runFn(module.onReload.bind(module));
         },
         numDecimalsEditing: 3
     })
@@ -398,7 +397,7 @@ export function airKermaSlider(graph){
             module.graphs[graph].seeds.forEach((seed) => {
                 seed.airKerma = getAirKermaFromSlider(value,seed);
             });
-            module.onReload();
+            yield* runFn(module.onReload.bind(module));
         },
         getValue: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
@@ -414,7 +413,7 @@ export function multSeedDwellTimeSlider(graph){
             let module = yield new AlgebraicEffect("GET MODULE");
             if (module.graphs[graph].selectedSeed != -1){
                 module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime = getDwellTimeFromSlider(value);
-                module.onReload();
+                yield* runFn(module.onReload.bind(module));
             }
         },
         getValue: function* () {
@@ -485,27 +484,32 @@ export const nothing = nothingSetup; //it looks like a useless function, but it'
 // isNothing flag is undefined) but that it shouldn't do anything more
 export const eventHandled = () => {}
 
-export function setEqualFont(elms) {
+export function* setEqualFont(elms) {
     // get font
-    let font = elms.reduce((minFont, elm) => {
+    let font = Infinity;
+    for (let elm of elms){
         if (elm.constructor.name === "Dropdown"){
-            return Math.min(minFont, elm.normalizeFont());
+            font = Math.min(font, elm.normalizeFont());
         }
         if (elm.constructor.name === "Button"){
-            return Math.min(minFont, elm.getDefaultFont());
+            font = Math.min(font, elm.getDefaultFont());
         }
         if (elm.constructor.name === "NumberInput"){
-            let parsedFont = parseFloat(elm.recalcFont(elm.staticLabel));
-            return Math.min(
-                minFont,
-                Number.isNaN(parsedFont) ?
-                    minFont
-                :
-                    Math.min(minFont, parsedFont)
-            );
+            font = Math.min(font, elm.recalcFont(
+                yield* chainEffectHandler({
+                    tryCode: function*(){
+                        let self = yield new AlgebraicEffect("GET SELF");
+                        return yield* runFn(self.label);
+                    },
+                    handleCode: function*(effect){
+                        if (effect === "GET SELF"){
+                            return elm;
+                        }
+                    }
+                })
+            ));
         }
-        return minFont;
-    },Infinity);
+    }
 
     // set font
     elms.forEach((elm) => {
@@ -518,7 +522,39 @@ export function setEqualFont(elms) {
         }
         if (elm.constructor.name === "NumberInput"){
             elm.recalcFontOnDraw = false; // ensures the NumberInput class does not try to correct this font size when drawing
-            elm.font = font + "px Arial";
+            elm.font = font;
         }
     });
+}
+
+export function blankDropdown(buttonText){
+    return new Dropdown(
+        new Button({
+            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            onClick: () => {},
+            label: {text: buttonText, font: "default", color: "black"},
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
+        ),[]
+    )
+}
+
+export function *addDropdownOptions(dropdown, options, text, onClick, module){
+    if (typeof module === "undefined"){
+        module = yield new AlgebraicEffect("GET MODULE");
+    }
+    dropdown.options = [];
+    for (let opt of options){
+        dropdown.options.push(
+            new Button({
+                x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+                label: {
+                    text: text(opt),
+                    font: "default",
+                    color: "black"
+                },
+                outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+                onClick: onClick(opt),
+            })
+        );
+    }
 }

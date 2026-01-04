@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -53,27 +53,7 @@ export let vaginalCylinderPage = new Module({
             },
             numDecimalsEditing: 1
         }),
-        graph1Reference: new NumberInput({
-            x: 0, y: 0, width: 0, height: 0,
-            label: {
-                text: (value) => `5mm Depth Dose: ${value} Gy`,
-                color: {selected: "white", notSelected: "black"}
-            },bgColor: {selected: "black", notSelected: "white"},
-            getValue: function* () {
-                let module = yield new AlgebraicEffect("GET MODULE");
-                return module.graphs.graph1.getPointDose(module.graphs.graph1.refpoints[0]);
-            },
-            onEnter: function* (value){
-                let module = yield new AlgebraicEffect("GET MODULE");
-                setDoseAtPoint(
-                    module.graphs.graph1,
-                    value,
-                    module,
-                    module.graphs.graph1.refpoints[0]
-                );
-            },
-            numDecimalsEditing: 3
-        })
+        graph1Reference: referencePointLabel("graph1", 0, (value) => `5mm Depth Dose: ${value} Gy`)
     },
     buttons: {
         resetDwellTimes: new Button({
@@ -230,13 +210,15 @@ export let vaginalCylinderPage = new Module({
             yield* navButtons[i].draw();
         }
 
-        if (this.graphs.graph1.selectedSeed != -1){
-            yield* this.labels.graph1DwellTime.draw();
-            yield* this.sliders.graph1DwellTime.draw();
+        yield* drawTandem("graph1", "coronal");
 
+        if (this.graphs.graph1.selectedSeed != -1){
             ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
+            ctx.strokeStyle = "black";
+            ctx.fillStyle = "white";
             ctx.beginPath();
             ctx.rect(this.menu.x, this.menu.y, this.menu.width, this.menu.height);
+            ctx.fill();
             ctx.stroke();
 
             let graph = this.graphs.graph1;
@@ -249,6 +231,9 @@ export let vaginalCylinderPage = new Module({
             ctx.moveTo(seedScreenPos.x, seedScreenPos.y);
             ctx.lineTo(this.menu.x, this.menu.y);
             ctx.stroke();
+
+            yield* this.labels.graph1DwellTime.draw();
+            yield* this.sliders.graph1DwellTime.draw();
         }
 
         this.graphs.graph1.drawGraphSeeds();
@@ -409,9 +394,12 @@ export let vaginalCylinderPage = new Module({
             });
         }
 
-        setEqualFont([
+        yield* setEqualFont([
+            this.labels.treatmentTime,
+            this.labels.graph1Reference,
             this.buttons.resetDwellTimes,
             this.dropDowns.graph1Model,
+            this.labels.graph1AirKerma,
             this.dropDowns.applicatorModel,
             this.dropDowns.applicatorLength,
             this.dropDowns.applicatorDiameter,
@@ -445,7 +433,7 @@ export let vaginalCylinderPage = new Module({
                     yield yield* module.dropDowns.graph1Model.checkClicked();
 
                     if (yield* module.graphs.graph1.checkClicked()){
-                        module.onReload();
+                        yield* module.onReload.call(module);
                         return true;
                     }
                 }
@@ -454,34 +442,64 @@ export let vaginalCylinderPage = new Module({
     }
 });
 
-function blankDropdown(buttonText){
-    return new Dropdown(
-        new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
-            onClick: () => {},
-            label: {text: buttonText, font: "default", color: "black"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
-        ),[]
-    )
-}
+function* drawTandem(graphStr, view){
+    let module = yield new AlgebraicEffect("GET MODULE");
+    let applicator = module.applicator;
+    let graph = module.graphs[graphStr];
+    let cm = graph.unit();
+    let mm = {
+        width: cm.width / 10,
+        height: cm.height / 10
+    }
+    let origin = graph.graphToScreenPos({x: 0, y: 0});
 
-function *addDropdownOptions(dropdown, options, text, onClick, module){
-    if (typeof module === "undefined"){
-        module = yield new AlgebraicEffect("GET MODULE");
-    }
-    dropdown.options = [];
-    for (let opt of options){
-        dropdown.options.push(
-            new Button({
-                x: 0, y: 0, width: 0, height: 0, bgColor: "white",
-                label: {
-                    text: text(opt),
-                    font: "default",
-                    color: "black"
-                },
-                outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-                onClick: onClick(opt),
-            })
+    ctx.save();
+    ctx.beginPath();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = (applicator.diameter) * mm.width;
+    ctx.strokeStyle = "black";
+
+    ctx.moveTo(origin.x, origin.y);
+    if (view === "sagittal"){
+        let tandemAngle = (360 - (module.applicator.angle ?? 90)) * (Math.PI / 180);
+        ctx.quadraticCurveTo(
+            2 * cm.width * Math.cos(tandemAngle),
+            2 * cm.width * Math.sin(tandemAngle),
+            10 * cm.width * Math.cos(tandemAngle),
+            10 * cm.width * Math.sin(tandemAngle)
         );
+        ctx.stroke();
+
+    } else if (view === "axial"){
+        ctx.lineTo(origin.x, origin.y - 10 * cm.height);
+        ctx.stroke();
+
+    } else if (view === "coronal"){
+        ctx.lineTo(origin.x, origin.y + 10 * cm.height);
+        ctx.stroke();
     }
+
+    ctx.beginPath();
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.roundRect(
+        origin.x - (applicator.diameter / 2) * mm.width,
+        origin.y - applicator.length * mm.height,
+        applicator.diameter * mm.width,
+        applicator.length * mm.height,
+        [
+            (applicator.diameter / 2) * mm.width, (applicator.diameter / 2) * mm.width,
+            0, 0
+        ]
+    );
+    ctx.stroke();
+
+    ctx.restore();
 }

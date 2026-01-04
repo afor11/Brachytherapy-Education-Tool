@@ -1,17 +1,18 @@
 import { drawAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled } from './utils.js';
+import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled, getRange } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, autoAspect = true}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
         this.width = width;
         this.height = height;
+        this.autoAspect = autoAspect;
         this.seeds = seeds;
         this.xTicks = xTicks;
         this.yTicks = yTicks;
@@ -20,20 +21,16 @@ export class Graph {
         this.name = name;
         this.refpoints = refpoints;
         this.selectedSeed = -1;
+        this.unit = () => {
+            return { // yes these are slightly different, plotly is weird
+                width: this.graphDimensions.width / this.unitWidth(),
+                height: this.graphDimensions.height / this.unitHeight()
+            }
+        };
         this.seedRadius = () =>
             Math.max(
-                0.05 * (
-                    (this.graphDimensions.width == 0) ?
-                        this.graphDimensions.width 
-                    : 
-                        this.width
-                ) / this.unitWidth(),
-                0.1 * (
-                    (this.graphDimensions.height == 0) ?
-                        this.graphDimensions.height 
-                    : 
-                        this.height
-                ) / this.unitHeight()
+                0.05 * this.unit().width,
+                0.05 * this.unit().height
         );
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
@@ -205,7 +202,28 @@ export class Graph {
         div.style.height = this.height + "px";
         div.style.left = this.x + "px";
         div.style.top = this.y + "px";
-        Plotly.newPlot(div.id, data); //does not update after window rescaling
+        let layout = {
+            xaxis: {
+                title: {
+                    text: 'cm',
+                    font: {
+                        family: 'Arial',
+                        size: 18,
+                    },
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'cm',
+                    font: {
+                        family: 'Arial',
+                        size: 18,
+                        color: "black"
+                    },
+                }
+            },
+        }
+        Plotly.newPlot(div.id, data, layout); //does not update after window rescaling
         let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
         this.graphDimensions = gridElm.getBoundingClientRect();
     }
@@ -288,7 +306,7 @@ export class Graph {
         let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
             let seedPos = this.graphToScreenPos(this.perspective(seed.pos));
             let seedDist = distance([mouse.x, mouse.y],[seedPos.x, seedPos.y]);
-            if (seedDist < closestSeed.dist){
+            if ((seedDist < closestSeed.dist) && this.pointOnGraph(seedPos)){
                 return {
                     dist: seedDist,
                     ind: ind
@@ -297,7 +315,7 @@ export class Graph {
             return closestSeed;
         },{dist: Infinity});
 
-        if (closestSeed.dist < this.seedRadius() * 1.25){
+        if ((closestSeed.dist < this.seedRadius() * 5) && this.pointOnGraph(window.mouse)){
             this.selectedSeed = closestSeed.ind;
             return true;
         } else if (this.selectedSeed != -1){
@@ -306,13 +324,16 @@ export class Graph {
 
         return false;
     }
+    pointOnGraph(point){
+        return (
+            (point.x > this.graphDimensions.x)
+            && (point.x < this.graphDimensions.x + this.graphDimensions.width)
+            && (point.y > this.graphDimensions.y)
+            && (point.y < this.graphDimensions.y + this.graphDimensions.height)
+        )
+    }
     drawMouseLabel(){
-        if (
-            (window.mouse.x > this.graphDimensions.x)
-            && (window.mouse.x < this.graphDimensions.x + this.graphDimensions.width)
-            && (window.mouse.y > this.graphDimensions.y)
-            && (window.mouse.y < this.graphDimensions.y + this.graphDimensions.height)
-        ){
+        if (this.pointOnGraph(window.mouse)){
             let doseAtMouse = this.getPointDose(this.perspective({...this.screenToGraphPos(window.mouse), z: 0})).toFixed(2) + "Gy";
             let boundingBox = {
                 x: window.mouse.x,

@@ -21,7 +21,12 @@ export let stringofseedsPage = new Module({
             seeds: [
                 new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
             ],
-            xTicks: getRange(-10, 10, 0.125), yTicks: getRange(-2, 2, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
+            xTicks: getRange(-10, 10, 0.125),
+            yTicks: getRange(-2, 2, 0.0625),
+            perspective: (point) => point,
+            name: "graph1",
+            refpoints: [{x: 0, y: 1, z: 0}],
+            autoAspect: false
         }),
     },
     sliders: {
@@ -81,8 +86,8 @@ export let stringofseedsPage = new Module({
                     new Seed(
                         {x: 0, y: 0, z: 0},
                         {phi: 0, theta: 0},
-                        model,
-                        (model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min),
+                        module.graphs.graph1.seeds[0].model,
+                        module.graphs.graph1.seeds[0].airKerma,
                         0.00833
                     )
                 );
