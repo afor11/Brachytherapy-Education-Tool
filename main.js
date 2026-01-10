@@ -7,8 +7,16 @@ import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
-ctx.canvas.width = window.innerWidth;
-ctx.canvas.height = window.innerHeight;
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
+backCanvas.width = canvas.width;
+backCanvas.height = canvas.height;
+
 export let module = "single seed";
 export function setModule(newModule) {module = newModule;}
 let scrollPos = {
@@ -68,6 +76,7 @@ setInterval(tick,50);
 
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    backCtx.clearRect(0,0,canvas.width,canvas.height);
     moduleData[module].onUpdate();
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
@@ -78,6 +87,9 @@ function tick(){
         };
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+
+        backCanvas.width = canvas.width;
+        backCanvas.height = canvas.height;
         moduleData[module].onReload();
     }
 }

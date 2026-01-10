@@ -6,7 +6,7 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "coronal Vaginal Cylinder"; // viewname cannot have whitespace
+const viewName = "coronalVaginalCylinder"; // viewname cannot have whitespace
 const maxUndos = 100;
 let paramSet = {
     length: [20, 60],
@@ -291,6 +291,75 @@ function drawImage(){
     
 }
 
+function drawApplicator(){
+    if (
+        (data.measuringPoints.length < 2)
+        || (typeof data.measuredDistance === "undefined")
+        || (typeof data.origin.x == 0)
+    ){
+        return;
+    }
+    let applicator = params;
+    let graph = {
+        graphDimensions: {
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            height: canvas.height
+        }
+    }
+    let distRatio = getDistance(
+        [data.measuringPoints[0].x,data.measuringPoints[0].y],
+        [data.measuringPoints[1].x,data.measuringPoints[1].y]
+    ) / data.measuredDistance;
+    let mm = {
+        width: distRatio,
+        height: distRatio
+    }
+    let cm = {
+        width: mm.width * 10,
+        height: mm.height * 10
+    };
+    let origin = data.origin;
+    let appDiameter = applicator.diameter ?? 6;
+
+    ctx.save();
+    ctx.beginPath();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = appDiameter * mm.width;
+    ctx.strokeStyle = "black";
+
+    // draws the catheter
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(origin.x, origin.y + 10 * cm.height);
+    ctx.stroke();
+
+    // draws the tandem for sagittal and coronal views (since they look identical)
+    ctx.beginPath();
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.roundRect(
+        origin.x - (appDiameter / 2) * mm.width,
+        origin.y - applicator.length * mm.height,
+        appDiameter * mm.width,
+        applicator.length * mm.height,
+        [
+            (appDiameter / 2) * mm.width, (appDiameter / 2) * mm.width,
+            0, 0
+        ]
+    );
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 function tick(){
     //reset canvas
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -300,6 +369,13 @@ function tick(){
     }
     if (showCurves){
         drawCurves();
+    }
+    if (showPicture){
+        ctx.lineCap = "butt";
+        ctx.lineJoin = "miter";
+        drawApplicator();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "bevel";
     }
     if (showControlPoints){
         drawControlPoints(data.jsonData[viewName][viewInd].blocks[blockEditing]);
@@ -932,6 +1008,11 @@ document.addEventListener("keydown", (e) => {
     if ((e.key === "<") && (lastDatas.length > 0)){ //undo
         nextDatas.unshift(cloneObj(data));
         data = cloneObj(lastDatas[lastDatas.length - 1]);
+        data.tapeMeasures.forEach((tapeMeasure, ind) => {
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], data.tapeMeasures.length);
+            tempTape.points.push(tapeMeasure.points[1]);
+            data.tapeMeasures[ind] = tempTape;
+        });
         lastDatas.splice(lastDatas.length - 1);
         blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
         return;
@@ -939,6 +1020,11 @@ document.addEventListener("keydown", (e) => {
     if ((e.key === ">") && (nextDatas.length > 0)){ //redo
         let lastData = cloneObj(data);
         data = cloneObj(nextDatas[0]);
+        data.tapeMeasures.forEach((tapeMeasure, ind) => {
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], data.tapeMeasures.length);
+            tempTape.points.push(tapeMeasure.points[1]);
+            data.tapeMeasures[ind] = tempTape;
+        });
         nextDatas = nextDatas.splice(1);
         lastDatas.push(lastData);
         if (lastDatas.length > maxUndos){
@@ -982,6 +1068,7 @@ document.addEventListener("keydown", (e) => {
 });
 document.addEventListener("click", (e) => {
     if (data.addingTapeMeasure){
+        saveData();
         data.tapeMeasures.push(
             new MeasuringTape({x: mouse.x, y: mouse.y},data.tapeMeasures.length)
         );
@@ -990,6 +1077,7 @@ document.addEventListener("click", (e) => {
     }
     for (let i = 0; i < data.tapeMeasures.length; i++){
         if (data.tapeMeasures[i].checkClick()){
+            saveData();
             return;
         }
     }

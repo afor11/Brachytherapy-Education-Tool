@@ -12,6 +12,9 @@ import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebr
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
 export let vaginalCylinderPage = new Module({
     graphs: {
         graph1: new Graph({
@@ -23,7 +26,7 @@ export let vaginalCylinderPage = new Module({
             name: "graph1",
             refpoints: [{x: 2, y: 2, z: 0}],
             anatomyView: "coronal",
-            anatomyApplicator: "Vaginal Cylinder",
+            anatomyApplicator: "VaginalCylinder",
             anatomyParams: {
                 length: 30,
                 diameter: 20
@@ -180,6 +183,7 @@ export let vaginalCylinderPage = new Module({
                     }
                 );
 
+                module.graphs.graph1.anatomyParams = {...module.applicator};
                 module.graphs.graph1.refreshAnatomy();
             }
 
@@ -221,9 +225,8 @@ export let vaginalCylinderPage = new Module({
             yield* navButtons[i].draw();
         }
 
-        yield* drawTandem("graph1", "coronal");
-        
         this.graphs.graph1.overlayAnatomy();
+        yield* drawTandem("graph1", "coronal");
 
         if (this.graphs.graph1.selectedSeed != -1){
             ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
@@ -514,9 +517,8 @@ export function* drawTandem(graphStr, view){
 
     // draws the tandem for sagittal and coronal views (since they look identical)
     if ((view === "sagittal") || (view === "coronal")){
-        ctx.beginPath();
-        ctx.lineWidth = 0.5 * mm.width;
-        ctx.roundRect(
+        let tandemPath = new Path2D();
+        tandemPath.roundRect(
             origin.x - (appDiameter / 2) * mm.width,
             origin.y - applicator.length * mm.height,
             appDiameter * mm.width,
@@ -526,7 +528,14 @@ export function* drawTandem(graphStr, view){
                 0, 0
             ]
         );
-        ctx.stroke();
+
+        ctx.lineWidth = 0.5 * mm.width;
+        ctx.stroke(tandemPath);
+
+        // fill the tandem in white below the grid lines so anatomy may be draw without making
+        // the applicator anatomy colored
+        backCtx.fillStyle = "white";
+        backCtx.fill(new Path2D(tandemPath));
     }
 
     ctx.restore();

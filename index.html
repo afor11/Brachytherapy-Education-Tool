@@ -8,10 +8,11 @@
 </head>
 <body style="margin:0">
     <div id="container">
-        <canvas id="canvas"></canvas>
+        <canvas style="z-index: 1;" id="canvas"></canvas>
         <div id='graph1'></div>
         <div id='graph2'></div>
         <div id='graph3'></div>
+        <canvas style="z-index: -1;" id="backCanvas"></canvas>
     </div>
     <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
     <script type="module" src="./constants.js"></script>

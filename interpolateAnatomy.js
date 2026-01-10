@@ -1,5 +1,8 @@
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
 
 function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
@@ -241,22 +244,22 @@ export function scaleAnatomy(origin, scaleX, scaleY, anatomyData){
 
 export function drawAnatomy(viewData){
     // draw viewData
-    ctx.lineCap = "round";
-    ctx.lineJoin = "bevel";
+    backCtx.lineCap = "round";
+    backCtx.lineJoin = "bevel";
     
     viewData.forEach((block) => {
-        ctx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
-        ctx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
-        ctx.lineWidth = block.outlineThickness;
-        ctx.beginPath();
+        backCtx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
+        backCtx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
+        backCtx.lineWidth = block.outlineThickness;
+        backCtx.beginPath();
         block.curves.forEach((curve,ind) => {
             if (ind == 0){
-                ctx.moveTo(curve.x1,curve.y1);
+                backCtx.moveTo(curve.x1,curve.y1);
             }
-            ctx.bezierCurveTo(curve.x2,curve.y2,curve.x3,curve.y3,curve.x4,curve.y4);
+            backCtx.bezierCurveTo(curve.x2,curve.y2,curve.x3,curve.y3,curve.x4,curve.y4);
         });
-        ctx.fill();
-        ctx.stroke();
+        backCtx.fill();
+        backCtx.stroke();
     });
 }
 
@@ -264,7 +267,7 @@ function getSurroundingPoints(target, points){
     // get position of each point from its params
     let encodedTarget = Object.values(target);
     let encodedPoints = [];
-    if ((typeof points[0].params) != "undefined"){
+    if ((typeof points[0].params) !== "undefined"){
         // if points are in parameter space format, convert to pos-value pair
         points.forEach((point) => {
             encodedPoints.push({

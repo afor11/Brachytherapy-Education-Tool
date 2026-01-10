@@ -5,8 +5,11 @@ import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, e
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView = "", anatomyApplicator = "", anatomyParams = {}}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -30,12 +33,12 @@ export class Graph {
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units
-        if (anatomyView !== ""){
+        if (typeof anatomyView !== "undefined"){
             this.anatomyView = anatomyView;
             this.anatomyApplicator = anatomyApplicator;
             this.anatomyParams = anatomyParams;
             this.applicatorAnatomy = getAnatomy(
-                this.anatomyView + " " + this.anatomyApplicator,
+                this.anatomyView + this.anatomyApplicator,
                 this.anatomyParams,
                 cloneObj(anatomyData)
             );
@@ -45,7 +48,7 @@ export class Graph {
     refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
             this.applicatorAnatomy = getAnatomy(
-                this.anatomyView + " " + this.anatomyApplicator,
+                this.anatomyView + this.anatomyApplicator,
                 this.anatomyParams,
                 cloneObj(anatomyData)
             );
@@ -66,7 +69,7 @@ export class Graph {
     }
     overlayAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
-            ctx.save();
+            backCtx.save();
 
             let clippingRegion = new Path2D();
             clippingRegion.rect(
@@ -75,11 +78,11 @@ export class Graph {
                 this.graphDimensions.width,
                 this.graphDimensions.height
             );
-            ctx.clip(clippingRegion);
+            backCtx.clip(clippingRegion);
 
             drawAnatomy(this.scaledAnatomy);
 
-            ctx.restore();
+            backCtx.restore();
         }
     }
     getPointDoseFromSeed(seed, pos){
@@ -268,6 +271,8 @@ export class Graph {
                     },
                 }
             },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
         }
         Plotly.newPlot(div.id, data, layout); //does not update after window rescaling
         let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
