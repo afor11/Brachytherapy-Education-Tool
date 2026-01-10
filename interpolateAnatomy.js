@@ -271,7 +271,10 @@ function getSurroundingPoints(target, points){
         // if points are in parameter space format, convert to pos-value pair
         points.forEach((point) => {
             encodedPoints.push({
-                pos: Object.values(point.params),
+                // sort params and put them in pos array
+                pos: Object.keys(point.params).sort((a, b) =>
+                        a.localeCompare(b)
+                    ).map((prop) => point.params[prop]),
                 value: point.blocks
             });
         });
@@ -286,8 +289,8 @@ function getSurroundingPoints(target, points){
         // filter points by which ones have coords whose signs matches the binary representation of the quadrant,
         // a 0 in the binary represenation meaning a negative or zero sign, and a 1 meaning a positive or zero sign
         let pointsInQuadrant = encodedPoints.filter((point) =>
-            (typeof point.pos != "undefined") ? //only reduce position components if they are defined
-                point.pos.reduce((inQuadrant,curr,coord) => 
+            (typeof point.pos !== "undefined") ? //only reduce position components if they are defined
+                (point.pos.reduce((inQuadrant,curr,coord) => 
                     (
                         inQuadrant &&
                         (
@@ -295,7 +298,7 @@ function getSurroundingPoints(target, points){
                             || ((curr - encodedTarget[coord]) == 0)
                         )
                     )
-                ,true)
+                ,true))
             : false
         );
 

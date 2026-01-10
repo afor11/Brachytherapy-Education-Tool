@@ -19,7 +19,13 @@ export let tandemAndOvoidsPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "coronal",
+            anatomyApplicator: "tandem+ovoids",
+            anatomyParams: {
+                length: 30,
+                diameter: 20
+            }
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
@@ -248,6 +254,12 @@ export let tandemAndOvoidsPage = new Module({
                 }
             );
 
+            module.graphs.graph1.anatomyParams = {
+                length: module.applicator.length,
+                ovoidDiameter: module.applicator.ovoidDiameter
+            };
+            module.graphs.graph1.refreshAnatomy();
+            
             module.lastApplicatorLoaded = JSON.stringify(module.applicator);
             yield* module.onReload(this);
         }
@@ -260,6 +272,8 @@ export let tandemAndOvoidsPage = new Module({
         for (let i = 0; i < navButtons.length; i++){
             yield* navButtons[i].draw();
         }
+
+        this.graphs.graph1.overlayAnatomy();
 
         yield* drawTandem("graph1","coronal");
         yield* drawOvoids("graph1","coronal");
@@ -391,6 +405,8 @@ export let tandemAndOvoidsPage = new Module({
             }
             Object.assign(elm, getRegionBound(...region));
         });
+
+        this.graphs.graph1.rescaleAnatomy();
 
         yield* setEqualFont([
             this.labels.treatmentTime, this.labels.graph1ReferenceLeft, this.labels.graph1ReferenceRight, this.buttons.resetDwellTimes, this.dropDowns.graph1Model,

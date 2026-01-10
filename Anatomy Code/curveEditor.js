@@ -6,11 +6,11 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "coronalVaginalCylinder"; // viewname cannot have whitespace
+const viewName = "coronaltandem+ovoids"; // viewname cannot have whitespace
 const maxUndos = 100;
 let paramSet = {
-    length: [20, 60],
-    diameter: [20, 35]
+    ovoidDiameter: [20, 35],
+    length: [20, 60]
 };
 let usingParamSet = true;
 
@@ -321,6 +321,122 @@ function drawApplicator(){
         height: mm.height * 10
     };
     let origin = data.origin;
+    const curvePercent = 0.5;
+    let roundingRadius = Math.min(
+        curvePercent * 1.5 * cm.width,
+        curvePercent * applicator.ovoidDiameter * mm.height
+    );
+    const view = "coronal";
+
+    ctx.save();
+    ctx.beginPath();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.strokeStyle = "black";
+
+    if (view === "coronal"){
+        let ovoidRight = {
+            x: origin.x + (applicator.ovoidDiameter / 2) * mm.width,
+            y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
+        };
+        let ovoidLeft = {
+            x: origin.x - (applicator.ovoidDiameter / 2) * mm.width,
+            y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
+        };
+        let startAngle = Math.atan2(
+            Math.sqrt(((applicator.ovoidDiameter / 2) ** 2) - (((6 - applicator.ovoidDiameter) / 2) ** 2)),
+            (6 - applicator.ovoidDiameter) / 2
+        );
+        ctx.beginPath();
+        ctx.ellipse(
+            ovoidRight.x,
+            ovoidRight.y,
+            (applicator.ovoidDiameter / 2) * mm.width,
+            (applicator.ovoidDiameter / 2) * mm.height,
+            0, startAngle, 2 * Math.PI - startAngle , true
+        );
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(
+            ovoidLeft.x,
+            ovoidLeft.y,
+            (applicator.ovoidDiameter / 2) * mm.width,
+            (applicator.ovoidDiameter / 2) * mm.height,
+            0, Math.PI - startAngle, startAngle + Math.PI, false
+        );
+        ctx.stroke();
+    } else if (view === "sagittal"){
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - 1.5 * cm.width,
+            origin.y,
+            3 * cm.width,
+            applicator.ovoidDiameter * mm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+    }else if (view === "axial"){
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - applicator.ovoidDiameter * mm.width,
+            origin.y - 1.5 * cm.height,
+            applicator.ovoidDiameter * mm.width,
+            3 * cm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+        ctx.roundRect(
+            origin.x,
+            origin.y - 1.5 * cm.height,
+            applicator.ovoidDiameter * mm.width,
+            3 * cm.height,
+            roundingRadius
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawTandem(tandemParams){
+    //## modify for non-coronal view to include angle param
+    if (
+        (data.measuringPoints.length < 2)
+        || (typeof data.measuredDistance === "undefined")
+        || (typeof data.origin.x == 0)
+    ){
+        return;
+    }
+    let applicator = tandemParams;
+    let graph = {
+        graphDimensions: {
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            height: canvas.height
+        }
+    }
+    let distRatio = getDistance(
+        [data.measuringPoints[0].x,data.measuringPoints[0].y],
+        [data.measuringPoints[1].x,data.measuringPoints[1].y]
+    ) / data.measuredDistance;
+    let mm = {
+        width: distRatio,
+        height: distRatio
+    }
+    let cm = {
+        width: mm.width * 10,
+        height: mm.height * 10
+    };
+    let origin = data.origin;
     let appDiameter = applicator.diameter ?? 6;
 
     ctx.save();
@@ -374,6 +490,7 @@ function tick(){
         ctx.lineCap = "butt";
         ctx.lineJoin = "miter";
         drawApplicator();
+        drawTandem(params);
         ctx.lineCap = "round";
         ctx.lineJoin = "bevel";
     }
