@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, cloneObj } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, cloneObj } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -87,7 +87,7 @@ export let vaginalCylinderPage = new Module({
     },
     dropDowns: {
         graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
-        applicatorModel: blankDropdown("Vaginal Cylinder"),
+        applicatorModel: blankDropdown("VaginalCylinder"),
         applicatorLength: blankDropdown("Length: 30mm"),
         applicatorDiameter: blankDropdown("Diameter: 30mm")
     },
@@ -167,10 +167,10 @@ export let vaginalCylinderPage = new Module({
                 );
 
                 // reset applicator model dropdown
-                module.dropDowns.applicatorModel.button.label = "Applicator: vaginal cylinder";
+                module.dropDowns.applicatorModel.button.label = "Applicator: VaginalCylinder";
                 yield* addDropdownOptions(
                     module.dropDowns.applicatorModel,
-                    ["vaginal cylinder", "tandem+ovoids","tandem+ring"],
+                    ["VaginalCylinder", "tandem+ovoids","tandem+ring"],
                     (opt) => `${opt}`,
                     (opt) => {
                         return function* () {
@@ -183,8 +183,7 @@ export let vaginalCylinderPage = new Module({
                     }
                 );
 
-                module.graphs.graph1.anatomyParams = {...module.applicator};
-                module.graphs.graph1.refreshAnatomy();
+                yield* module.graphs.graph1.refreshAnatomy();
             }
 
             if (module.graphs.graph1.selectedSeed != -1){
@@ -213,7 +212,7 @@ export let vaginalCylinderPage = new Module({
             ];
 
             module.lastApplicatorLoaded = JSON.stringify(module.applicator);
-            yield* module.onReload(this);
+            yield* module.onReload();
         }
     },
     onUpdate: function* () {

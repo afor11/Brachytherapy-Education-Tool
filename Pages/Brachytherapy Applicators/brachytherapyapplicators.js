@@ -2,7 +2,7 @@ import { Module } from '../../module.js';
 import { tandemAndOvoidsPage } from './tandem-Ovoids.js';
 import { vaginalCylinderPage } from './vaginalCylinder.js';
 import { tandemAndRingPage } from './tandem-Ring.js';
-import { AlgebraicEffect, effectHandler } from '../../algebraicEffect.js';
+import { AlgebraicEffect, effectHandler, chainEffectHandler } from '../../algebraicEffect.js';
 import { clone, runFn } from '../../utils.js';
 
 let canvas = document.getElementById("canvas");
@@ -12,16 +12,32 @@ let ctx = canvas.getContext("2d");
 export let brachytherapyApplicatorsPage = new Module({
     specialVars: {
         subPages: {
-            "vaginal cylinder": vaginalCylinderPage,
+            "VaginalCylinder": vaginalCylinderPage,
             "tandem+ovoids": tandemAndOvoidsPage,
             "tandem+ring": tandemAndRingPage
         },
-        applicatorName: "vaginal cylinder"
+        applicatorName: "VaginalCylinder"
     },
-    onUpdate: function () {
-        callModuleFunc.call(this,"onUpdate");
+    onUpdate: function* () {
+        let thisModule = this;
+
+        // call the onUpdate function of the module, using handleSubpageEffects as the chained effect handler,
+        // allowing effects to still bubble up to main
+        yield* chainEffectHandler({
+            tryCode: function* (){
+                let module = yield new AlgebraicEffect("GET MODULE");
+                yield* runFn(module.onUpdate.bind(module));
+            },
+            handleCode: function* (effect, ...effectArgs){
+                let effectYield = handleSubpageEffects.call(thisModule, effect, ...effectArgs);
+                if (typeof effectYield != "undefined"){
+                    return effectYield;
+                }
+            }
+        });
     },
     onReload: function () {
+        // when the module is reloaded, no effects will allowed to bubble up past this point
         callModuleFunc.call(this,"onReload");
         callModuleFunc.call(this,"onUpdate");
     },
@@ -34,7 +50,6 @@ export let brachytherapyApplicatorsPage = new Module({
 });
 
 function callModuleFunc(func, ...args){
-    let thisModule = this;
     effectHandler({
         tryCode: function* (){
             let module = yield new AlgebraicEffect("GET MODULE");
@@ -42,17 +57,22 @@ function callModuleFunc(func, ...args){
                 yield* runFn(module[func].bind(module, ...args));
             }
         },
-        handleCode: (effect, ...effectArgs) => {
-            if (effect === "GET MODULE"){
-                return thisModule.subPages[thisModule.applicatorName];
-            }
-            if (effect === "GET PARENT MODULE"){
-                return thisModule;
-            }
-            if (effect === "LOAD APPLICATOR"){
-                thisModule.applicatorName = effectArgs[0];
-                return thisModule.subPages[thisModule.applicatorName].refreshApplicator();
-            }
-        }
+        handleCode: (effect, ...effectArgs) => handleSubpageEffects.call(this, effect, ...effectArgs)
     });
+}
+
+function handleSubpageEffects(effect, ...effectArgs){
+    if (effect === "GET MODULE"){
+        return this.subPages[this.applicatorName];
+    }
+    if (effect === "GET PARENT MODULE"){
+        return this;
+    }
+    if (effect === "LOAD APPLICATOR"){
+        this.applicatorName = effectArgs[0];
+        return this.subPages[this.applicatorName].refreshApplicator();
+    }
+    if (effect === "GET APPLICATOR DATA"){
+        return this.subPages[this.applicatorName].applicator;
+    }
 }

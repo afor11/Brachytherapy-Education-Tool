@@ -4,6 +4,7 @@ import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
 import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/brachytherapyapplicators.js';
 import { navBar, resetNavBar } from './navBar.js';
 import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
+import { runFn } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -47,9 +48,6 @@ effectHandler({
         if (effect === "GET MODULE"){
             return brachytherapyApplicatorsPage.subPages[brachytherapyApplicatorsPage.applicatorName];
         }
-        if (effect === "GET PARENT MODULE"){
-            return brachytherapyApplicatorsPage;
-        }
     }
 });
 
@@ -70,14 +68,32 @@ Object.keys(moduleData).forEach((module) => {
 });
 
 resetNavBar(moduleData);
-moduleData[module].onReload();
+effectHandler({
+    tryCode: function* () {
+        yield* runFn(moduleData[module].onReload);
+    },
+    handleCode: function(effect){
+        if (effect === "GET MODULE"){
+            return moduleData[module];
+        }
+    }
+});
 
 setInterval(tick,50);
 
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     backCtx.clearRect(0,0,canvas.width,canvas.height);
-    moduleData[module].onUpdate();
+    effectHandler({
+        tryCode: function* () {
+            yield* runFn(moduleData[module].onUpdate);
+        },
+        handleCode: function(effect){
+            if (effect === "GET MODULE"){
+                return moduleData[module];
+            }
+        }
+    });
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
             x: 0,
@@ -90,7 +106,16 @@ function tick(){
 
         backCanvas.width = canvas.width;
         backCanvas.height = canvas.height;
-        moduleData[module].onReload();
+        effectHandler({
+            tryCode: function* () {
+                yield* runFn(moduleData[module].onReload);
+            },
+            handleCode: function(effect){
+                if (effect === "GET MODULE"){
+                    return moduleData[module];
+                }
+            }
+        });
     }
 }
 

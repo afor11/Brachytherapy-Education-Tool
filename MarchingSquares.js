@@ -1,7 +1,7 @@
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
-export class MarchingSquares{
+export class MarchingSquares {
     constructor(xTicks, yTicks, func, isolines, dimensions){
         this.xTicks = xTicks.sort((a, b) => a - b);
         this.yTicks = yTicks.sort((a, b) => a - b);

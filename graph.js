@@ -1,6 +1,7 @@
 import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled, getRange } from './utils.js';
+import { AlgebraicEffect } from './algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -45,8 +46,14 @@ export class Graph {
             this.scaledAnatomy = {};
         }
     }
-    refreshAnatomy(){
+    *refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
+            let appData = (yield new AlgebraicEffect("GET APPLICATOR DATA")) ?? {};
+            Object.keys(appData).forEach((param) => {
+                if (Object.hasOwn(this.anatomyParams, param)){
+                    this.anatomyParams[param] = appData[param];
+                }
+            });
             this.applicatorAnatomy = getAnatomy(
                 this.anatomyView + this.anatomyApplicator,
                 this.anatomyParams,
@@ -133,7 +140,7 @@ export class Graph {
         let defaultDose = Array(this.yTicks.length).fill(Array(this.xTicks.length).fill(0));
 
         let dose = this.seeds.reduce((totalDose, seed) => {
-            if (!seed.enabled){return totalDose;}
+            if (!seed.enabled || (seed.dwellTime == 0)){return totalDose;}
             let dose = [];
             let seedString = this.getSeedState(seed);
             if (this.cachedDose.has(seedString)){

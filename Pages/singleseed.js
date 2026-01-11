@@ -46,51 +46,40 @@ export let singleSeedPage = new Module({
         graph1Reference: referencePointLabel("graph1",0),
         graph2Reference: referencePointLabel("graph2",0),
     },
-    onUpdate: function () {
-        let thisModule = this;
-        effectHandler({
-            tryCode: function* (){
-                let module = yield new AlgebraicEffect("GET MODULE");
-                ctx.clearRect(0,0,canvas.width,canvas.height);
+    onUpdate: function* () {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-                let navButtons = Object.values(navBar);
-                for (let i = 0; i < navButtons.length; i++){
-                    yield* navButtons[i].draw();
-                }
+        let navButtons = Object.values(navBar);
+        for (let i = 0; i < navButtons.length; i++){
+            yield* navButtons[i].draw();
+        }
 
-                if (module.graphs.graph1.seeds[0].model.HDRsource){
-                    yield* module.labels.graph1DwellTime.draw();
-                    yield* module.sliders.graph1DwellTime.draw();
-                }
+        if (this.graphs.graph1.seeds[0].model.HDRsource){
+            yield* this.labels.graph1DwellTime.draw();
+            yield* this.sliders.graph1DwellTime.draw();
+        }
 
-                if (module.graphs.graph2.seeds[0].model.HDRsource){
-                    yield* module.labels.graph2DwellTime.draw();
-                    yield* module.sliders.graph2DwellTime.draw();
-                }
-                
-                yield* module.labels.graph1AirKerma.draw();
-                yield* module.sliders.graph1AirKerma.draw();
-                yield* module.labels.graph1Reference.draw();
-                yield* module.dropDowns.graph1Model.draw();
+        if (this.graphs.graph2.seeds[0].model.HDRsource){
+            yield* this.labels.graph2DwellTime.draw();
+            yield* this.sliders.graph2DwellTime.draw();
+        }
+        
+        yield* this.labels.graph1AirKerma.draw();
+        yield* this.sliders.graph1AirKerma.draw();
+        yield* this.labels.graph1Reference.draw();
+        yield* this.dropDowns.graph1Model.draw();
 
-                yield* module.labels.graph2AirKerma.draw();
-                yield* module.labels.graph2Reference.draw();
-                yield* module.sliders.graph2AirKerma.draw();
-                yield* module.dropDowns.graph2Model.draw();
+        yield* this.labels.graph2AirKerma.draw();
+        yield* this.labels.graph2Reference.draw();
+        yield* this.sliders.graph2AirKerma.draw();
+        yield* this.dropDowns.graph2Model.draw();
 
-                module.graphs.graph1.drawRefPoints();
-                module.graphs.graph1.drawMouseLabel();
-                module.graphs.graph2.drawRefPoints();
-                module.graphs.graph2.drawMouseLabel();
-            },
-            handleCode: (effect) => {
-                if (effect === "GET MODULE"){
-                    return thisModule;
-                }
-            }
-        });
+        this.graphs.graph1.drawRefPoints();
+        this.graphs.graph1.drawMouseLabel();
+        this.graphs.graph2.drawRefPoints();
+        this.graphs.graph2.drawMouseLabel();
     },
-    onReload: function () {
+    onReload: function* () {
         refreshNavBar(thisModule);
 
         let graph3Div = document.getElementById("graph3");
@@ -324,11 +313,12 @@ export let singleSeedPage = new Module({
             width: this.graphs.graph2.graphDimensions.width * 0.27,
             height: this.graphs.graph2.graphDimensions.height * 0.09,
         });
-        this.onUpdate();
+        yield* this.onUpdate();
     },
     defaultInputHandler: {
         onMouseDown: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
+            console.log(module.labels.graph1DwellTime);
 
             //UI around graph1
             if (!module.dropDowns.graph1Model.showing){
@@ -344,7 +334,6 @@ export let singleSeedPage = new Module({
             //UI around graph2
             if (!module.dropDowns.graph2Model.showing){
                 yield* module.labels.graph2AirKerma.checkClicked();
-                yield* module.labels.graph2DwellTime.checkClicked();
                 yield* module.sliders.graph2AirKerma.checkClicked();
                 if (module.graphs.graph2.seeds[0].model.HDRsource){
                     yield* module.labels.graph2DwellTime.checkClicked();

@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue } from '../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view, moduleData } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -88,132 +88,121 @@ export let PlanarArrayOfSeeds = new Module({
         graph1ShrinkArray: shrinkArrayButton("graph1"),
         graph2ShrinkArray: shrinkArrayButton("graph2")
     },
-    onUpdate: function () {
-        let thisModule = this;
-        effectHandler({
-            tryCode: function*(){
-                let module = yield new AlgebraicEffect("GET MODULE");
-                ctx.clearRect(0,0,canvas.width,canvas.height);
+    onUpdate: function* () {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-                //draw nav bar
-                let navButtons = Object.values(navBar);
-                for (let i = 0; i < navButtons.length; i++){
-                    yield* navButtons[i].draw();
-                }
+        //draw nav bar
+        let navButtons = Object.values(navBar);
+        for (let i = 0; i < navButtons.length; i++){
+            yield* navButtons[i].draw();
+        }
 
-                // draw air kerma label/slider for graph1
-                yield* module.sliders.graph1AirKerma.draw();
-                yield* module.labels.graph1AirKerma.draw();
-                
-                // draw air kerma label/slider for graph2
-                yield* module.labels.graph2AirKerma.draw();
-                yield* module.sliders.graph2AirKerma.draw();
+        // draw air kerma label/slider for graph1
+        yield* this.sliders.graph1AirKerma.draw();
+        yield* this.labels.graph1AirKerma.draw();
+        
+        // draw air kerma label/slider for graph2
+        yield* this.labels.graph2AirKerma.draw();
+        yield* this.sliders.graph2AirKerma.draw();
 
-                // draw dwell time UI or disable seed UI (if a seed is selected, depending on if the source id HDR)
-                if (module.graphs.graph1.selectedSeed != -1){
-                    if (module.graphs.graph1.seeds[0].model.HDRsource){
-                        yield* module.labels.graph1DwellTime.draw();
-                        yield* module.sliders.graph1DwellTime.draw();
-                    }else{
-                        yield* module.buttons.graph1EnableSeed.draw();
-                    }
-                }
-                if (module.graphs.graph2.selectedSeed != -1){
-                    if (module.graphs.graph2.seeds[0].model.HDRsource){
-                        yield* module.labels.graph2DwellTime.draw();
-                        yield* module.sliders.graph2DwellTime.draw();
-                    }else{
-                        yield* module.buttons.graph2EnableSeed.draw();
-                    }
-                }
-
-                // update the expand / shrink array buttons to their y-position matches the bottom of the enable
-                // seed button or dwell time sliders (in vertical mode)
-                if (view.width / view.height <= 1){
-                    let splitY = view.height / 2;
-                    let splitX = view.width * 0.25;
-
-                    let graph1ExpandArrayBounds = getRegionBound({
-                        x: 0,
-                        y: view.y + splitY * (
-                            module.graphs.graph1.selectedSeed != -1 ?
-                                (module.graphs.graph1.seeds[0].model.HDRsource ?
-                                    0.5
-                                :
-                                    0.4)
-                            : 0.3
-                        ),
-                        width: splitX,
-                        height: splitY * 0.1
-                    }, {horizontal: 0.2, vertical: 0.2});
-                    
-                    Object.assign(module.buttons.graph1ExpandArray, graph1ExpandArrayBounds);
-                    graph1ExpandArrayBounds.y += splitY * 0.1;
-                    Object.assign(module.buttons.graph1ShrinkArray, graph1ExpandArrayBounds);
-                    graph1ExpandArrayBounds.y += splitY * 0.1;
-                    Object.assign(module.labels.graph1SeedSpacing, graph1ExpandArrayBounds);
-                    graph1ExpandArrayBounds.y += splitY * 0.15;
-                    Object.assign(module.sliders.graph1SeedSpacing, {
-                        x: graph1ExpandArrayBounds.x,
-                        y: graph1ExpandArrayBounds.y,
-                        length: graph1ExpandArrayBounds.width,
-                        thickness: graph1ExpandArrayBounds.height * 0.3,
-                    });
-
-                    let graph2ExpandArrayBounds = getRegionBound({
-                        x: 0,
-                        y: view.y + splitY * (
-                            module.graphs.graph2.selectedSeed != -1 ?
-                                (module.graphs.graph2.seeds[0].model.HDRsource ?
-                                    1.5
-                                :
-                                    1.4)
-                            : 1.3
-                        ),
-                        width: splitX,
-                        height: splitY * 0.1
-                    }, {horizontal: 0.2, vertical: 0.2});
-
-                    Object.assign(module.buttons.graph2ExpandArray, graph2ExpandArrayBounds);
-                    graph2ExpandArrayBounds.y += splitY * 0.1;
-                    Object.assign(module.buttons.graph2ShrinkArray, graph2ExpandArrayBounds);
-                    graph2ExpandArrayBounds.y += splitY * 0.1;
-                    Object.assign(module.labels.graph2SeedSpacing, graph2ExpandArrayBounds);
-                    graph2ExpandArrayBounds.y += splitY * 0.15;
-                    Object.assign(module.sliders.graph2SeedSpacing, {
-                        x: graph2ExpandArrayBounds.x,
-                        y: graph2ExpandArrayBounds.y,
-                        length: graph2ExpandArrayBounds.width,
-                        thickness: graph2ExpandArrayBounds.height * 0.3,
-                    });
-                }
-
-                module.graphs.graph1.drawGraphSeeds();
-                module.graphs.graph1.drawRefPoints();
-                yield* module.labels.graph1Reference.draw();
-                module.graphs.graph1.drawMouseLabel();
-                yield* module.buttons.graph1ExpandArray.draw();
-                yield* module.buttons.graph1ShrinkArray.draw();
-                yield* module.sliders.graph1SeedSpacing.draw();
-                yield* module.labels.graph1SeedSpacing.draw();
-                yield* module.dropDowns.graph1Model.draw();
-
-                module.graphs.graph2.drawGraphSeeds();
-                module.graphs.graph2.drawRefPoints();
-                yield* module.labels.graph2Reference.draw();
-                module.graphs.graph2.drawMouseLabel();
-                yield* module.buttons.graph2ExpandArray.draw();
-                yield* module.buttons.graph2ShrinkArray.draw();
-                yield* module.sliders.graph2SeedSpacing.draw();
-                yield* module.labels.graph2SeedSpacing.draw();
-                yield* module.dropDowns.graph2Model.draw();
-            },
-            handleCode: (effect) => {
-                if (effect === "GET MODULE"){
-                    return thisModule;
-                }
+        // draw dwell time UI or disable seed UI (if a seed is selected, depending on if the source id HDR)
+        if (this.graphs.graph1.selectedSeed != -1){
+            if (this.graphs.graph1.seeds[0].model.HDRsource){
+                yield* this.labels.graph1DwellTime.draw();
+                yield* this.sliders.graph1DwellTime.draw();
+            }else{
+                yield* this.buttons.graph1EnableSeed.draw();
             }
-        })
+        }
+        if (this.graphs.graph2.selectedSeed != -1){
+            if (this.graphs.graph2.seeds[0].model.HDRsource){
+                yield* this.labels.graph2DwellTime.draw();
+                yield* this.sliders.graph2DwellTime.draw();
+            }else{
+                yield* this.buttons.graph2EnableSeed.draw();
+            }
+        }
+
+        // update the expand / shrink array buttons to their y-position matches the bottom of the enable
+        // seed button or dwell time sliders (in vertical mode)
+        if (view.width / view.height <= 1){
+            let splitY = view.height / 2;
+            let splitX = view.width * 0.25;
+
+            let graph1ExpandArrayBounds = getRegionBound({
+                x: 0,
+                y: view.y + splitY * (
+                    this.graphs.graph1.selectedSeed != -1 ?
+                        (this.graphs.graph1.seeds[0].model.HDRsource ?
+                            0.5
+                        :
+                            0.4)
+                    : 0.3
+                ),
+                width: splitX,
+                height: splitY * 0.1
+            }, {horizontal: 0.2, vertical: 0.2});
+            
+            Object.assign(this.buttons.graph1ExpandArray, graph1ExpandArrayBounds);
+            graph1ExpandArrayBounds.y += splitY * 0.1;
+            Object.assign(this.buttons.graph1ShrinkArray, graph1ExpandArrayBounds);
+            graph1ExpandArrayBounds.y += splitY * 0.1;
+            Object.assign(this.labels.graph1SeedSpacing, graph1ExpandArrayBounds);
+            graph1ExpandArrayBounds.y += splitY * 0.15;
+            Object.assign(this.sliders.graph1SeedSpacing, {
+                x: graph1ExpandArrayBounds.x,
+                y: graph1ExpandArrayBounds.y,
+                length: graph1ExpandArrayBounds.width,
+                thickness: graph1ExpandArrayBounds.height * 0.3,
+            });
+
+            let graph2ExpandArrayBounds = getRegionBound({
+                x: 0,
+                y: view.y + splitY * (
+                    this.graphs.graph2.selectedSeed != -1 ?
+                        (this.graphs.graph2.seeds[0].model.HDRsource ?
+                            1.5
+                        :
+                            1.4)
+                    : 1.3
+                ),
+                width: splitX,
+                height: splitY * 0.1
+            }, {horizontal: 0.2, vertical: 0.2});
+
+            Object.assign(this.buttons.graph2ExpandArray, graph2ExpandArrayBounds);
+            graph2ExpandArrayBounds.y += splitY * 0.1;
+            Object.assign(this.buttons.graph2ShrinkArray, graph2ExpandArrayBounds);
+            graph2ExpandArrayBounds.y += splitY * 0.1;
+            Object.assign(this.labels.graph2SeedSpacing, graph2ExpandArrayBounds);
+            graph2ExpandArrayBounds.y += splitY * 0.15;
+            Object.assign(this.sliders.graph2SeedSpacing, {
+                x: graph2ExpandArrayBounds.x,
+                y: graph2ExpandArrayBounds.y,
+                length: graph2ExpandArrayBounds.width,
+                thickness: graph2ExpandArrayBounds.height * 0.3,
+            });
+        }
+
+        this.graphs.graph1.drawGraphSeeds();
+        this.graphs.graph1.drawRefPoints();
+        yield* this.labels.graph1Reference.draw();
+        this.graphs.graph1.drawMouseLabel();
+        yield* this.buttons.graph1ExpandArray.draw();
+        yield* this.buttons.graph1ShrinkArray.draw();
+        yield* this.sliders.graph1SeedSpacing.draw();
+        yield* this.labels.graph1SeedSpacing.draw();
+        yield* this.dropDowns.graph1Model.draw();
+
+        this.graphs.graph2.drawGraphSeeds();
+        this.graphs.graph2.drawRefPoints();
+        yield* this.labels.graph2Reference.draw();
+        this.graphs.graph2.drawMouseLabel();
+        yield* this.buttons.graph2ExpandArray.draw();
+        yield* this.buttons.graph2ShrinkArray.draw();
+        yield* this.sliders.graph2SeedSpacing.draw();
+        yield* this.labels.graph2SeedSpacing.draw();
+        yield* this.dropDowns.graph2Model.draw();
     },
     onReload: function () {
         refreshNavBar(thisModule);
@@ -710,7 +699,7 @@ function seedSpacingLabel(graph){
         },
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
-            setSeedSpacing(module, graph, value);
+            setSeedSpacing(module, graph, clamp(value, 0.5, 1.5));
             module.onReload();
         },
         numDecimalsEditing: 2

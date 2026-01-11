@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDoseAtPoint, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { module, view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -24,7 +24,7 @@ export let tandemAndOvoidsPage = new Module({
             anatomyApplicator: "tandem+ovoids",
             anatomyParams: {
                 length: 30,
-                diameter: 20
+                ovoidDiameter: 20
             }
         }),
         graph2: new Graph({
@@ -241,7 +241,7 @@ export let tandemAndOvoidsPage = new Module({
             module.dropDowns.applicatorModel.button.label = "Applicator: tandem+ovoid";
             yield* addDropdownOptions(
                 module.dropDowns.applicatorModel,
-                ["vaginal cylinder", "tandem+ovoids","tandem+ring"],
+                ["VaginalCylinder", "tandem+ovoids","tandem+ring"],
                 (opt) => `${opt}`,
                 (opt) => {
                     return function* () {
@@ -254,11 +254,7 @@ export let tandemAndOvoidsPage = new Module({
                 }
             );
 
-            module.graphs.graph1.anatomyParams = {
-                length: module.applicator.length,
-                ovoidDiameter: module.applicator.ovoidDiameter
-            };
-            module.graphs.graph1.refreshAnatomy();
+            yield* module.graphs.graph1.refreshAnatomy();
             
             module.lastApplicatorLoaded = JSON.stringify(module.applicator);
             yield* module.onReload(this);

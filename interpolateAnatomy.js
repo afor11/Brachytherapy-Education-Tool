@@ -161,10 +161,11 @@ function evalSpline(curve, t){
 }
 
 function lerpParametrizedCurves(target, points){
+    let orderedTarget = orderedValues(target);
     //get closest points in each quadrant
-    let closestPoints = getSurroundingPoints(target, points);
+    let closestPoints = getSurroundingPoints(orderedTarget, points);
 
-    if (Object.keys(target).length == 0){
+    if (Object.keys(orderedTarget).length == 0){
         return points[0].value;
     }
 
@@ -187,7 +188,7 @@ function lerpParametrizedCurves(target, points){
                 pointB = cloneObj(pointA);
             }
 
-            let targetPos = Object.values(target);
+            let targetPos = orderedTarget;
             //get coefficent of interpolation
             if (pointA.pos[0] == pointB.pos[0]){
                 interpolation = 0;
@@ -213,9 +214,9 @@ function lerpParametrizedCurves(target, points){
         }
     }
     let slicedTarget = {};
-    Object.keys(target).forEach((param,ind) => {
+    Object.keys(orderedTarget).forEach((param,ind) => {
         if (ind > 0){
-            slicedTarget[param] = target[param];
+            slicedTarget[param] = orderedTarget[param];
         }
     });
     return lerpParametrizedCurves(slicedTarget, lerpedPoints);
@@ -263,18 +264,22 @@ export function drawAnatomy(viewData){
     });
 }
 
+function orderedValues(obj) {
+    return Object.keys(obj).sort((a, b) =>
+        a.localeCompare(b)
+    ).map((prop) => obj[prop])
+}
+
 function getSurroundingPoints(target, points){
     // get position of each point from its params
-    let encodedTarget = Object.values(target);
+    let encodedTarget = target;
     let encodedPoints = [];
     if ((typeof points[0].params) !== "undefined"){
         // if points are in parameter space format, convert to pos-value pair
         points.forEach((point) => {
             encodedPoints.push({
                 // sort params and put them in pos array
-                pos: Object.keys(point.params).sort((a, b) =>
-                        a.localeCompare(b)
-                    ).map((prop) => point.params[prop]),
+                pos: orderedValues(point.params),
                 value: point.blocks
             });
         });

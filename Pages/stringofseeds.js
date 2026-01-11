@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -39,7 +39,7 @@ export let stringofseedsPage = new Module({
                 module.onReload();
             },
             getValue: function* () {
-                return (yield new AlgebraicEffect("GET MODULE")).seedSpacing - 0.5;
+                return clamp((yield new AlgebraicEffect("GET MODULE")).seedSpacing, 0.5, 1.5) - 0.5;
             }
         })
     },
@@ -63,7 +63,7 @@ export let stringofseedsPage = new Module({
                 return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
             },
             onEnter: function* (value){
-                (yield new AlgebraicEffect("GET MODULE")).seedSpacing = value;
+                (yield new AlgebraicEffect("GET MODULE")).seedSpacing = clamp(value, 0.5, 1.5);
             },
             numDecimalsEditing: 2
         })
@@ -115,59 +115,47 @@ export let stringofseedsPage = new Module({
             outline: {color: "black", thickness: 0}
         })
     },
-    onUpdate: function () {
-        let thisModule = this;
-        effectHandler({
-            tryCode: function* (){
-                let module = yield new AlgebraicEffect("GET MODULE");
+    onUpdate: function* () {
+        //reset canvas
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-                //reset canvas
-                ctx.clearRect(0,0,canvas.width,canvas.height);
+        //draw nav bar
+        let navButtons = Object.values(navBar);
+        for (let i = 0; i < navButtons.length; i++){
+            yield* navButtons[i].draw();
+        }
 
-                //draw nav bar
-                let navButtons = Object.values(navBar);
-                for (let i = 0; i < navButtons.length; i++){
-                    yield* navButtons[i].draw();
-                }
+        // draw air kerma label and slider
+        yield* this.labels.graph1AirKerma.draw();
+        yield* this.sliders.graph1AirKerma.draw();
 
-                // draw air kerma label and slider
-                yield* module.labels.graph1AirKerma.draw();
-                yield* module.sliders.graph1AirKerma.draw();
+        // draw seed spacing label and slider
+        yield* this.sliders.graph1Seedspacing.draw();
+        yield* this.labels.graph1Seedspacing.draw();
 
-                // draw seed spacing label and slider
-                yield* module.sliders.graph1Seedspacing.draw();
-                yield* module.labels.graph1Seedspacing.draw();
-
-                // draw the dwell time slider if using HDR source or
-                // enable/disable source toggle otherwise
-                if (module.graphs.graph1.selectedSeed != -1){
-                    if (module.graphs.graph1.seeds[0].model.HDRsource){
-                        yield* module.labels.graph1DwellTime.draw();
-                        yield* module.sliders.graph1DwellTime.draw();
-                    }else{
-                        yield* module.buttons.graph1EnableSeed.draw();
-                    }
-                }
-
-                // draw model dropdown
-                yield* module.dropDowns.graph1Model.draw();
-
-                // draw graph 1 seeds/reference point + label/mouse label
-                module.graphs.graph1.drawGraphSeeds();
-                module.graphs.graph1.drawRefPoints();
-                yield* module.labels.graph1Reference.draw();
-                module.graphs.graph1.drawMouseLabel();
-
-                // draw the add seed button
-                yield* module.buttons.graph1AddSeed.draw();
-                yield* module.buttons.graph1RemoveSeed.draw();
-            },
-            handleCode: (effect) => {
-                if (effect === "GET MODULE"){
-                    return thisModule;
-                }
+        // draw the dwell time slider if using HDR source or
+        // enable/disable source toggle otherwise
+        if (this.graphs.graph1.selectedSeed != -1){
+            if (this.graphs.graph1.seeds[0].model.HDRsource){
+                yield* this.labels.graph1DwellTime.draw();
+                yield* this.sliders.graph1DwellTime.draw();
+            }else{
+                yield* this.buttons.graph1EnableSeed.draw();
             }
-        });
+        }
+
+        // draw model dropdown
+        yield* this.dropDowns.graph1Model.draw();
+
+        // draw graph 1 seeds/reference point + label/mouse label
+        this.graphs.graph1.drawGraphSeeds();
+        this.graphs.graph1.drawRefPoints();
+        yield* this.labels.graph1Reference.draw();
+        this.graphs.graph1.drawMouseLabel();
+
+        // draw the add seed button
+        yield* this.buttons.graph1AddSeed.draw();
+        yield* this.buttons.graph1RemoveSeed.draw();
     },
     onReload: function () {
         refreshNavBar(thisModule);

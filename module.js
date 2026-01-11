@@ -37,8 +37,8 @@ export class Module {
         this.dropDowns = dropDowns;
         this.labels = labels;
         this.buttons = buttons;
-        this.onUpdate = onUpdate;
-        this.onReload = onReload;
+        this.onUpdate = onUpdate.bind(this);
+        this.onReload = onReload.bind(this);
 
         // normal functions are to be used for mouse events, arrow
         // functions are to be passed back by clicked elements to
@@ -52,10 +52,10 @@ export class Module {
         // special execution of generator functions)
 
         this.defaultInputHandler = {
-            onMouseMove: this.onMouseMove,
-            onMouseDown: this.onMouseDown,
-            onMouseUp: this.onMouseUp,
-            onKeyDown: this.onKeyDown
+            onMouseMove: this.onMouseMove.bind(this),
+            onMouseDown: this.onMouseDown.bind(this),
+            onMouseUp: this.onMouseUp.bind(this),
+            onKeyDown: this.onKeyDown.bind(this)
         };
     }
     eventHandler(event, e) {

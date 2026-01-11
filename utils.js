@@ -195,7 +195,7 @@ export function toggleSeedEnable(graph,seedInd){
             thisModule.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
             self.label = (seedEnabled ? "enable seed" : "disable seed");
 
-            thisModule.onReload();
+            yield* thisModule.onReload();
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
@@ -216,57 +216,73 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
         },
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
-            setDoseAtPoint(
+            yield* setDoseAtPoint(
                 module.graphs[graph],
                 value,
-                module,
                 module.graphs[graph].refpoints[ind]
             );
         },
-        numDecimalsEditing: 3
+        numDecimalsEditing: 3,
+        mouseSlider: {
+            active: true,
+            min: function* () {return 0},
+            max: function* () {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                return (module.graphs[graph].seeds[0].model.HDRsource) ?
+                    module.graphs[graph].seeds.length * 2
+                :
+                    module.graphs[graph].seeds.length * 3
+            }
+        }
     })
 }
 
 export function* runFn(fn,...args){
     if (fn?.constructor.name === "GeneratorFunction"){
         return yield* fn(...args);
-    }else{
+    }else if (typeof fn === "function"){
         return fn(...args);
     }
+    return fn;
 }
 
-export function setDoseAtPoint(graph,dose,module,point, searchPrecision = 20){
-    //if (Array.isArray(point))
+export function* setDoseAtPoint(graph,dose,point, searchPrecision = 20){
     if (graph.seeds[0].model.HDRsource){
         let dwellTime = {min: 0, max: 0.0833333333333};
-        let testingDwellTime = () => (dwellTime.min + dwellTime.max) / 2;
         for (let i = 0; i < searchPrecision; i++){
+            // set the updated dwell time as the mean of the max and min bounds
+            let updatedDwellTime = (dwellTime.min + dwellTime.max) / 2;
+
+            // set the seed dwell time base on updated dwell time
             graph.seeds.forEach((seed) => {
                 if (seed.dwellTime > 0){
-                    seed.dwellTime = testingDwellTime();
+                    seed.dwellTime = updatedDwellTime;
                 }
             });
+
+            // update bounds based on point dose test
             if (graph.getPointDose(point) > dose){
-                dwellTime.max = testingDwellTime();
+                dwellTime.max = updatedDwellTime;
             }else{
-                dwellTime.min = testingDwellTime();
+                dwellTime.min = updatedDwellTime;
             }
         }
     }else{
-        let airKerma = {...airKermaSliderLimits.LDR};
-        let testingAirKerma = () => (airKerma.min + airKerma.max) / 2;
-        for (let i = 0; i < searchPrecision; i++){
-            graph.seeds.forEach((seed) => {
-                seed.airKerma = testingAirKerma();
-            });
-            if (graph.getPointDose(point) > dose){
-                airKerma.max = testingAirKerma();
-            }else{
-                airKerma.min = testingAirKerma();
-            }
-        }
+        // set all seeds of the graph to a uniform air kerma
+        graph.seeds.forEach((seed) => {
+            seed.airKerma = 1;
+        });
+
+        // since airk kerma linearly scales the dose at all points,
+        // calculate the updated air kerma with simple division
+        let updatedAirKerma = dose / (graph.getPointDose(point));
+
+        // update seeds with new air kerma
+        graph.seeds.forEach((seed) => {
+            seed.airKerma = updatedAirKerma;
+        });
     }
-    module.onReload();
+    yield* runFn((yield new AlgebraicEffect("GET MODULE")).onReload);
 }
 
 export function multSeedDwellTimeLabel(graph){
@@ -306,7 +322,7 @@ export function dwellTimeLabel(graph){
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds[0].dwellTime = clamp(value / 3600,0,0.0833333333333);
-            module.onReload();
+            yield* runFn(module.onReload);
         },
         numDecimalsEditing: 3
     });
@@ -334,7 +350,7 @@ export function airKermaLabel(graph){
                 seed.airKerma = clampedVal;
             });
         },
-        numDecimalsEditing: 3
+        numDecimalsEditing: 3,
     })
 }
 
@@ -434,7 +450,7 @@ export function dwellTimeSlider(graph){
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
-            module.onReload();
+            yield* runFn(module.onReload);
         },
         getValue: function*  () {
             let module = yield new AlgebraicEffect("GET MODULE");

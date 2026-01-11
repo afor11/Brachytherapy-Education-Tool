@@ -6,11 +6,12 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "coronaltandem+ovoids"; // viewname cannot have whitespace
+const viewName = "coronalVaginalCylinder"; // viewname cannot have whitespace
 const maxUndos = 100;
+// ORDER MATTERS
 let paramSet = {
-    ovoidDiameter: [20, 35],
-    length: [20, 60]
+    length: [20, 60],
+    diameter: [20, 35],
 };
 let usingParamSet = true;
 

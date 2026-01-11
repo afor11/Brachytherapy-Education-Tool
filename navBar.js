@@ -1,7 +1,7 @@
 import { AlgebraicEffect, effectHandler } from "./algebraicEffect.js";
 import { module, setModule } from "./main.js";
 import { Button } from './UIclasses/Button.js';
-import { setEqualFont } from "./utils.js";
+import { setEqualFont, runFn } from "./utils.js";
 
 export let navBar = {};
 
@@ -20,7 +20,7 @@ export function resetNavBar(moduleData){
                 navBar[moduleName].bgColor = "black";
                 navBar[moduleName].fontColor = "white";
                 setModule(moduleName);
-                moduleData[moduleName].onReload();
+                yield* runFn(moduleData[moduleName].onReload);
             },
             label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
