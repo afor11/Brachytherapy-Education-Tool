@@ -1,11 +1,12 @@
 import { getFontSize, runFn, clamp } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
+import { runAnimation } from './Button.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
 export class NumberInput {
-    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, mouseSlider = {active: false, min: 0, max: 0}}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: "black" ,notSelected: "#D3D3D3"}}){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -36,7 +37,8 @@ export class NumberInput {
         this.onEnter = onEnter;
         this.recalcFontOnDraw = true;
         this.font = "";
-        this.mouseSlider = mouseSlider;
+        this.animate = animate;
+        this.hoverCol = hoverCol;
     }
     *getValue(){
         let self = this;
@@ -65,11 +67,16 @@ export class NumberInput {
             }
         });
 
+        yield* runAnimation.call(this);
+
         if (this.recalcFontOnDraw){
             this.font = this.recalcFont(label);
         }
 
-        ctx.fillStyle = this.bgColor[(this.editing ? "selected" : "notSelected")];
+        ctx.fillStyle = this.hovering() ?
+            this.hoverCol[(this.editing ? "selected" : "notSelected")]
+        :
+            this.bgColor[(this.editing ? "selected" : "notSelected")];
         ctx.beginPath();
         ctx.fillRect(this.x,this.y,this.width,this.height);
 
@@ -78,7 +85,7 @@ export class NumberInput {
         let textDimensions = ctx.measureText(label);
         let textHeight = textDimensions.actualBoundingBoxAscent + textDimensions.actualBoundingBoxDescent;
 
-        ctx.save()
+        ctx.save();
 
         ctx.beginPath();
         ctx.rect(this.x, this.y, this.width, this.height);
@@ -107,71 +114,11 @@ export class NumberInput {
                 }
                 module.onKeyDown = module.defaultInputHandler.onKeyDown;
                 module.onMouseDown = module.defaultInputHandler.onMouseDown;
-                if (self.mouseSlider.min != self.mouseSlider.max){
-                    // reactive mouse slider if the bounds have been set once finished editing
-                    self.mouseSlider.active = true;
-                }
-                if (self.mouseSlider.active){
-                    module.onMouseMove = module.defaultInputHandler.onMouseMove;
-                    module.onMouseUp = module.defaultInputHandler.onMouseUp;
-                }
                 self.editing = false;
-            }
-
-            if (this.mouseSlider.active){
-                // initalize label slider handling
-                this.clickData = {
-                    startTime: new Date(),
-                    x: mouse.x,
-                    y: mouse.y
-                };
-
-                let mouseMovedTooMuch = () => Math.abs(mouse.x - self.clickData.x) < 8 * Math.abs(mouse.y - self.clickData.y);
-                let waitedTooLong = () => new Date().getTime() - self.clickData.startTime > 500;
-
-                module.onMouseMove = function* (e) {
-                    if (!self.mouseSlider.active){return}
-
-                    // if self.clickData.startTime = -1, the user likely indended to use this element as a slider 
-                    if (!mouseMovedTooMuch() && waitedTooLong()){
-                        self.clickData.startTime = -1;
-                    }
-
-                    self.editing = false;
-                    self.editingValue = yield* runFn(self.getValue());
-
-                    if (!mouse.down || (mouseMovedTooMuch() || waitedTooLong()) && (self.clickData.startTime != -1)){
-                        self.mouseSlider.active = false;
-                        self.editing = true;
-                        self.initalValue = yield* runFn(self.getValue());
-                        return;
-                    }
-
-                    let min = yield* runFn(self.mouseSlider.min);
-                    let max = yield* runFn(self.mouseSlider.max);
-                    let value = clamp(
-                        parseFloat(self.initalValue) + ((mouse.x - self.clickData.x) / (self.width / 2)) * (max - min),
-                        min,
-                        max
-                    );
-                    if (value != parseFloat(self.initalValue)){
-                        yield* runFn(self.onEnter, value);
-                    }
-                    yield* runFn(module.defaultInputHandler.onMouseMove.call(this, e));
-                    return true;
-                }
-
-                mouse.onMouseUp = function* (){
-                    if (self.mouseSlider.active && waitedTooLong()){
-                        yield* finishEditing(module, self);
-                        return true;
-                    }
-                }
             }
 
             // initalize label text inputting
             module.onKeyDown = function* (e) {
-                if (self.mouseSlider.active) {return}
                 let numDecimals = (
                     self.editingValue.includes(".") ?
                         self.editingValue.length - 1 - self.editingValue.indexOf(".")

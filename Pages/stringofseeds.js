@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn, expandOnHover } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -65,7 +65,8 @@ export let stringofseedsPage = new Module({
             onEnter: function* (value){
                 (yield new AlgebraicEffect("GET MODULE")).seedSpacing = clamp(value, 0.5, 1.5);
             },
-            numDecimalsEditing: 2
+            numDecimalsEditing: 2,
+            animate: function* () {yield* expandOnHover(false)}
         })
     },
     buttons: {
@@ -92,7 +93,9 @@ export let stringofseedsPage = new Module({
                 );
                 yield* runFn(module.onReload)
             },
-            outline: {color: "black", thickness: 0}
+            outline: {color: "black", thickness: 0},
+            animate: expandOnHover,
+            hoverCol: "#AFE1AF"
         }),
         graph1RemoveSeed: new Button({
             x: 0, y: 0, width: 0, height: 0,
@@ -112,7 +115,9 @@ export let stringofseedsPage = new Module({
                     yield* runFn(module.onReload)
                 }
             },
-            outline: {color: "black", thickness: 0}
+            outline: {color: "black", thickness: 0},
+            animate: expandOnHover,
+            hoverCol: "rgba(216, 83, 109, 1)",
         })
     },
     onUpdate: function* () {

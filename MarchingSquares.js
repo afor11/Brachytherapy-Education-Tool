@@ -22,8 +22,6 @@ export class MarchingSquares {
         });
     }
     refreshPath(){
-        this.recalcData();
-
         const edgeLerp = (edgeA, edgeB) => 
             (edgeA.x == edgeB.x) ?
                 this.lerp(

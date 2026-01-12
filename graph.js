@@ -2,6 +2,7 @@ import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, nothing, eventHandled, getRange } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
+import { MarchingSquares } from './MarchingSquares.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -284,6 +285,10 @@ export class Graph {
         Plotly.newPlot(div.id, data, layout); //does not update after window rescaling
         let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
         this.graphDimensions = gridElm.getBoundingClientRect();
+        /*let test = new MarchingSquares(this.xTicks, this.yTicks, () => 0, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
+        test.data = this.getIsodose(this.refpoints[0]);
+        test.refreshPath();
+        test.draw();*/
     }
     drawRefPoints(){
         let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;

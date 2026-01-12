@@ -24,14 +24,6 @@ export function resetNavBar(moduleData){
             },
             label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-            animate: function* () {
-                let self = yield new AlgebraicEffect("GET SELF");
-                if (self.hovering() && (self.bgColor !== "black")){
-                    self.bgColor = "#ADD8E6";
-                }else if (self.bgColor !== "black"){
-                    self.bgColor = "white";
-                }
-            }
         });
         return navButtons;
     },{});
@@ -47,6 +39,7 @@ export function refreshNavBar(moduleOpen){
         button.bgColor = ((buttonName === moduleOpen) ? "black" : "white");
         button.fontColor = ((buttonName === moduleOpen) ? "white" : "black");
         button.outlineThickness = Math.min(canvas.width,canvas.height) * 0.001;
+        button.hoverCol = ((buttonName === moduleOpen) ? "black" : "#D3D3D3");
     });
     effectHandler({
         tryCode: function* () {

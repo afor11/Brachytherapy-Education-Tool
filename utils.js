@@ -106,11 +106,11 @@ export function getFontSize(width,height,label,font){
 }
 
 export function getMin(arr){
-    return arr.reduce((minVal,curVal) => ((curVal < minVal) ? curVal : minVal),arr[0]);
+    return Math.min(...arr);
 }
 
 export function getMax(arr){
-    return arr.reduce((minVal,curVal) => ((curVal > minVal) ? curVal : minVal),arr[0]);
+    return Math.max(...arr);
 }
 
 export function convertUnit(unit,newUnit){
@@ -198,12 +198,13 @@ export function toggleSeedEnable(graph,seedInd){
             yield* runFn(thisModule.onReload);
         },
         label: {text: "disable seed", font: "default", color: "white"},
-        outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
+        outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+        hoverCol: "black",
+        animate: function* () {yield* expandOnHover(false)}
     });
 }
 
 export function referencePointLabel(graph, ind, label = (value) => `Dose: ${value} Gy`){
-    console.log(label);
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
@@ -223,47 +224,7 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
             );
         },
         numDecimalsEditing: 3,
-        mouseSlider: {
-            active: true,
-            min: function* () {
-                let module = yield new AlgebraicEffect("GET MODULE");
-                return module.graphs[graph].seeds[0].model.HDRsource ? 0.0000001 : 0;
-            },
-            max: function* () {
-                let module = yield new AlgebraicEffect("GET MODULE");
-                let graphObj = module.graphs[graph];
-                if (graphObj.seeds[0].model.HDRsource){
-                    // set all seeds with a dwell time greater than 0 to max dwell time
-                    let previousDwellTimes = [];
-                    graphObj.seeds.forEach((seed) => {
-                        previousDwellTimes.push(seed.dwellTime);
-                        seed.dwellTime = (seed.dwellTime > 0) ? 0.08333: 0;
-                    });
-                    // take the new point dose to be the max
-                    let maxDose = graphObj.getPointDose(graphObj.refpoints[ind]);
-                    // reset seeds
-                    graphObj.seeds.forEach((seed, ind) => {
-                        seed.dwellTime = previousDwellTimes[ind];
-                    });
-                    console.log(maxDose);
-                    return maxDose;
-                }else{
-                    // set all seeds with a dwell time greater than 0 to max dwell time
-                    let previousAirKermas = [];
-                    graphObj.seeds.forEach((seed) => {
-                        previousAirKermas.push(seed.airKerma);
-                        seed.airKerma = seed.enabled ? airKermaSliderLimits.LDR.max : 0;
-                    });
-                    // take the new point dose to be the max
-                    let maxDose = graphObj.getPointDose(graphObj.refpoints[ind]);
-                    // reset seeds
-                    graphObj.seeds.forEach((seed, ind) => {
-                        seed.airKerma = previousAirKermas[ind];
-                    });
-                    return maxDose;
-                }
-            }
-        }
+        animate: function* () {yield* expandOnHover(false)}
     })
 }
 
@@ -350,7 +311,8 @@ export function multSeedDwellTimeLabel(graph){
             module.graphs[graph].seeds[module.graphs[graph].selectedSeed].dwellTime = clamp(value / 3600,0,0.0833333333333);
             yield* runFn(module.onReload.bind(module));
         },
-        numDecimalsEditing: 3
+        numDecimalsEditing: 3,
+        animate: function* () {yield* expandOnHover(false)}
     });
 }
 
@@ -370,7 +332,8 @@ export function dwellTimeLabel(graph){
             module.graphs[graph].seeds[0].dwellTime = clamp(value / 3600,0,0.0833333333333);
             yield* runFn(module.onReload);
         },
-        numDecimalsEditing: 3
+        numDecimalsEditing: 3,
+        animate: function* () {yield* expandOnHover(false)}
     });
 }
 
@@ -397,45 +360,62 @@ export function airKermaLabel(graph){
             });
         },
         numDecimalsEditing: 3,
+        animate: function* () {yield* expandOnHover(false)}
     })
 }
 
-export function* expandOnHover() {
+export function* expandOnHover(detectClick = true) {
     let self = yield new AlgebraicEffect("GET SELF");
+
+    // a function to store any properties that may be modified into a restingButtonProps attribute
+    let storeProps = () => {
+        self.restingButtonProps = {...self};
+    }
+    // a function to encode the element's properties as a string (checked to see if any updates have occured)
+    let encodedProps = () => JSON.stringify([
+        self.width,
+        self.height,
+        self.x,
+        self.y,
+    ]);
 
     // if any of the button's properties have been changed since this function was last there,
     // (if the button was modified by an outside source), assume that these are the new
     // dimensions to conform to
     if (Object.hasOwn(self, "lastButtonProps")){
-        if (self.lastButtonProps !== JSON.stringify([self.width, self.height, self.x, self.y])){
-            self.restingButtonProps = {...self};
+        if (self.lastButtonProps !== encodedProps()){
+            storeProps();
         }
     }
 
     // if the user is hovering expand slightly
     if (self.hovering()){
         if (!Object.hasOwn(self, "restingButtonProps")){
-            self.restingButtonProps = {...self};
+            storeProps();
         }
-        if (mouse.down){
+
+        // scale element
+        if (mouse.down && detectClick){
             self.width = self.restingButtonProps.width;
             self.height = self.restingButtonProps.height;
         }else{
-            self.width += (self.restingButtonProps.width * 1.1 - self.width) * 0.1;
-            self.height += (self.restingButtonProps.height * 1.1 - self.height) * 0.1;
+            self.width += (self.restingButtonProps.width * 1.1 - self.width) * 0.2;
+            self.height += (self.restingButtonProps.height * 1.1 - self.height) * 0.2;
         }
+
+        // offset it to maintain the center position
         self.x = self.restingButtonProps.x - (self.width - self.restingButtonProps.width) / 2;
         self.y = self.restingButtonProps.y - (self.height - self.restingButtonProps.height) / 2;
     }else if (Object.hasOwn(self, "restingButtonProps")){
         // otherwise shrink slightly
-        self.width += (self.restingButtonProps.width - self.width) * 0.2;
-        self.height += (self.restingButtonProps.height - self.height) * 0.2;
+        self.width += (self.restingButtonProps.width - self.width) * 0.4;
+        self.height += (self.restingButtonProps.height - self.height) * 0.4;
         self.x = self.restingButtonProps.x - (self.width - self.restingButtonProps.width) / 2;
         self.y = self.restingButtonProps.y - (self.height - self.restingButtonProps.height) / 2;
     }
 
     // record button properties to be checked next time
-    self.lastButtonProps = JSON.stringify([self.width, self.height, self.x, self.y]);
+    self.lastButtonProps = encodedProps();
 }
 
 export function modelDropdown(modelOptions,graph,defaultLabel){
@@ -445,7 +425,8 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
             onClick: () => {},
             label: {text: defaultLabel, font: "default", color: "white"},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
-            animate: expandOnHover
+            animate: expandOnHover,
+            hoverCol: "black"
         }),[]
     );
     for (let i = 0; i < modelOptions.length; i++){

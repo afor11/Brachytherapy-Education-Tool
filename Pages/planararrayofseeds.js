@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp, runFn } from '../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp, runFn, expandOnHover } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view, moduleData } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -644,7 +644,9 @@ function expandArrayButton(graph){
             yield* runFn(module.onReload);
         },
         label: {text: "Expand Array", font: "default", color: "black"},
-        outline: {color: "black", thickness: 0}
+        outline: {color: "black", thickness: 0},
+        animate: expandOnHover,
+        hoverCol: "#AFE1AF"
     });
 }
 
@@ -669,7 +671,9 @@ function shrinkArrayButton(graph){
             }
         },
         label: {text: "Shrink Array", font: "default", color: "black"},
-        outline: {color: "black", thickness: 0}
+        outline: {color: "black", thickness: 0},
+        animate: expandOnHover,
+        hoverCol: "rgba(216, 83, 109, 1)",
     });
 }
 
@@ -702,7 +706,8 @@ function seedSpacingLabel(graph){
             setSeedSpacing(module, graph, clamp(value, 0.5, 1.5));
             yield* runFn(module.onReload)
         },
-        numDecimalsEditing: 2
+        numDecimalsEditing: 2,
+        animate: function* () {yield* expandOnHover(false)}
     });
 }
 
