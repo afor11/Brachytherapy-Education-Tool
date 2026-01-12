@@ -14,28 +14,55 @@ import { drawTandem } from './vaginalCylinder.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
 export let tandemAndOvoidsPage = new Module({
     graphs: {
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => point,
+            name: "graph1",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
             anatomyView: "coronal",
             anatomyApplicator: "tandem+ovoids",
             anatomyParams: {
-                length: 30,
+                length: 40,
                 ovoidDiameter: 20
             }
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph2", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => {return {x: point.z, y: point.y, z: point.x}},
+            name: "graph2",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "sagittal",
+            anatomyApplicator: "tandem+ovoids",
+            anatomyParams: {
+                length: 40,
+                ovoidDiameter: 20,
+                angle: 60
+            }
         }),
         graph3: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.x, y: point.z, z: point.y}}, name: "graph3", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => {return {x: point.x, y: point.z, z: point.y}},
+            name: "graph3",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "axial",
+            anatomyApplicator: "tandem+ovoids",
+            anatomyParams: {
+                ovoidDiameter: 20,
+            }
         })
     },
     sliders: {
@@ -255,9 +282,11 @@ export let tandemAndOvoidsPage = new Module({
             );
 
             yield* module.graphs.graph1.refreshAnatomy();
+            yield* module.graphs.graph2.refreshAnatomy();
+            yield* module.graphs.graph3.refreshAnatomy();
             
             module.lastApplicatorLoaded = JSON.stringify(module.applicator);
-            yield* module.onReload(this);
+            yield* module.onReload();
         }
     },
     onUpdate: function* () {
@@ -270,6 +299,8 @@ export let tandemAndOvoidsPage = new Module({
         }
 
         this.graphs.graph1.overlayAnatomy();
+        this.graphs.graph2.overlayAnatomy();
+        this.graphs.graph3.overlayAnatomy();
 
         yield* drawTandem("graph1","coronal");
         yield* drawOvoids("graph1","coronal");
@@ -403,6 +434,8 @@ export let tandemAndOvoidsPage = new Module({
         });
 
         this.graphs.graph1.rescaleAnatomy();
+        this.graphs.graph2.rescaleAnatomy();
+        this.graphs.graph3.rescaleAnatomy();
 
         yield* setEqualFont([
             this.labels.treatmentTime, this.labels.graph1ReferenceLeft, this.labels.graph1ReferenceRight, this.buttons.resetDwellTimes, this.dropDowns.graph1Model,
@@ -482,12 +515,14 @@ function* drawOvoids(graphStr, view){
     ctx.lineWidth = 0.5 * mm.width;
     ctx.strokeStyle = "black";
 
+    let ovoidLeft = new Path2D();
+    let ovoidRight = new Path2D();
     if (view === "coronal"){
-        let ovoidRight = {
+        let ovoidRightDimensions = {
             x: origin.x + (applicator.ovoidDiameter / 2) * mm.width,
             y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
         };
-        let ovoidLeft = {
+        let ovoidLeftDimensions = {
             x: origin.x - (applicator.ovoidDiameter / 2) * mm.width,
             y: origin.y + (applicator.ovoidDiameter / 2) * mm.height
         };
@@ -495,53 +530,49 @@ function* drawOvoids(graphStr, view){
             Math.sqrt(((applicator.ovoidDiameter / 2) ** 2) - (((6 - applicator.ovoidDiameter) / 2) ** 2)),
             (6 - applicator.ovoidDiameter) / 2
         );
-        ctx.beginPath();
-        ctx.ellipse(
-            ovoidRight.x,
-            ovoidRight.y,
+        ovoidLeft.ellipse(
+            ovoidRightDimensions.x,
+            ovoidRightDimensions.y,
             (applicator.ovoidDiameter / 2) * mm.width,
             (applicator.ovoidDiameter / 2) * mm.height,
             0, startAngle, 2 * Math.PI - startAngle , true
         );
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.ellipse(
-            ovoidLeft.x,
-            ovoidLeft.y,
+        ovoidRight.ellipse(
+            ovoidLeftDimensions.x,
+            ovoidLeftDimensions.y,
             (applicator.ovoidDiameter / 2) * mm.width,
             (applicator.ovoidDiameter / 2) * mm.height,
             0, Math.PI - startAngle, startAngle + Math.PI, false
         );
-        ctx.stroke();
     } else if (view === "sagittal"){
-        ctx.beginPath();
-        ctx.roundRect(
+        ovoidLeft.roundRect(
             origin.x - 1.5 * cm.width,
             origin.y,
             3 * cm.width,
             applicator.ovoidDiameter * mm.height,
             roundingRadius
         );
-        ctx.stroke();
     }else if (view === "axial"){
-        ctx.beginPath();
-        ctx.roundRect(
+        ovoidLeft.roundRect(
             origin.x - applicator.ovoidDiameter * mm.width,
             origin.y - 1.5 * cm.height,
             applicator.ovoidDiameter * mm.width,
             3 * cm.height,
             roundingRadius
         );
-        ctx.stroke();
-        ctx.roundRect(
+        ovoidRight.roundRect(
             origin.x,
             origin.y - 1.5 * cm.height,
             applicator.ovoidDiameter * mm.width,
             3 * cm.height,
             roundingRadius
         );
-        ctx.stroke();
     }
+    ctx.stroke(ovoidLeft);
+    backCtx.fillStyle = "white";
+    backCtx.fill(ovoidLeft);
+    ctx.stroke(ovoidRight);
+    backCtx.fill(ovoidRight);
 
     ctx.restore();
 }

@@ -195,7 +195,7 @@ export function toggleSeedEnable(graph,seedInd){
             thisModule.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
             self.label = (seedEnabled ? "enable seed" : "disable seed");
 
-            yield* thisModule.onReload();
+            yield* runFn(thisModule.onReload);
         },
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
@@ -225,13 +225,43 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
         numDecimalsEditing: 3,
         mouseSlider: {
             active: true,
-            min: function* () {return 0},
+            min: function* () {
+                let module = yield new AlgebraicEffect("GET MODULE");
+                return module.graphs[graph].seeds[0].model.HDRsource ? 0.0000001 : 0;
+            },
             max: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
-                return (module.graphs[graph].seeds[0].model.HDRsource) ?
-                    module.graphs[graph].seeds.length * 2
-                :
-                    module.graphs[graph].seeds.length * 3
+                let graphObj = module.graphs[graph];
+                if (graphObj.seeds[0].model.HDRsource){
+                    // set all seeds with a dwell time greater than 0 to max dwell time
+                    let previousDwellTimes = [];
+                    graphObj.seeds.forEach((seed) => {
+                        previousDwellTimes.push(seed.dwellTime);
+                        seed.dwellTime = (seed.dwellTime > 0) ? 0.08333: 0;
+                    });
+                    // take the new point dose to be the max
+                    let maxDose = graphObj.getPointDose(graphObj.refpoints[ind]);
+                    // reset seeds
+                    graphObj.seeds.forEach((seed, ind) => {
+                        seed.dwellTime = previousDwellTimes[ind];
+                    });
+                    console.log(maxDose);
+                    return maxDose;
+                }else{
+                    // set all seeds with a dwell time greater than 0 to max dwell time
+                    let previousAirKermas = [];
+                    graphObj.seeds.forEach((seed) => {
+                        previousAirKermas.push(seed.airKerma);
+                        seed.airKerma = seed.enabled ? airKermaSliderLimits.LDR.max : 0;
+                    });
+                    // take the new point dose to be the max
+                    let maxDose = graphObj.getPointDose(graphObj.refpoints[ind]);
+                    // reset seeds
+                    graphObj.seeds.forEach((seed, ind) => {
+                        seed.airKerma = previousAirKermas[ind];
+                    });
+                    return maxDose;
+                }
             }
         }
     })
@@ -240,33 +270,45 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
 export function* runFn(fn,...args){
     if (fn?.constructor.name === "GeneratorFunction"){
         return yield* fn(...args);
+    }else if (typeof fn === "object"){
+        return yield* fn;
     }else if (typeof fn === "function"){
         return fn(...args);
     }
     return fn;
 }
 
-export function* setDoseAtPoint(graph,dose,point, searchPrecision = 20){
+export function* setDoseAtPoint(graph,dose,point){
     if (graph.seeds[0].model.HDRsource){
-        let dwellTime = {min: 0, max: 0.0833333333333};
-        for (let i = 0; i < searchPrecision; i++){
-            // set the updated dwell time as the mean of the max and min bounds
-            let updatedDwellTime = (dwellTime.min + dwellTime.max) / 2;
-
-            // set the seed dwell time base on updated dwell time
-            graph.seeds.forEach((seed) => {
-                if (seed.dwellTime > 0){
-                    seed.dwellTime = updatedDwellTime;
-                }
-            });
-
-            // update bounds based on point dose test
-            if (graph.getPointDose(point) > dose){
-                dwellTime.max = updatedDwellTime;
-            }else{
-                dwellTime.min = updatedDwellTime;
-            }
+        // if no seeds are active, don't even try
+        if (graph.seeds.filter((seed) => seed.dwellTime > 0).length == 0){return;}
+        // calculate the dose, dividing out the contributions of the dwell time factor to the dose,
+        // to find the dose without accounting for dwell time
+        let doseWithoutDwellTime = graph.getPointDose(point) / graph.seeds.reduce(
+            (dwellFactor, seed) =>
+                dwellFactor + (
+                    (seed.dwellTime > 0) ?
+                        (1 - Math.exp(-seed.dwellTime / (1.44 * seed.model.halfLife)))
+                    :
+                        0
+                    )
+            ,0);
+        let newFactor = -1.44 * Math.log(
+            1 - ((dose / doseWithoutDwellTime)
+            / graph.seeds.filter(
+                (seed) => seed.dwellTime > 0
+            ).length)
+        );
+        if (Number.isNaN(newFactor)){
+            newFactor = 0.08333;
         }
+        graph.seeds.forEach((seed) => {
+            seed.dwellTime = clamp(
+                seed.model.halfLife * newFactor,
+                0,
+                0.08333
+            );
+        });
     }else{
         // set all seeds of the graph to a uniform air kerma
         graph.seeds.forEach((seed) => {
@@ -275,7 +317,11 @@ export function* setDoseAtPoint(graph,dose,point, searchPrecision = 20){
 
         // since airk kerma linearly scales the dose at all points,
         // calculate the updated air kerma with simple division
-        let updatedAirKerma = dose / (graph.getPointDose(point));
+        let updatedAirKerma = clamp(
+            dose / (graph.getPointDose(point)),
+            airKermaSliderLimits.LDR.min,
+            airKermaSliderLimits.LDR.max
+        );
 
         // update seeds with new air kerma
         graph.seeds.forEach((seed) => {
@@ -354,14 +400,53 @@ export function airKermaLabel(graph){
     })
 }
 
+export function* expandOnHover() {
+    let self = yield new AlgebraicEffect("GET SELF");
+
+    // if any of the button's properties have been changed since this function was last there,
+    // (if the button was modified by an outside source), assume that these are the new
+    // dimensions to conform to
+    if (Object.hasOwn(self, "lastButtonProps")){
+        if (self.lastButtonProps !== JSON.stringify([self.width, self.height, self.x, self.y])){
+            self.restingButtonProps = {...self};
+        }
+    }
+
+    // if the user is hovering expand slightly
+    if (self.hovering()){
+        if (!Object.hasOwn(self, "restingButtonProps")){
+            self.restingButtonProps = {...self};
+        }
+        if (mouse.down){
+            self.width = self.restingButtonProps.width;
+            self.height = self.restingButtonProps.height;
+        }else{
+            self.width += (self.restingButtonProps.width * 1.1 - self.width) * 0.1;
+            self.height += (self.restingButtonProps.height * 1.1 - self.height) * 0.1;
+        }
+        self.x = self.restingButtonProps.x - (self.width - self.restingButtonProps.width) / 2;
+        self.y = self.restingButtonProps.y - (self.height - self.restingButtonProps.height) / 2;
+    }else if (Object.hasOwn(self, "restingButtonProps")){
+        // otherwise shrink slightly
+        self.width += (self.restingButtonProps.width - self.width) * 0.2;
+        self.height += (self.restingButtonProps.height - self.height) * 0.2;
+        self.x = self.restingButtonProps.x - (self.width - self.restingButtonProps.width) / 2;
+        self.y = self.restingButtonProps.y - (self.height - self.restingButtonProps.height) / 2;
+    }
+
+    // record button properties to be checked next time
+    self.lastButtonProps = JSON.stringify([self.width, self.height, self.x, self.y]);
+}
+
 export function modelDropdown(modelOptions,graph,defaultLabel){
     let dropdown = new Dropdown(
         new Button({
             x: 0, y: 0, width: 0, height: 0, bgColor: "black",
             onClick: () => {},
             label: {text: defaultLabel, font: "default", color: "white"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
-        ),[]
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
+            animate: expandOnHover
+        }),[]
     );
     for (let i = 0; i < modelOptions.length; i++){
         let model = modelOptions[i];
@@ -386,6 +471,7 @@ export function modelDropdown(modelOptions,graph,defaultLabel){
                 parent.collapseDropdown();
                 yield* runFn(module.onReload.bind(module));
             },
+            animate: expandOnHover
         }));
     }
     return dropdown;

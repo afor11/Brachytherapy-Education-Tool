@@ -116,51 +116,56 @@ export class NumberInput {
                     module.onMouseUp = module.defaultInputHandler.onMouseUp;
                 }
                 self.editing = false;
-                console.log("test1");
             }
 
             if (this.mouseSlider.active){
                 // initalize label slider handling
                 this.clickData = {
                     startTime: new Date(),
-                    x: mouse.x
+                    x: mouse.x,
+                    y: mouse.y
                 };
 
-                module.onMouseMove = function* (e) {
-                    // don't react before 300 ms, the user may just like to move their cursor while clicking,
-                    // and the mouseUp event will hopefully fire before this goins into effect in that case
-                    if (
-                        (new Date().getTime() - self.clickData.startTime <= 300)
-                        || (!self.mouseSlider.active)
-                    ){return}
+                let mouseMovedTooMuch = () => Math.abs(mouse.x - self.clickData.x) < 8 * Math.abs(mouse.y - self.clickData.y);
+                let waitedTooLong = () => new Date().getTime() - self.clickData.startTime > 500;
 
-                    if (mouse.x - self.clickData.x > (0.03 * canvas.width)){
+                module.onMouseMove = function* (e) {
+                    if (!self.mouseSlider.active){return}
+
+                    // if self.clickData.startTime = -1, the user likely indended to use this element as a slider 
+                    if (!mouseMovedTooMuch() && waitedTooLong()){
                         self.clickData.startTime = -1;
                     }
+
                     self.editing = false;
+                    self.editingValue = yield* runFn(self.getValue());
+
+                    if (!mouse.down || (mouseMovedTooMuch() || waitedTooLong()) && (self.clickData.startTime != -1)){
+                        self.mouseSlider.active = false;
+                        self.editing = true;
+                        self.initalValue = yield* runFn(self.getValue());
+                        return;
+                    }
+
                     let min = yield* runFn(self.mouseSlider.min);
                     let max = yield* runFn(self.mouseSlider.max);
                     let value = clamp(
-                        parseFloat(self.initalValue) + ((mouse.x - self.clickData.x) / self.width) * (max - parseFloat(self.initalValue)),
+                        parseFloat(self.initalValue) + ((mouse.x - self.clickData.x) / (self.width / 2)) * (max - min),
                         min,
                         max
                     );
                     if (value != parseFloat(self.initalValue)){
                         yield* runFn(self.onEnter, value);
                     }
-                    self.editingValue = (yield* runFn(self.getValue()));
                     yield* runFn(module.defaultInputHandler.onMouseMove.call(this, e));
                     return true;
                 }
 
-                module.onMouseUp = function* () {
-                    // wait 500 ms or if the mouse has moved, at which point switch off the mouse slider mode
-                    if (new Date().getTime() - self.clickData.startTime <= 500){
-                        self.mouseSlider.active = false;
-                        return;
+                mouse.onMouseUp = function* (){
+                    if (self.mouseSlider.active && waitedTooLong()){
+                        yield* finishEditing(module, self);
+                        return true;
                     }
-                    yield* finishEditing(module, self);
-                    return true;
                 }
             }
 

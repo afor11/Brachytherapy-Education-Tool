@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { moduleData, view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -36,7 +36,7 @@ export let stringofseedsPage = new Module({
             updateValue: function* (value) {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.seedSpacing = 0.5 + value;
-                module.onReload();
+                yield* runFn(module.onReload)
             },
             getValue: function* () {
                 return clamp((yield new AlgebraicEffect("GET MODULE")).seedSpacing, 0.5, 1.5) - 0.5;
@@ -90,7 +90,7 @@ export let stringofseedsPage = new Module({
                         0.00833
                     )
                 );
-                module.onReload();
+                yield* runFn(module.onReload)
             },
             outline: {color: "black", thickness: 0}
         }),
@@ -109,7 +109,7 @@ export let stringofseedsPage = new Module({
                         module.graphs.graph1.selectedSeed = Math.max(module.graphs.graph1.selectedSeed - 1,0);
                     }
                     module.graphs.graph1.seeds.pop();
-                    module.onReload();
+                    yield* runFn(module.onReload)
                 }
             },
             outline: {color: "black", thickness: 0}
@@ -157,7 +157,7 @@ export let stringofseedsPage = new Module({
         yield* this.buttons.graph1AddSeed.draw();
         yield* this.buttons.graph1RemoveSeed.draw();
     },
-    onReload: function () {
+    onReload: function* () {
         refreshNavBar(thisModule);
 
         // space seeds based on seed spacing
@@ -287,7 +287,7 @@ export let stringofseedsPage = new Module({
             height: splitY / 5
         }, {horizontal: 0.2, vertical: 0.2}));
 
-        this.onUpdate();
+        yield* runFn(this.onUpdate);
     },
     defaultInputHandler: {
         onMouseDown: function* () {

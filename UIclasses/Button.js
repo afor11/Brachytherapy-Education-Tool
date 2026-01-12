@@ -1,12 +1,11 @@
-import { getFontSize, buttonPress, nothing, runFn } from '../utils.js';
-import { EventFunction } from '../eventFunction.js';
-import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
+import { getFontSize, runFn } from '../utils.js';
+import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Button {
-    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}}){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -18,8 +17,22 @@ export class Button {
         this.onClick = onClick;
         this.outlineColor = outlineColor;
         this.outlineThickness = outlineThickness;
+        this.animate = animate;
     }
-    *draw(){ // this function does not have to be a genertor, but it is one for consistency
+    *draw(){
+        // every time a button is being drawn, check if the button should run the onHover function
+        let self = this;
+        yield* chainEffectHandler({
+            tryCode: function* () {
+                yield* self.animate();
+            },
+            handleCode: function* (effect) {
+                if (effect === "GET SELF"){
+                    return self;
+                }
+            }
+        });
+
         if (this.font === "default"){
             ctx.font = this.getDefaultFont() + "px Arial";
         }else{

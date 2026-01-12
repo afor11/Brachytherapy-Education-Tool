@@ -1,7 +1,7 @@
 // generates a string that can be loaded in by curveEditor from the json
 import { readFile, writeFile } from 'fs/promises';
 const filePath = './Anatomy Code/anatomy.json';
-const outputFile = "./Anatomy Code/loadString.txt";
+const outputFile = "./Anatomy Code/anatomy.json";
 async function formatLoadString() {
     try {
         let jsonData = await readFile(filePath, {encoding: 'utf8'});

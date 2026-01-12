@@ -23,7 +23,15 @@ export function resetNavBar(moduleData){
                 yield* runFn(moduleData[moduleName].onReload);
             },
             label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+            animate: function* () {
+                let self = yield new AlgebraicEffect("GET SELF");
+                if (self.hovering() && (self.bgColor !== "black")){
+                    self.bgColor = "#ADD8E6";
+                }else if (self.bgColor !== "black"){
+                    self.bgColor = "white";
+                }
+            }
         });
         return navButtons;
     },{});

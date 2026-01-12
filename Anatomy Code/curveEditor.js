@@ -6,12 +6,11 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "coronalVaginalCylinder"; // viewname cannot have whitespace
+const viewName = "axialtandem+ovoids"; // viewname cannot have whitespace
 const maxUndos = 100;
-// ORDER MATTERS
+// ORDER MATTERS :(
 let paramSet = {
-    length: [20, 60],
-    diameter: [20, 35],
+    ovoidDiameter: [20, 35],
 };
 let usingParamSet = true;
 
@@ -114,7 +113,7 @@ if (usingParamSet){
     }
     params = {...defaultParams[0]};
 }else{
-    params = {...paramSet};
+    params = {...paramSet}
 }
 
 //setup canvas and variables
@@ -292,7 +291,7 @@ function drawImage(){
     
 }
 
-function drawApplicator(){
+function drawApplicator(view){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -327,7 +326,6 @@ function drawApplicator(){
         curvePercent * 1.5 * cm.width,
         curvePercent * applicator.ovoidDiameter * mm.height
     );
-    const view = "coronal";
 
     ctx.save();
     ctx.beginPath();
@@ -407,7 +405,7 @@ function drawApplicator(){
     ctx.restore();
 }
 
-function drawTandem(tandemParams){
+function drawTandem(tandemParams, view){
     //## modify for non-coronal view to include angle param
     if (
         (data.measuringPoints.length < 2)
@@ -456,23 +454,51 @@ function drawTandem(tandemParams){
 
     // draws the catheter
     ctx.moveTo(origin.x, origin.y);
-    ctx.lineTo(origin.x, origin.y + 10 * cm.height);
-    ctx.stroke();
+    if (view === "sagittal"){
+        let tandemAngle = (360 - (applicator.angle ?? 90)) * (Math.PI / 180);
+        ctx.quadraticCurveTo(
+            origin.x,
+            origin.y + cm.height,
+            origin.x + 2 * cm.width * Math.cos(tandemAngle),
+            origin.y + cm.height - 2 * cm.height * Math.sin(tandemAngle) // negated because positive y is down
+        );
+        ctx.lineTo(
+            origin.x + 10 * cm.width * Math.cos(tandemAngle),
+            origin.y + cm.height - 10 * cm.height * Math.sin(tandemAngle)
+        );
+        ctx.stroke();
+
+    } else if (view === "axial"){
+        ctx.lineTo(origin.x, origin.y - 10 * cm.height);
+        ctx.stroke();
+
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, appDiameter / 2 * mm.width, 0, 2 * Math.PI);
+        ctx.fill();
+
+    } else if (view === "coronal"){
+        ctx.lineTo(origin.x, origin.y + 10 * cm.height);
+        ctx.stroke();
+    }
 
     // draws the tandem for sagittal and coronal views (since they look identical)
-    ctx.beginPath();
-    ctx.lineWidth = 0.5 * mm.width;
-    ctx.roundRect(
-        origin.x - (appDiameter / 2) * mm.width,
-        origin.y - applicator.length * mm.height,
-        appDiameter * mm.width,
-        applicator.length * mm.height,
-        [
-            (appDiameter / 2) * mm.width, (appDiameter / 2) * mm.width,
-            0, 0
-        ]
-    );
-    ctx.stroke();
+    if ((view === "sagittal") || (view === "coronal")){
+        let tandemPath = new Path2D();
+        tandemPath.roundRect(
+            origin.x - (appDiameter / 2) * mm.width,
+            origin.y - applicator.length * mm.height,
+            appDiameter * mm.width,
+            applicator.length * mm.height,
+            [
+                (appDiameter / 2) * mm.width, (appDiameter / 2) * mm.width,
+                0, 0
+            ]
+        );
+
+        ctx.lineWidth = 0.5 * mm.width;
+        ctx.stroke(tandemPath);
+    }
 
     ctx.restore();
 }
@@ -490,8 +516,8 @@ function tick(){
     if (showPicture){
         ctx.lineCap = "butt";
         ctx.lineJoin = "miter";
-        drawApplicator();
-        drawTandem(params);
+        drawApplicator("axial");
+        drawTandem(params, "axial");
         ctx.lineCap = "round";
         ctx.lineJoin = "bevel";
     }
@@ -571,7 +597,13 @@ function tick(){
                     usingParamSet ?
                         (", " + ((paramSetInd / (defaultParams.length - 1)) * 100).toFixed(1) + "%")
                     :
-                        ""
+                    (
+                        (typeof jsonString !== "undefined") ?
+                            (", " + ((paramSetInd / (JSON.parse(jsonString)[viewName].length - 1)) * 100).toFixed(1) + "%")
+                        :
+                            ""
+                    )
+
                 ) + ")",
             menuPos.x,menuPos.y
         );
@@ -625,7 +657,7 @@ function tick(){
 }
 
 function getValidActions(){
-    let validActions = ["<: undo", ">: redo", "m: new measuring tape"];
+    let validActions = ["<: undo", ">: redo"];
     if (data.editingMode === "enteringName"){
         validActions.push("enter name");
         return validActions;
@@ -633,7 +665,8 @@ function getValidActions(){
     validActions.push(
         "q: toggle visable points",
         "v: toggle showing curves",
-        "b: toggle showing picture"
+        "b: toggle showing picture",
+        "m: new measuring tape"
     );
     if ((data.editingMode === "adjustingFillColor") || (data.editingMode === "adjustingOutlineColor")){
         if (data.editingMode === "adjustingFillColor"){
@@ -690,6 +723,8 @@ function getValidActions(){
             ";/:: move block down",
             "l/L: move block left",
             "'/\": move block right",
+            "[: vertically mirror block",
+            "]: horizontally mirror block",
         );
     }
     if (data.editingMode === "enteringScale"){
@@ -879,11 +914,6 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 document.addEventListener("keydown", (e) => {
-    if (e.key === "m"){
-        saveData();
-        data.addingTapeMeasure = true;
-        return;
-    }
     if (data.editingMode === "enteringName"){
         if ((e.key === "Backspace") && (data.jsonData[viewName][viewInd].blocks[blockEditing].name.length > 0)){
             data.jsonData[viewName][viewInd].blocks[blockEditing].name = data.jsonData[viewName][viewInd].blocks[blockEditing].name.slice(0,-1);
@@ -901,6 +931,11 @@ document.addEventListener("keydown", (e) => {
             data.jsonData[viewName][viewInd].blocks[blockEditing].name += e.key;
             return;
         }
+    }
+    if (e.key === "m"){
+        saveData();
+        data.addingTapeMeasure = true;
+        return;
     }
     if (data.editingMode === "adjustingFillColor"){
         if (e.key === "c"){
@@ -1005,13 +1040,25 @@ document.addEventListener("keydown", (e) => {
                 load(jsonString,false);
             }
             if (e.key === "n"){
-                paramSetInd = Math.min(paramSetInd + 1, defaultParams.length - 1)
-                params = {...defaultParams[paramSetInd]};
+                if (usingParamSet){
+                    paramSetInd = Math.min(paramSetInd + 1, defaultParams.length - 1);
+                    params = {...defaultParams[paramSetInd]};
+                }else{
+                    let paramList = JSON.parse(jsonString)[viewName].map((point) => point.params);
+                    paramSetInd = Math.min(paramSetInd + 1, paramList.length - 1);
+                    params = {...paramList[paramSetInd]};
+                }
                 load(jsonString,false);
             }
             if (e.key === "N"){
-                paramSetInd = Math.max(paramSetInd - 1, 0)
-                params = {...defaultParams[paramSetInd]};
+                if (usingParamSet){
+                    paramSetInd = Math.max(paramSetInd - 1, 0);
+                    params = {...defaultParams[paramSetInd]};
+                }else{
+                    let paramList = JSON.parse(jsonString)[viewName].map((point) => point.params);
+                    paramSetInd = Math.max(paramSetInd - 1, 0);
+                    params = {...paramList[paramSetInd]};
+                }
                 load(jsonString,false);
             }
         }
@@ -1058,13 +1105,26 @@ document.addEventListener("keydown", (e) => {
         }
         if ("uUiI".includes(e.key)){
             saveData();
-            let dAngle = [0.2,0.1,-0.2,-0.1]["uUiI".indexOf(e.key)];
+            let dAngle = [0.1,0.005,-0.1,-0.005]["uUiI".indexOf(e.key)];
             data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     let x = (curve["x" + i] - mouse.x);
                     let y = (curve["y" + i] - mouse.y);
                     curve["x" + i] = x * Math.cos(dAngle) - y * Math.sin(dAngle) + mouse.x;
                     curve["y" + i] = x * Math.sin(dAngle) + y * Math.cos(dAngle) + mouse.y;
+                }
+            });
+        }
+        if ("[]".includes(e.key)){
+            saveData();
+            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+                for (let i = 1; i < 5; i++){
+                    if (e.key === "]"){
+                        curve["x" + i] += 2 * (mouse.x - curve["x" + i]);
+                    }
+                    if (e.key === "["){
+                        curve["y" + i] += 2 * (mouse.y - curve["y" + i]);
+                    }
                 }
             });
         }
@@ -1127,8 +1187,10 @@ document.addEventListener("keydown", (e) => {
         nextDatas.unshift(cloneObj(data));
         data = cloneObj(lastDatas[lastDatas.length - 1]);
         data.tapeMeasures.forEach((tapeMeasure, ind) => {
-            let tempTape = new MeasuringTape(tapeMeasure.points[0], data.tapeMeasures.length);
-            tempTape.points.push(tapeMeasure.points[1]);
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID);
+            if (typeof tapeMeasure.points[1] !== "undefined"){
+                tempTape.points.push(tapeMeasure.points[1]);
+            }
             data.tapeMeasures[ind] = tempTape;
         });
         lastDatas.splice(lastDatas.length - 1);
@@ -1139,8 +1201,10 @@ document.addEventListener("keydown", (e) => {
         let lastData = cloneObj(data);
         data = cloneObj(nextDatas[0]);
         data.tapeMeasures.forEach((tapeMeasure, ind) => {
-            let tempTape = new MeasuringTape(tapeMeasure.points[0], data.tapeMeasures.length);
-            tempTape.points.push(tapeMeasure.points[1]);
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID);
+            if (typeof tapeMeasure.points[1] !== "undefined"){
+                tempTape.points.push(tapeMeasure.points[1]);
+            }
             data.tapeMeasures[ind] = tempTape;
         });
         nextDatas = nextDatas.splice(1);
@@ -1173,7 +1237,7 @@ document.addEventListener("keydown", (e) => {
         data.editingMode = "finishingBlock";
         return;
     }
-    if (e.key === "k"){ //delete block
+    if ((e.key === "k") && (data.jsonData[viewName][viewInd].blocks.length > 1)){ //delete block
         saveData();
         data.jsonData[viewName][viewInd].blocks.splice(blockEditing,1);
         blockEditing = Math.max(blockEditing - 1, 0);

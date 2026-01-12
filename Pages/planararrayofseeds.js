@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp } from '../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp, runFn } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view, moduleData } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -204,7 +204,7 @@ export let PlanarArrayOfSeeds = new Module({
         yield* this.labels.graph2SeedSpacing.draw();
         yield* this.dropDowns.graph2Model.draw();
     },
-    onReload: function () {
+    onReload: function* () {
         refreshNavBar(thisModule);
 
         let graph3Div = document.getElementById("graph3");
@@ -524,7 +524,7 @@ export let PlanarArrayOfSeeds = new Module({
             width: this.graphs.graph2.graphDimensions.width * 0.27,
             height: this.graphs.graph2.graphDimensions.height * 0.09,
         });
-        this.onUpdate();
+        yield* runFn(this.onUpdate);
     },
     defaultInputHandler: {
         onMouseDown: function* () {
@@ -641,7 +641,7 @@ function expandArrayButton(graph){
                 seeds[i].pos.y = ((sideLength + 1) / 2) * seedSpacing;
                 module.graphs[graph].seeds.push(seeds[i]);
             }
-            module.onReload();
+            yield* runFn(module.onReload);
         },
         label: {text: "Expand Array", font: "default", color: "black"},
         outline: {color: "black", thickness: 0}
@@ -665,7 +665,7 @@ function shrinkArrayButton(graph){
                 if (module.graphs[graph].selectedSeed >= module.graphs[graph].seeds.length){
                     module.graphs[graph].selectedSeed = -1;
                 }
-                module.onReload();
+                yield* runFn(module.onReload);
             }
         },
         label: {text: "Shrink Array", font: "default", color: "black"},
@@ -679,7 +679,7 @@ function seedSpacingSlider(graph){
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             setSeedSpacing(module, graph, value + 0.5);
-            module.onReload();
+            yield* runFn(module.onReload);
         },
         getValue: function* (){
             return (yield new AlgebraicEffect("GET MODULE")).seedSpacing[graph] - 0.5;
@@ -700,7 +700,7 @@ function seedSpacingLabel(graph){
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
             setSeedSpacing(module, graph, clamp(value, 0.5, 1.5));
-            module.onReload();
+            yield* runFn(module.onReload)
         },
         numDecimalsEditing: 2
     });
