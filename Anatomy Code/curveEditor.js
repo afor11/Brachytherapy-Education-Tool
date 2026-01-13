@@ -6,13 +6,15 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "axialtandem+ovoids"; // viewname cannot have whitespace
+const viewName = "sagittaltandem+ring"; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
 let paramSet = {
-    ovoidDiameter: [20, 35],
+    ringDiameter: 20,
+    length: 30,
+    angle: 90
 };
-let usingParamSet = true;
+let usingParamSet = false;
 
 /*
 x = go to next block
@@ -291,7 +293,106 @@ function drawImage(){
     
 }
 
-function drawApplicator(view){
+function drawApplicatorTandemRing(view){
+    if (
+        (data.measuringPoints.length < 2)
+        || (typeof data.measuredDistance === "undefined")
+        || (typeof data.origin.x == 0)
+    ){
+        return;
+    }
+    let applicator = params;
+    let graph = {
+        graphDimensions: {
+            x: 0,
+            y: 0,
+            width: canvas.width,
+            height: canvas.height
+        }
+    }
+    let distRatio = getDistance(
+        [data.measuringPoints[0].x,data.measuringPoints[0].y],
+        [data.measuringPoints[1].x,data.measuringPoints[1].y]
+    ) / data.measuredDistance;
+    let mm = {
+        width: distRatio,
+        height: distRatio
+    }
+    let cm = {
+        width: mm.width * 10,
+        height: mm.height * 10
+    };
+    let origin = data.origin;
+
+    ctx.save();
+    let clippingRegion = new Path2D();
+    clippingRegion.rect(
+        graph.graphDimensions.x,
+        graph.graphDimensions.y,
+        graph.graphDimensions.width,
+        graph.graphDimensions.height
+    );
+    ctx.clip(clippingRegion);
+
+    ctx.lineWidth = 0.5 * mm.width;
+    ctx.strokeStyle = "black";
+
+    const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
+    const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
+    if (view == "axial"){
+        // draw inner ring
+        ctx.beginPath();
+        ctx.ellipse(
+            origin.x,
+            origin.y,
+            innerRadius * mm.width,
+            innerRadius * mm.height,
+            0, 0, 2 * Math.PI
+        );
+        ctx.stroke();
+
+        // draw outer ring
+        ctx.beginPath();
+        ctx.ellipse(
+            origin.x,
+            origin.y,
+            outerRadius * mm.width,
+            outerRadius * mm.height,
+            0, 0, 2 * Math.PI
+        );
+        ctx.stroke();
+    } else if ((view == "sagittal") || (view == "coronal")){
+        let cornerRadii = [
+            (outerRadius - innerRadius) / 2 * mm.width, (outerRadius - innerRadius) / 2 * mm.width,
+            (outerRadius - innerRadius) * mm.width / 4, (outerRadius - innerRadius) * mm.width / 4
+        ];
+        // draw left part of ring
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x - outerRadius * mm.width,
+            origin.y - 0.75 * cm.height,
+            (outerRadius - innerRadius) * mm.width,
+            1.25 * cm.height,
+            cornerRadii
+        );
+        ctx.stroke();
+
+        // draw right part of ring
+        ctx.beginPath();
+        ctx.roundRect(
+            origin.x + innerRadius * mm.width,
+            origin.y - 0.75 * cm.height,
+            (outerRadius - innerRadius) * mm.width,
+            1.25 * cm.height,
+            cornerRadii
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawApplicatorTandemOvoids(view){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -405,8 +506,7 @@ function drawApplicator(view){
     ctx.restore();
 }
 
-function drawTandem(tandemParams, view){
-    //## modify for non-coronal view to include angle param
+function drawTandem(view){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -414,7 +514,7 @@ function drawTandem(tandemParams, view){
     ){
         return;
     }
-    let applicator = tandemParams;
+    let applicator = params;
     let graph = {
         graphDimensions: {
             x: 0,
@@ -516,8 +616,8 @@ function tick(){
     if (showPicture){
         ctx.lineCap = "butt";
         ctx.lineJoin = "miter";
-        drawApplicator("axial");
-        drawTandem(params, "axial");
+        drawApplicatorTandemRing("sagittal");
+        drawTandem("sagittal");
         ctx.lineCap = "round";
         ctx.lineJoin = "bevel";
     }

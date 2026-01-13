@@ -14,22 +14,55 @@ import { drawTandem } from './vaginalCylinder.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+let backCanvas = document.getElementById("backCanvas");
+let backCtx = backCanvas.getContext("2d");
+
 export let tandemAndRingPage = new Module({
     graphs: {
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => point,
+            name: "graph1",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "coronal",
+            anatomyApplicator: "tandem+ring",
+            anatomyParams: {
+                length: 40,
+                ringDiameter: 20
+            }
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.z, y: point.y, z: point.x}}, name: "graph2", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => {return {x: point.z, y: point.y, z: point.x}},
+            name: "graph2",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "sagittal",
+            anatomyApplicator: "tandem+ring",
+            anatomyParams: {
+                length: 40,
+                ringDiameter: 20,
+                angle: 60
+            }
         }),
         graph3: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 6, 0.0625), perspective: (point) => {return {x: point.x, y: point.z, z: point.y}}, name: "graph3", refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}]
+            xTicks: getRange(-2, 2, 0.0625),
+            yTicks: getRange(-2, 6, 0.0625),
+            perspective: (point) => {return {x: point.x, y: point.z, z: point.y}},
+            name: "graph3",
+            refpoints: [{x: 2, y: 2, z: 0}, {x: -2, y: 2, z: 0}],
+            anatomyView: "axial",
+            anatomyApplicator: "tandem+ring",
+            anatomyParams: {
+                ringDiameter: 20,
+            }
         }),
     },
     sliders: {
@@ -257,6 +290,10 @@ export let tandemAndRingPage = new Module({
                 }
             );
 
+            yield* module.graphs.graph1.refreshAnatomy();
+            yield* module.graphs.graph2.refreshAnatomy();
+            yield* module.graphs.graph3.refreshAnatomy();
+
             module.lastApplicatorLoaded = JSON.stringify(module.applicator);
             yield* module.onReload();
         }
@@ -269,6 +306,10 @@ export let tandemAndRingPage = new Module({
         for (let i = 0; i < navButtons.length; i++){
             yield* navButtons[i].draw();
         }
+
+        this.graphs.graph1.overlayAnatomy();
+        this.graphs.graph2.overlayAnatomy();
+        this.graphs.graph3.overlayAnatomy();
 
         yield* drawTandem("graph1", "coronal");
         yield* drawRing("graph1", "coronal");
@@ -322,6 +363,10 @@ export let tandemAndRingPage = new Module({
 
                 graph.drawGraph(document.getElementById(graph.name));
             });
+
+            this.graphs.graph1.rescaleAnatomy();
+            this.graphs.graph2.rescaleAnatomy();
+            this.graphs.graph3.rescaleAnatomy();
 
             let elmWidth = view.width / 5;
             let elmHeight = splitY / 3;
@@ -496,7 +541,6 @@ function* drawRing(graphStr, view){
     }
     let origin = graph.graphToScreenPos({x: 0, y: 0});
 
-    ctx.save();
     let clippingRegion = new Path2D();
     clippingRegion.rect(
         graph.graphDimensions.x,
@@ -504,62 +548,81 @@ function* drawRing(graphStr, view){
         graph.graphDimensions.width,
         graph.graphDimensions.height
     );
+
+    // set clipping region so drawing does not go outside of graph
+    ctx.save();
     ctx.clip(clippingRegion);
+
+    backCtx.save();
+    backCtx.clip(clippingRegion, "evenodd");
 
     ctx.lineWidth = 0.5 * mm.width;
     ctx.strokeStyle = "black";
 
     const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
     const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
-    if (view == "axial"){
-        // draw inner ring
-        ctx.beginPath();
-        ctx.ellipse(
-            origin.x,
-            origin.y,
-            innerRadius * mm.width,
-            innerRadius * mm.height,
-            0, 0, 2 * Math.PI
-        );
-        ctx.stroke();
 
-        // draw outer ring
-        ctx.beginPath();
-        ctx.ellipse(
+    backCtx.lineWidth = 0.5 * mm.width;
+    backCtx.strokeStyle = "black";
+
+    if (view == "axial"){
+        let ring = new Path2D();
+
+        // draw inner ring
+        ring.ellipse(
             origin.x,
             origin.y,
             outerRadius * mm.width,
             outerRadius * mm.height,
             0, 0, 2 * Math.PI
         );
-        ctx.stroke();
+
+        // draw outer ring
+        ring.ellipse(
+            origin.x,
+            origin.y,
+            innerRadius * mm.width,
+            innerRadius * mm.height,
+            0, 0, 2 * Math.PI
+        );
+
+        backCtx.fillStyle = "white";
+        backCtx.clip(ring, "evenodd");
+        backCtx.fill(ring);
+        ctx.stroke(ring);
     } else if ((view == "sagittal") || (view == "coronal")){
+        let leftRing = new Path2D();
+        let rightRing = new Path2D();
+
         let cornerRadii = [
             (outerRadius - innerRadius) / 2 * mm.width, (outerRadius - innerRadius) / 2 * mm.width,
             (outerRadius - innerRadius) * mm.width / 4, (outerRadius - innerRadius) * mm.width / 4
         ];
         // draw left part of ring
-        ctx.beginPath();
-        ctx.roundRect(
+        leftRing.roundRect(
             origin.x - outerRadius * mm.width,
             origin.y - 0.75 * cm.height,
             (outerRadius - innerRadius) * mm.width,
             1.25 * cm.height,
             cornerRadii
         );
-        ctx.stroke();
 
         // draw right part of ring
-        ctx.beginPath();
-        ctx.roundRect(
+        rightRing.roundRect(
             origin.x + innerRadius * mm.width,
             origin.y - 0.75 * cm.height,
             (outerRadius - innerRadius) * mm.width,
             1.25 * cm.height,
             cornerRadii
         );
-        ctx.stroke();
+
+        backCtx.fillStyle = "white";
+        backCtx.fill(leftRing);
+        backCtx.fill(rightRing);
+        ctx.stroke(leftRing);
+        ctx.stroke(rightRing);
     }
 
     ctx.restore();
+    backCtx.restore();
 }
