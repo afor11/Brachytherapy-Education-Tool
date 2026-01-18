@@ -72,11 +72,7 @@ effectHandler({
     tryCode: function* () {
         yield* runFn(moduleData[module].onReload);
     },
-    handleCode: function(effect){
-        if (effect === "GET MODULE"){
-            return moduleData[module];
-        }
-    }
+    handleCode: mainEffectHandler
 });
 
 setInterval(tick,50);
@@ -88,11 +84,7 @@ function tick(){
         tryCode: function* () {
             yield* runFn(moduleData[module].onUpdate);
         },
-        handleCode: function(effect){
-            if (effect === "GET MODULE"){
-                return moduleData[module];
-            }
-        }
+        handleCode: mainEffectHandler
     });
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
         view = {
@@ -110,11 +102,7 @@ function tick(){
             tryCode: function* () {
                 yield* runFn(moduleData[module].onReload);
             },
-            handleCode: function(effect){
-                if (effect === "GET MODULE"){
-                    return moduleData[module];
-                }
-            }
+            handleCode: mainEffectHandler
         });
     }
 }
@@ -127,7 +115,12 @@ addEventListener("scroll",function (){
 });
 addEventListener("mousemove",function (e){
     updateMousePos(e);
-    moduleData[module].eventHandler("onMouseMove",e);
+    effectHandler({
+        tryCode: function* (e) {
+            yield* runFn(moduleData[module].onMouseMove, e);
+        },
+        handleCode: mainEffectHandler
+    });
 });
 addEventListener("mousedown",function (e){
     updateMousePos(e);
@@ -135,25 +128,45 @@ addEventListener("mousedown",function (e){
     Object.values(navBar).forEach((pageButton) => {
         effectHandler({
             tryCode: pageButton.checkClicked(),
-            handleCode: function(effect){
-                if (effect === "GET MODULE"){
-                    return moduleData[module];
-                }
-            }
+            handleCode: mainEffectHandler
         })
     });
-    moduleData[module].eventHandler("onMouseDown",e);
+    effectHandler({
+        tryCode: function* (e) {
+            yield* runFn(moduleData[module].onMouseDown, e);
+        },
+        handleCode: mainEffectHandler
+    });
 });
 addEventListener("mouseup",function (e){
     updateMousePos(e);
     mouse.down = false;
-    moduleData[module].eventHandler("onMouseUp",e);
+    effectHandler({
+        tryCode: function* (e) {
+            yield* runFn(moduleData[module].onMouseUp, e);
+        },
+        handleCode: mainEffectHandler
+    });
 });
 addEventListener("keydown", function (e) {
-    moduleData[module].eventHandler("onKeyDown",e);
+    effectHandler({
+        tryCode: function* (e) {
+            yield* runFn(moduleData[module].onKeyDown, e);
+        },
+        handleCode: mainEffectHandler
+    });
 });
 
 function updateMousePos(e){
     mouse.x = e.clientX + scrollPos.x;
     mouse.y = e.clientY + scrollPos.y;
+}
+
+function mainEffectHandler(effect, ...args){
+    if (effect === "GET MODULE"){
+        return moduleData[module];
+    }
+    if (effect === "ERROR"){
+        console.error("error");
+    }
 }

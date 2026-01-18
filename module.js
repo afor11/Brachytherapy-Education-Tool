@@ -1,5 +1,4 @@
 import { nothing } from "./utils.js";
-import { AlgebraicEffect, effectHandler } from './algebraicEffect.js';
 
 export class Module {
     constructor ({
@@ -57,25 +56,5 @@ export class Module {
             onMouseUp: this.onMouseUp.bind(this),
             onKeyDown: this.onKeyDown.bind(this)
         };
-    }
-    eventHandler(event, e) {
-        if (typeof this[event] === "function"){
-            if (this[event].constructor.name === "GeneratorFunction"){
-                // if the event function is a generator function, handle its effects
-                effectHandler({
-                    tryCode: this[event](e),
-                    handleCode: (effect) => {
-                        if (effect === "GET MODULE"){
-                            return this;
-                        }
-                    }
-                });
-            }else{
-                // otherwise simply call the function
-                this[event].call(this,e);
-            }
-        }else if (typeof this[event] === "object"){
-            this[event].func.call({module: this, self: this[event].self}, e);
-        }
     }
 }

@@ -563,10 +563,6 @@ let nothingSetup = function () {};
 nothingSetup.isNothing = true;
 export const nothing = nothingSetup; //it looks like a useless function, but it's nice for shorthand
 
-// lets the event handler function know that the event has been handled (since the
-// isNothing flag is undefined) but that it shouldn't do anything more
-export const eventHandled = () => {}
-
 export function* setEqualFont(elms) {
     // get font
     let font = Infinity;

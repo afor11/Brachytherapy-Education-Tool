@@ -1,6 +1,5 @@
-import { nothing, runFn } from '../utils.js';
-import { EventFunction } from '../eventFunction.js';
-import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
+import { runFn } from '../utils.js';
+import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -77,10 +76,6 @@ export class Slider{
                 }
             };
 
-            // set the onMouseUp function such that when the user releases 
-            // the mouse, it resets the onMouseMove and onMouseUp functions
-            // you use this instead of this.module to get the module because
-            // the function is not wrapped in an EventFunction object
             module.onMouseUp = function () {
                 module.onMouseMove = module.defaultInputHandler.onMouseMove;
                 module.onMouseUp = module.defaultInputHandler.onMouseUp;

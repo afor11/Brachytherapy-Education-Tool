@@ -9,59 +9,85 @@ export class MarchingTriangles {
         this.isolines = isolines;
         this.data = [];
         this.dimensions = dimensions;
+        this.trisVisited = [];
     }
-    refreshPath(){
-        const lerp = (a, b) => (a.value - ((a.weight) / (b.weight - a.weight)) * (b.value - a.value))
-        const edgeLerp = (edgeA, edgeB, isoline) => (
-            ((edgeA.value < isoline) == (edgeB.value < isoline)) ?
-                {
-                    edgeActive: false
+    lerp(a, b){
+        return (a.value - ((a.weight) / (b.weight - a.weight)) * (b.value - a.value));
+    }
+    edgeLerp(edgeA, edgeB, isoline) {
+        if (
+            (edgeA === null)
+            || (edgeB === null)
+            || ((edgeA.value < isoline) == (edgeB.value < isoline))
+        ){
+            return {
+                edgeActive: false
+            };
+        }
+        return {
+            edgeActive: true,
+            isoline: isoline,
+            x: this.lerp(
+                {value: edgeA.y, weight: edgeA.value - isoline},
+                {value: edgeB.y, weight: edgeB.value - isoline}
+            ),
+            y: this.lerp(
+                {value: edgeA.x, weight: edgeA.value - isoline},
+                {value: edgeB.x, weight: edgeB.value - isoline}
+            )
+        };
+    }
+    getVert(x, y){
+        if (
+            (y == 0)
+            || (x == 0)
+            || (y >= this.yTicks.length)
+            || (x >= this.xTicks.length)
+        ){
+            return null;
+        }
+        return {
+            x: this.xTicks[x],
+            y: this.yTicks[y],
+            value: this.data[y][x]
+        }
+    }
+    getUnvisitedTri(){
+        for (let i = 0; i < this.trisVisited.length; i++){
+            for (let j = 0; j < this.trisVisited[i].length; j++){
+                if (!this.trisVisited){
+                    return {x: j, y: i};
                 }
-            :
-                {
-                    edgeActive: true,
-                    x: lerp(
-                        {value: edgeA.y, weight: edgeA.value - isoline},
-                        {value: edgeB.y, weight: edgeB.value - isoline}
-                    ),
-                    y: lerp(
-                        {value: edgeA.x, weight: edgeA.value - isoline},
-                        {value: edgeB.x, weight: edgeB.value - isoline}
-                    )
-                }
-        );
-
-        let edgeTris = [];
-
-        // push the main triangles NOPE
-        for (let i = 0; i < this.yTicks.length - 1; i++){
-            for (let j = 1; j < this.xTicks.length; j++){
-                let bottomRight = {
-                    x: this.xTicks[j],
-                    y: this.yTicks[i],
-                    value: this.data[i][j]
-                };
-                let topLeft = {
-                    x: this.xTicks[j - 1],
-                    y: this.yTicks[i + 1],
-                    value: this.data[i + 1][j - 1]
-                };
-                let topRight = {
-                    x: this.xTicks[j],
-                    y: this.yTicks[i + 1],
-                    value: this.data[i + 1][j]
-                };
-
-                let thisTri = {p1: [], p2: [], p3: []};
-                this.isolines.forEach((isoline) => {
-                    thisTri.p1.push(edgeLerp(bottomRight, topRight, isoline));
-                    thisTri.p2.push(edgeLerp(topRight, topLeft, isoline));
-                    thisTri.p3.push(edgeLerp(topLeft, bottomRight, isoline));
-                });
-
-                edgeTris.push(thisTri);
             }
         }
+        return {x: -1, y: -1};
+    }
+    getTriPath(tri, isoline){
+        let v1v2Edge = this.edgeLerp(tri.v1, tri.v2, isoline);
+        let v2v3Edge = this.edgeLerp(tri.v2, tri.v3, isoline);
+        let v1v3Edge = this.edgeLerp(tri.v1, tri.v3, isoline);
+        if (!v1v2Edge.edgeActive || !v1v3Edge.edgeActive){
+            return [];
+        }
+    }
+    refreshPath(){
+        this.paths = [];
+        this.isolines.forEach((isoline) => {
+            this.trisVisited = new Array(this.yTicks.length).fill(
+                new Array(this.xTicks.length).fill(false)
+            );
+            let triInd = this.getUnvisitedTri();
+            while (triInd.x != -1){
+                this.paths.push(
+                    ...this.getTriPath({
+                        v1: this.getVert(triInd.x, triInd.y),
+                        v2: this.getVert(triInd.x - 1, triInd.y),
+                        v3: this.getVert(triInd.x, triInd.y - 1)
+                    }, isoline)
+                );
+                triInd = this.getUnvisitedTri();
+            }
+        });
     }
     graphToScreenPos(point){
         return {

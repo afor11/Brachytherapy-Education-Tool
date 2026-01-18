@@ -58,7 +58,11 @@ export let vaginalCylinderPage = new Module({
                 let module = yield new AlgebraicEffect("GET MODULE");
                 // convert the value from minutes to hours (what the seeds use), then divide that time evenly accross all seeds,
                 // capping it at 5 minutes per seed
-                let dwellTimePerSeed = Math.min((value / 60) / module.graphs.graph1.seeds.length, 0.08333);
+                let dwellTimePerSeed = (value / 60) / module.graphs.graph1.seeds.length;
+                if (dwellTimePerSeed > 0.08333){
+                    yield new AlgebraicEffect("ERROR");
+                    dwellTimePerSeed = 0.08333;
+                }
                 module.graphs.graph1.seeds.forEach((seed) => {
                     seed.dwellTime = dwellTimePerSeed;
                 });

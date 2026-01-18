@@ -6,12 +6,12 @@ const img = document.getElementById("image");
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "sagittaltandem+ring"; // viewname cannot have whitespace
+const viewName = "sagittaltandem+ovoids"; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
 let paramSet = {
-    ringDiameter: 20,
-    length: 30,
+    length: 40,
+    ovoidDiameter: 35,
     angle: 90
 };
 let usingParamSet = false;
@@ -339,7 +339,7 @@ function drawApplicatorTandemRing(view){
 
     const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
     const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
-    if (view == "axial"){
+    if (view === "axial"){
         // draw inner ring
         ctx.beginPath();
         ctx.ellipse(
@@ -361,7 +361,7 @@ function drawApplicatorTandemRing(view){
             0, 0, 2 * Math.PI
         );
         ctx.stroke();
-    } else if ((view == "sagittal") || (view == "coronal")){
+    } else if ((view === "sagittal") || (view === "coronal")){
         let cornerRadii = [
             (outerRadius - innerRadius) / 2 * mm.width, (outerRadius - innerRadius) / 2 * mm.width,
             (outerRadius - innerRadius) * mm.width / 4, (outerRadius - innerRadius) * mm.width / 4
@@ -616,7 +616,7 @@ function tick(){
     if (showPicture){
         ctx.lineCap = "butt";
         ctx.lineJoin = "miter";
-        drawApplicatorTandemRing("sagittal");
+        drawApplicatorTandemOvoids("sagittal");
         drawTandem("sagittal");
         ctx.lineCap = "round";
         ctx.lineJoin = "bevel";
@@ -1659,14 +1659,14 @@ function lerpParametrizedCurves(target, points){
         let pointB = closestPoints[i + 1];
 
         // check if both points are defined (they may not be if no points exist in either of the quadrants)
-        if (!((typeof pointA.pos == "undefined") && (typeof pointB.pos == "undefined"))){
+        if (!((typeof pointA.pos === "undefined") && (typeof pointB.pos === "undefined"))){
             let interpolation;
 
             // if one of the points does not exist (due to no points being in that quadrant), set it to the other point
-            if (typeof pointA.pos == "undefined"){
+            if (typeof pointA.pos === "undefined"){
                 pointA = cloneObj(pointB);
             }
-            if (typeof pointB.pos == "undefined"){
+            if (typeof pointB.pos === "undefined"){
                 pointB = cloneObj(pointA);
             }
 

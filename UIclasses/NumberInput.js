@@ -95,7 +95,6 @@ export class NumberInput {
         ctx.restore();
     }
     *checkClicked(){
-        //if the mouse is not down, return nothing
         if (!window.mouse.down){
             return false;
         }

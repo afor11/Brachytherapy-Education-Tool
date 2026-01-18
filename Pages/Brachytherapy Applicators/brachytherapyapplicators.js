@@ -16,63 +16,49 @@ export let brachytherapyApplicatorsPage = new Module({
             "tandem+ovoids": tandemAndOvoidsPage,
             "tandem+ring": tandemAndRingPage
         },
-        applicatorName: "VaginalCylinder"
-    },
-    onUpdate: function* () {
-        let thisModule = this;
-
-        // call the onUpdate function of the module, using handleSubpageEffects as the chained effect handler,
-        // allowing effects to still bubble up to main
-        yield* chainEffectHandler({
-            tryCode: function* (){
-                let module = yield new AlgebraicEffect("GET MODULE");
-                yield* runFn(module.onUpdate.bind(module));
-            },
-            handleCode: function* (effect, ...effectArgs){
-                let effectYield = handleSubpageEffects.call(thisModule, effect, ...effectArgs);
-                if (typeof effectYield != "undefined"){
-                    return effectYield;
-                }
+        applicatorName: "VaginalCylinder",
+        *handleSubpageEffects(effect, ...effectArgs){
+            if (effect === "GET MODULE"){
+                return this.subPages[this.applicatorName];
             }
-        });
-    },
-    onReload: function () {
-        // when the module is reloaded, no effects will allowed to bubble up past this point
-        callModuleFunc.call(this,"onReload");
-        callModuleFunc.call(this,"onUpdate");
-    },
-    defaultInputHandler: {
-        onMouseMove: function(e) {callModuleFunc.call(this,"onMouseMove",e)},
-        onMouseDown: function(e) {callModuleFunc.call(this,"onMouseDown",e)},
-        onMouseUp: function(e) {callModuleFunc.call(this,"onMouseUp",e)},
-        onKeyDown: function(e) {callModuleFunc.call(this,"onKeyDown",e)},
-    }
-});
-
-function callModuleFunc(func, ...args){
-    effectHandler({
-        tryCode: function* (){
-            let module = yield new AlgebraicEffect("GET MODULE");
-            if (Object.hasOwn(module, func)){
-                yield* runFn(module[func].bind(module, ...args));
+            if (effect === "GET PARENT MODULE"){
+                return this;
+            }
+            if (effect === "LOAD APPLICATOR"){
+                this.applicatorName = effectArgs[0];
+                return this.subPages[this.applicatorName].refreshApplicator();
+            }
+            if (effect === "GET APPLICATOR DATA"){
+                return this.subPages[this.applicatorName].applicator;
+            }
+            if (effect === "ERROR"){
+                console.error("error :(");
             }
         },
-        handleCode: (effect, ...effectArgs) => handleSubpageEffects.call(this, effect, ...effectArgs)
-    });
-}
-
-function handleSubpageEffects(effect, ...effectArgs){
-    if (effect === "GET MODULE"){
-        return this.subPages[this.applicatorName];
+        *callModuleFunc(func, ...args){
+            let self = this;
+            yield* chainEffectHandler({
+                tryCode: function* (){
+                    let module = yield new AlgebraicEffect("GET MODULE");
+                    if (Object.hasOwn(module, func)){
+                        yield* runFn(module[func].bind(module, ...args));
+                    }
+                },
+                handleCode: self.handleSubpageEffects.bind(self)
+            });
+        }
+    },
+    onUpdate: function* () {
+        yield* this.callModuleFunc("onUpdate");
+    },
+    onReload: function* () {
+        yield* this.callModuleFunc.call(this,"onReload");
+        yield* this.callModuleFunc.call(this,"onUpdate");
+    },
+    defaultInputHandler: {
+        onMouseMove: function* (e) {yield* this.callModuleFunc.call(this,"onMouseMove",e)},
+        onMouseDown: function* (e) {yield* this.callModuleFunc.call(this,"onMouseDown",e)},
+        onMouseUp: function* (e) {yield* this.callModuleFunc.call(this,"onMouseUp",e)},
+        onKeyDown: function* (e) {yield* this.callModuleFunc.call(this,"onKeyDown",e)},
     }
-    if (effect === "GET PARENT MODULE"){
-        return this;
-    }
-    if (effect === "LOAD APPLICATOR"){
-        this.applicatorName = effectArgs[0];
-        return this.subPages[this.applicatorName].refreshApplicator();
-    }
-    if (effect === "GET APPLICATOR DATA"){
-        return this.subPages[this.applicatorName].applicator;
-    }
-}
+});

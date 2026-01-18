@@ -1,6 +1,4 @@
-import { EventFunction } from "../eventFunction.js";
-import { buttonPress, nothing } from "../utils.js";
-import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../algebraicEffect.js';
+import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 
 export class Dropdown {
     constructor(button, options){
