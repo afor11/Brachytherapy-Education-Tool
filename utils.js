@@ -68,7 +68,7 @@ export function biliniarInterpolateTable(data,xSpacing,ySpacing,x,y){
 }
 
 //helper function for interpolate table and bilinear interpolate
-function getInterpolationIndex(spacingArr,ind){
+function getInterpolationIndex(spacingArr, ind){
     for (let i = 0; i < spacingArr.length; i++){
         if (spacingArr[i] >= ind){
             return i;

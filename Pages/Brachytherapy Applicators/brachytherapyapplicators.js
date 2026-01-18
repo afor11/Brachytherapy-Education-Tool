@@ -2,11 +2,8 @@ import { Module } from '../../module.js';
 import { tandemAndOvoidsPage } from './tandem-Ovoids.js';
 import { vaginalCylinderPage } from './vaginalCylinder.js';
 import { tandemAndRingPage } from './tandem-Ring.js';
-import { AlgebraicEffect, effectHandler, chainEffectHandler } from '../../algebraicEffect.js';
-import { clone, runFn } from '../../utils.js';
-
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
+import { AlgebraicEffect, chainEffectHandler } from '../../algebraicEffect.js';
+import { runFn } from '../../utils.js';
 
 // initalize brachytherapyApplicatorsPage with the appropriate subpages
 export let brachytherapyApplicatorsPage = new Module({
@@ -16,49 +13,51 @@ export let brachytherapyApplicatorsPage = new Module({
             "tandem+ovoids": tandemAndOvoidsPage,
             "tandem+ring": tandemAndRingPage
         },
-        applicatorName: "VaginalCylinder",
-        *handleSubpageEffects(effect, ...effectArgs){
-            if (effect === "GET MODULE"){
-                return this.subPages[this.applicatorName];
-            }
-            if (effect === "GET PARENT MODULE"){
-                return this;
-            }
-            if (effect === "LOAD APPLICATOR"){
-                this.applicatorName = effectArgs[0];
-                return this.subPages[this.applicatorName].refreshApplicator();
-            }
-            if (effect === "GET APPLICATOR DATA"){
-                return this.subPages[this.applicatorName].applicator;
-            }
-            if (effect === "ERROR"){
-                console.error("error :(");
-            }
-        },
-        *callModuleFunc(func, ...args){
-            let self = this;
-            yield* chainEffectHandler({
-                tryCode: function* (){
-                    let module = yield new AlgebraicEffect("GET MODULE");
-                    if (Object.hasOwn(module, func)){
-                        yield* runFn(module[func].bind(module, ...args));
-                    }
-                },
-                handleCode: self.handleSubpageEffects.bind(self)
-            });
-        }
+        applicatorName: "VaginalCylinder"
     },
     onUpdate: function* () {
-        yield* this.callModuleFunc("onUpdate");
+        yield* callModuleFunc.call(this,"onUpdate");
     },
     onReload: function* () {
-        yield* this.callModuleFunc.call(this,"onReload");
-        yield* this.callModuleFunc.call(this,"onUpdate");
+        yield* callModuleFunc.call(this,"onReload");
+        yield* callModuleFunc.call(this,"onUpdate");
     },
     defaultInputHandler: {
-        onMouseMove: function* (e) {yield* this.callModuleFunc.call(this,"onMouseMove",e)},
-        onMouseDown: function* (e) {yield* this.callModuleFunc.call(this,"onMouseDown",e)},
-        onMouseUp: function* (e) {yield* this.callModuleFunc.call(this,"onMouseUp",e)},
-        onKeyDown: function* (e) {yield* this.callModuleFunc.call(this,"onKeyDown",e)},
+        onMouseMove: function* (e) {yield* callModuleFunc.call(this,"onMouseMove",e)},
+        onMouseDown: function* (e) {yield* callModuleFunc.call(this,"onMouseDown",e)},
+        onMouseUp: function* (e) {yield* callModuleFunc.call(this,"onMouseUp",e)},
+        onKeyDown: function* (e) {yield* callModuleFunc.call(this,"onKeyDown",e)},
     }
 });
+
+function* callModuleFunc(func, ...args){
+    let self = yield new AlgebraicEffect("GET MODULE");
+    let thisModule = self.subPages[self.applicatorName];
+    yield* chainEffectHandler({
+        tryCode: function* (){
+            if (Object.hasOwn(thisModule, func)){
+                yield* runFn(thisModule[func].bind(thisModule, ...args));
+            }
+        },
+        handleCode: handleSubpageEffects.bind(self)
+    });
+}
+
+function* handleSubpageEffects(effect, ...effectArgs){
+    if (effect === "GET MODULE"){
+        return this.subPages[this.applicatorName];
+    }
+    if (effect === "GET PARENT MODULE"){
+        return this;
+    }
+    if (effect === "LOAD APPLICATOR"){
+        this.applicatorName = effectArgs[0];
+        return this.subPages[this.applicatorName].refreshApplicator();
+    }
+    if (effect === "GET APPLICATOR DATA"){
+        return this.subPages[this.applicatorName].applicator;
+    }
+    if (effect === "ERROR"){
+        console.error("error :(");
+    }
+}

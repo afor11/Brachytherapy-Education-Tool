@@ -116,13 +116,13 @@ export class Graph {
         },0);
     }
     getGraphState(){
-        return JSON.stringify([
+        return [
             this.zSlice,
             this.xTicks,
             this.yTicks,
             this.perspective,
             this.refpoints,
-        ]);
+        ].reduce((stateString, attriute) => stateString + "," + attriute, "");
     }
     getSeedState(seed){
         return JSON.stringify([

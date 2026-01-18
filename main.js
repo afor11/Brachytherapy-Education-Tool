@@ -116,7 +116,7 @@ addEventListener("scroll",function (){
 addEventListener("mousemove",function (e){
     updateMousePos(e);
     effectHandler({
-        tryCode: function* (e) {
+        tryCode: function* () {
             yield* runFn(moduleData[module].onMouseMove, e);
         },
         handleCode: mainEffectHandler
@@ -132,7 +132,7 @@ addEventListener("mousedown",function (e){
         })
     });
     effectHandler({
-        tryCode: function* (e) {
+        tryCode: function* () {
             yield* runFn(moduleData[module].onMouseDown, e);
         },
         handleCode: mainEffectHandler
@@ -142,7 +142,7 @@ addEventListener("mouseup",function (e){
     updateMousePos(e);
     mouse.down = false;
     effectHandler({
-        tryCode: function* (e) {
+        tryCode: function* () {
             yield* runFn(moduleData[module].onMouseUp, e);
         },
         handleCode: mainEffectHandler
@@ -150,7 +150,8 @@ addEventListener("mouseup",function (e){
 });
 addEventListener("keydown", function (e) {
     effectHandler({
-        tryCode: function* (e) {
+        tryCode: function* () {
+            console.log(e);
             yield* runFn(moduleData[module].onKeyDown, e);
         },
         handleCode: mainEffectHandler

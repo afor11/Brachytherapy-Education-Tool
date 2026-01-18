@@ -8,8 +8,10 @@ export class Seed {
         this.airKerma = airKerma; // measured in U
         this.dwellTime = dwellTime; // Measured in hours
         this.enabled = true;
-        this.directionVec;
+        this.directionVec; // direction of the seed
+        this.seedVec; // directionVec scaled to the size of the seed, so it points from the middle of the seed to one end
         this.geometryRef = {x: 0, y: 1, z: 0, r: 1, theta: Math.PI / 2};
+        this.geometryFactorAtRef;
         this.recalcDirection();
     }
     g(r){
@@ -51,15 +53,20 @@ export class Seed {
             if ((pos.theta == 0) || (pos.theta == Math.PI)){
                 geometry = 1 / ((pos.r ** 2) - ((this.model.sourceLength ** 2) / 4)); // case for if theta == 0, since that would lead to a divide by 0 error
             }else{
+                let relativePos = {
+                    x: pos.x - this.pos.x,
+                    y: pos.y - this.pos.y,
+                    z: pos.z - this.pos.z
+                };
                 let vec1 = {
-                    x: (pos.x - this.pos.x + this.directionVec.x * (this.model.sourceLength / 2)),
-                    y: (pos.y - this.pos.y + this.directionVec.y * (this.model.sourceLength / 2)),
-                    z: (pos.z - this.pos.z + this.directionVec.z * (this.model.sourceLength / 2))
+                    x: (relativePos.x + this.seedVec.x),
+                    y: (relativePos.y + this.seedVec.y),
+                    z: (relativePos.z + this.seedVec.z)
                 }; //calculates vector from one end of the seed to the given pos
                 let vec2 = {
-                    x: (pos.x - this.pos.x - this.directionVec.x * (this.model.sourceLength / 2)),
-                    y: (pos.y - this.pos.y - this.directionVec.y * (this.model.sourceLength / 2)),
-                    z: (pos.z - this.pos.z - this.directionVec.z * (this.model.sourceLength / 2))
+                    x: (relativePos.x - this.seedVec.x),
+                    y: (relativePos.y - this.seedVec.y),
+                    z: (relativePos.z - this.seedVec.z)
                 }; //calculates vector from the opposite end of the seed to the given pos
                 let beta = Math.acos((vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z) / (magnitude(vec1) * magnitude(vec2))) //finds the angle between vec1 and vec2 using dot product
                 geometry = beta / (this.model.sourceLength * pos.r * Math.abs(Math.sin(pos.theta)));
@@ -69,7 +76,7 @@ export class Seed {
     }
     calculateDose(pos){ //this all assumes the camera is looking such that further away is positive z, so none of these calcs include z
         if (this.enabled){
-            let doseRate = this.airKerma * this.model.doseRateConstant * (this.geometryFactor(pos)/this.geometryFactor({r: this.geometryRef.r, theta: this.geometryRef.theta, x:this.geometryRef.x + this.pos.x, y:this.geometryRef.y + this.pos.y, z: this.geometryRef.z})) * this.g(pos.r) * this.F(pos);
+            let doseRate = this.airKerma * this.model.doseRateConstant * (this.geometryFactor(pos) / this.geometryFactorAtRef) * this.g(pos.r) * this.F(pos);
             return doseRate * 1.44 * this.model.halfLife * (this.model.HDRsource ? (1 - Math.exp(-this.dwellTime / (1.44 * this.model.halfLife))) : 1) / 100; // this is divided by 100 to convert to Gy
         }else{
             return 0;
@@ -107,5 +114,21 @@ export class Seed {
             r: 1,
             theta: Math.PI / 2
         };
+
+        // recalculate the seed vector
+        this.seedVec = {
+            x: this.directionVec.x * (this.model.sourceLength / 2),
+            y: this.directionVec.y * (this.model.sourceLength / 2),
+            z: this.directionVec.z * (this.model.sourceLength / 2)
+        }
+
+        // recalculate the geometry factor at the reference geometry point
+        this.geometryFactorAtRef = this.geometryFactor({
+            r: this.geometryRef.r,
+            theta: this.geometryRef.theta,
+            x: this.geometryRef.x + this.pos.x,
+            y: this.geometryRef.y + this.pos.y,
+            z: this.geometryRef.z
+        });
     }
 }
