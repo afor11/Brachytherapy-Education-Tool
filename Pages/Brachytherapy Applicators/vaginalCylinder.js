@@ -1,4 +1,4 @@
-import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, anatomyData } from '../../constants.js';
+import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, anatomyData } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
@@ -7,7 +7,7 @@ import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKerma
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
-import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
+import { AlgebraicEffect } from '../../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");

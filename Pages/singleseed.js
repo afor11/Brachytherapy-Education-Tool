@@ -4,8 +4,8 @@ import { Graph } from '../graph.js';
 import { Module } from '../module.js';
 import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
-import { view, moduleData } from "../main.js";
-import { AlgebraicEffect, effectHandler } from '../algebraicEffect.js';
+import { view } from "../main.js";
+import { AlgebraicEffect } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");

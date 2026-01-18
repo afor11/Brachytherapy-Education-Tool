@@ -3,7 +3,7 @@ import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
 import { Slider } from './UIclasses/Slider.js';
-import { AlgebraicEffect, effectHandler, chainEffectHandler } from './algebraicEffect.js';
+import { AlgebraicEffect, chainEffectHandler } from './algebraicEffect.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
@@ -242,33 +242,26 @@ export function* runFn(fn,...args){
 export function* setDoseAtPoint(graph,dose,point){
     if (graph.seeds[0].model.HDRsource){
         // if no seeds are active, don't even try
-        if (graph.seeds.filter((seed) => seed.dwellTime > 0).length == 0){return;}
-        // calculate the dose, dividing out the contributions of the dwell time factor to the dose,
-        // to find the dose without accounting for dwell time
-        let doseWithoutDwellTime = graph.getPointDose(point) / graph.seeds.reduce(
-            (dwellFactor, seed) =>
-                dwellFactor + (
-                    (seed.dwellTime > 0) ?
-                        (1 - Math.exp(-seed.dwellTime / (1.44 * seed.model.halfLife)))
-                    :
-                        0
-                    )
-            ,0);
-        let newFactor = -1.44 * Math.log(
-            1 - ((dose / doseWithoutDwellTime)
-            / graph.seeds.filter(
-                (seed) => seed.dwellTime > 0
-            ).length)
-        );
+        if (graph.seeds.filter((seed) => seed.dwellTime > 0).length == 0){return}
+        // setting the dwell time to infinity cancels out the effect of the dwell time
+        graph.seeds.forEach((seed) => {
+            seed.dwellTime = (seed.dwellTime > 0) ? Infinity : 0;
+        });
+        // divide the target dose by the dose without the effect of the dwell time to get the
+        // effect the dwell time should have
+        let newFactor = -1.44 * Math.log(1 - (dose / graph.getPointDose(point)));
         if (Number.isNaN(newFactor)){
             newFactor = 0.08333;
         }
+        // set the dose waccoring to the new factor
         graph.seeds.forEach((seed) => {
-            seed.dwellTime = clamp(
-                seed.model.halfLife * newFactor,
-                0,
-                0.08333
-            );
+            if (seed.dwellTime > 0){
+                seed.dwellTime = clamp(
+                    newFactor * seed.model.halfLife,
+                    0,
+                    0.08333
+                );
+            }
         });
     }else{
         // set all seeds of the graph to a uniform air kerma
@@ -517,7 +510,7 @@ export function dwellTimeSlider(graph){
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
-            yield* runFn(module.onReload);
+            // no need to reload the module if there is only one seed :)
         },
         getValue: function*  () {
             let module = yield new AlgebraicEffect("GET MODULE");

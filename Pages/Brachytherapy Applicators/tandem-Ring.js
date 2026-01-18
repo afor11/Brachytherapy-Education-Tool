@@ -1,14 +1,13 @@
-import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
+import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
-import { module, view } from '../../main.js';
+import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
-import { AlgebraicEffect, chainEffectHandler, effectHandler } from '../../algebraicEffect.js';
-import { Dropdown } from '../../UIclasses/Dropdown.js';
+import { AlgebraicEffect } from '../../algebraicEffect.js';
 import { drawTandem } from './vaginalCylinder.js';
 
 let canvas = document.getElementById("canvas");

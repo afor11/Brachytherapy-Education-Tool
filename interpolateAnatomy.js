@@ -1,9 +1,6 @@
 let backCanvas = document.getElementById("backCanvas");
 let backCtx = backCanvas.getContext("2d");
 
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
-
 function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
 }

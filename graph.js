@@ -2,8 +2,6 @@ import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
-import { MarchingSquares } from './MarchingSquares.js';
-import { MarchingTriangles } from './MarchingTriangles.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");

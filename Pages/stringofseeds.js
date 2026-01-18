@@ -4,11 +4,11 @@ import { Graph } from '../graph.js';
 import { Module } from '../module.js';
 import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn, expandOnHover } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
-import { moduleData, view } from "../main.js";
+import { view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
 import { Slider } from '../UIclasses/Slider.js';
 import { NumberInput } from '../UIclasses/NumberInput.js';
-import { AlgebraicEffect, effectHandler } from '../algebraicEffect.js';
+import { AlgebraicEffect } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -63,7 +63,9 @@ export let stringofseedsPage = new Module({
                 return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
             },
             onEnter: function* (value){
-                (yield new AlgebraicEffect("GET MODULE")).seedSpacing = clamp(value, 0.5, 1.5);
+                let module = yield new AlgebraicEffect("GET MODULE");
+                module.seedSpacing = clamp(value, 0.5, 1.5);
+                yield* runFn(module.onReload);
             },
             numDecimalsEditing: 2,
             animate: function* () {yield* expandOnHover(false)}

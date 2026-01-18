@@ -4,11 +4,11 @@ import { Graph } from '../graph.js';
 import { Module } from '../module.js';
 import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, multSeedDwellTimeLabel, multSeedDwellTimeSlider, toggleSeedEnable, runUntilTrue, clamp, runFn, expandOnHover } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
-import { view, moduleData } from "../main.js";
+import { view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
 import { Slider } from '../UIclasses/Slider.js';
 import { NumberInput } from '../UIclasses/NumberInput.js';
-import { AlgebraicEffect, effectHandler } from '../algebraicEffect.js';
+import { AlgebraicEffect } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");

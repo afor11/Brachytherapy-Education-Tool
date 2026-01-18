@@ -1,4 +1,4 @@
-import { getFontSize, runFn, clamp } from '../utils.js';
+import { getFontSize, runFn } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 import { runAnimation } from './Button.js';
 
