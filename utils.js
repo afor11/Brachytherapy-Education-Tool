@@ -41,7 +41,7 @@ export function* runUntilTrue(func){
 }
 
 export function interpolateTable(dataArr,spacingArr,ind){
-    let neighborHigh = Math.min(getInterpolationIndex(spacingArr,ind),spacingArr.length);
+    let neighborHigh = getInterpolationIndex(spacingArr,ind);
     let neighborLow = Math.max(neighborHigh - 1,0);
     if (neighborHigh == neighborLow) {
         return dataArr[neighborLow];
@@ -56,13 +56,22 @@ export function interpolateTable(dataArr,spacingArr,ind){
 }
 
 export function biliniarInterpolateTable(data,xSpacing,ySpacing,x,y){
-    let x2 = Math.min(getInterpolationIndex(xSpacing,x),xSpacing.length);
+    let x2 = getInterpolationIndex(xSpacing,x);
     let x1 = Math.max(x2 - 1,0);
-    let y2 = Math.min(getInterpolationIndex(ySpacing,y),ySpacing.length);
+    let y2 = getInterpolationIndex(ySpacing,y);
     let y1 = Math.max(y2 - 1,0);
+    let xLerp = (x - xSpacing[x1]) / (xSpacing[x2] - xSpacing[x1]);
     return lerp(
-        lerp(data[x1][y1],data[x2][y1],(x - xSpacing[x1]) / (xSpacing[x2] - xSpacing[x1])),
-        lerp(data[x1][y2],data[x2][y2],(x - xSpacing[x1]) / (xSpacing[x2] - xSpacing[x1])),
+        lerp(
+            data[x1][y1],
+            data[x2][y1],
+            xLerp
+        ),
+        lerp(
+            data[x1][y2],
+            data[x2][y2],
+            xLerp
+        ),
         (y - ySpacing[y1]) / (ySpacing[y2] - ySpacing[y1])
     );
 }
@@ -363,6 +372,9 @@ export function* expandOnHover(detectClick = true) {
     // a function to store any properties that may be modified into a restingButtonProps attribute
     let storeProps = () => {
         self.restingButtonProps = {...self};
+        if (Object.hasOwn(self.restingButtonProps, "restingButtonProps")){
+            delete self.restingButtonProps.restingButtonProps;
+        }
     }
     // a function to encode the element's properties as a string (checked to see if any updates have occured)
     let encodedProps = () => JSON.stringify([

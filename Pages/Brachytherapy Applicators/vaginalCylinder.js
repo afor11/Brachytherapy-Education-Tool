@@ -201,12 +201,12 @@ export let vaginalCylinderPage = new Module({
             module.graphs.graph1.xTicks = getRange(
                 -(module.applicator.diameter / 10) / 2 - 1,
                 (module.applicator.diameter / 10) / 2 + 1,
-                0.125
+                0.0625
             );
             module.graphs.graph1.yTicks = getRange(
                 -2,
                 (module.applicator.length / 10) + 2,
-                0.125
+                0.0625
             );
 
             // set reference point
@@ -255,6 +255,7 @@ export let vaginalCylinderPage = new Module({
             yield* this.sliders.graph1DwellTime.draw();
         }
 
+        this.graphs.graph1.drawGraph();
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
         this.graphs.graph1.drawMouseLabel();
@@ -300,7 +301,7 @@ export let vaginalCylinderPage = new Module({
             this.graphs.graph1.unitWidth() / this.graphs.graph1.unitHeight())
         );
 
-        this.graphs.graph1.drawGraph(document.getElementById("graph1"));
+        this.graphs.graph1.refreshGraph();
         this.graphs.graph1.rescaleAnatomy();
 
         splitX = this.graphs.graph1.graphDimensions.x;

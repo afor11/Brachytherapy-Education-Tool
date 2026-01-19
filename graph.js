@@ -2,6 +2,7 @@ import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
+import { MarchingSquares } from './MarchingSquares.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -10,7 +11,7 @@ let backCanvas = document.getElementById("backCanvas");
 let backCtx = backCanvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm"}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -45,6 +46,15 @@ export class Graph {
             );
             this.scaledAnatomy = {};
         }
+        // how many tick marks to skip evaluation of during getIsodose (useful for improving performance on
+        // worse computers) (default is 1, meaning every tick mark is evaluated, 2 would mean every other
+        // tick mark is evalutated and so fourth)
+        this.resolution = 1;
+        this.effectiveXTicks = this.xTicks.filter((_, ind) => (ind % this.resolution) == 0);
+        this.effectiveYTicks = this.yTicks.filter((_, ind) => (ind % this.resolution) == 0);
+
+        this.scale = scale;
+        this.isolineGraph = new MarchingSquares(this.xTicks, this.yTicks, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
     }
     *refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
@@ -116,11 +126,11 @@ export class Graph {
     getGraphState(){
         return [
             this.zSlice,
-            this.xTicks,
-            this.yTicks,
+            this.effectiveXTicks,
+            this.effectiveYTicks,
             this.perspective,
-            this.refpoints,
-        ].reduce((stateString, attriute) => stateString + "," + attriute, "");
+            this.refpoints
+        ].reduce((stateString, attribute) => stateString + "," + attribute, "");
     }
     getSeedState(seed){
         return JSON.stringify([
@@ -132,19 +142,34 @@ export class Graph {
         ]);
     }
     getIsodose(refPoint){
+        if (this.resolution != 1){
+            this.effectiveXTicks = this.xTicks.filter((_, ind) => (ind % this.resolution) == 0);
+            this.effectiveYTicks = this.yTicks.filter((_, ind) => (ind % this.resolution) == 0);
+        }else{
+            this.effectiveXTicks = this.xTicks;
+            this.effectiveYTicks = this.yTicks;
+        }
+
         let usedCaches = new Map();
         this.cachedDose.forEach((_, seedString) => {
             usedCaches.set(seedString, false);
         });
 
-        let defaultDose = Array(this.yTicks.length).fill(Array(this.xTicks.length).fill(0));
+        let defaultDose = [];
+        for (let i = 0; i < this.effectiveYTicks.length; i++){
+            defaultDose.push(
+                new Array(this.effectiveXTicks.length).fill(0)
+            );
+        }
+
+        const currGraphState = this.getGraphState();
 
         let dose = this.seeds.reduce((totalDose, seed) => {
             if (!seed.enabled || (seed.dwellTime == 0)){return totalDose;}
             let dose = [];
             let seedString = this.getSeedState(seed);
             if (this.cachedDose.has(seedString)){
-                // this seed has bee cached
+                // this seed has been cached
                 let cachedDose = this.cachedDose.get(seedString);
                 
                 // finds the factor to multiply all doses in the cached dose array by (this factor is needed since seeds
@@ -161,24 +186,22 @@ export class Graph {
                 );
                 let doseScaleFactor = airKermaScaleFactor * dwellTimeScaleFactor;
 
-                if (cachedDose.graphState === this.getGraphState()){
+                if (cachedDose.graphState === currGraphState){
                     // the graph state has not changed since the seed has been cached
-                    dose = [];
-                    for (let i = 0; i < this.yTicks.length; i++){
-                        let doseSlice = [];
-                        for (let j = 0; j < this.xTicks.length; j++){
-                            doseSlice.push(totalDose[i][j] + cachedDose.dose[i][j] * doseScaleFactor);
+                    let cachedDoseData = cachedDose.dose;
+                    for (let i = 0; i < this.effectiveYTicks.length; i++){
+                        for (let j = 0; j < this.effectiveXTicks.length; j++){
+                            totalDose[i][j] += cachedDoseData[i][j] * doseScaleFactor;
                         }
-                        dose.push(doseSlice);
                     }
                     usedCaches.set(seedString, true);
-                    return dose;
+                    return totalDose;
                 }
             }
 
             // if the cache was not use, perpare to add the calculated dose as a cache entry
             let doseCache = {
-                graphState: this.getGraphState(),
+                graphState: currGraphState,
                 airKerma: seed.airKerma,
                 dwellTime: seed.dwellTime,
                 halfLife: seed.model.halfLife,
@@ -186,11 +209,11 @@ export class Graph {
             };
 
             // calculate dose from the specific seed
-            for (let i = 0; i < this.yTicks.length; i++){
+            for (let i = 0; i < this.effectiveYTicks.length; i++){
                 let doseSlice = [];
                 let totalDoseSlice = [];
-                for (let j = 0; j < this.xTicks.length; j++){
-                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice}));
+                for (let j = 0; j < this.effectiveXTicks.length; j++){
+                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.effectiveXTicks[j], y: this.effectiveYTicks[i], z: this.zSlice}));
                     doseSlice.push(pointDose);
                     totalDoseSlice.push(totalDose[i][j] + pointDose);
                 }
@@ -202,7 +225,7 @@ export class Graph {
             this.cachedDose.set(seedString, doseCache);
             usedCaches.set(seedString, true);
             return dose;
-        },defaultDose);
+        }, defaultDose);
 
         this.cachedDose.forEach((_, seedString) => {
             if (!usedCaches.get(seedString)){
@@ -214,9 +237,9 @@ export class Graph {
         refDose = ((refDose == 0) ? 1 : refDose); // prevent divide by 0 errors
 
         let isodose = [];
-        for (let i = 0; i < this.yTicks.length; i++){
+        for (let i = 0; i < this.effectiveYTicks.length; i++){
             let slice = [];
-            for (let j = 0; j < this.xTicks.length; j++){
+            for (let j = 0; j < this.effectiveXTicks.length; j++){
                 slice.push(100 * dose[i][j] / refDose);
             }
             isodose.push(slice);
@@ -224,70 +247,109 @@ export class Graph {
 
         return isodose;
     }
-    drawGraph(div){
-        let data = [];
-        for (let i = 1; i < 128; i *= 2){
-            data.push(
-                {
-                    z: this.getIsodose(this.refpoints[0]),
-                    x: this.xTicks,
-                    y: this.yTicks,
-                    type: 'contour',
-                    colorscale: "Jet",
-                    contours: {
-                        type: 'constraint',
-                        operation: '=',
-                        value: 100 * i / 8,
-                        coloring: "lines",
-                        showlabels: true,
-                        labelfont: {
-                            family: "Raleway",
-                            size: 12,
-                            color: "black"
-                        }
-                    },
-                    line:{
-                        width: 2,
-                        smoothing: 0.85
-                    },
-                    name: 100 * (i / 8) + "%",
-                },
-            );
-        };
-        div.style.width = this.width + "px";
-        div.style.height = this.height + "px";
-        div.style.left = this.x + "px";
-        div.style.top = this.y + "px";
-        let layout = {
-            xaxis: {
-                title: {
-                    text: 'cm',
-                    font: {
-                        family: 'Arial',
-                        size: 18,
-                    },
-                }
-            },
-            yaxis: {
-                title: {
-                    text: 'cm',
-                    font: {
-                        family: 'Arial',
-                        size: 18,
-                        color: "black"
-                    },
-                }
-            },
-            paper_bgcolor: "rgba(0,0,0,0)",
-            plot_bgcolor: "rgba(0,0,0,0)",
+    refreshGraph(){
+        this.isolineGraph = new MarchingSquares(
+            this.xTicks,
+            this.yTicks,
+            [12.5, 50, 100, 200, 400, 800],
+            ["#D92684", "#D97B26","#D9262A", "#84D926", "#26D9D5", "#7B26D9"],
+            {
+                x: this.x + this.width * 0.1,
+                y: this.y + this.height * 0.1,
+                width: this.width * 0.8,
+                height: this.height * 0.8
+            }
+        );
+        this.isolineGraph.data = this.getIsodose(this.refpoints[0]);
+        this.isolineGraph.refreshPath();
+
+        this.graphDimensions = this.isolineGraph.dimensions;
+    }
+    drawGraph(){
+        ctx.textAlign = "center";
+        ctx.fillStyle = "black";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.001;
+        const maxXTick = Math.floor(getMax(this.xTicks));
+        const minXTick = Math.ceil(getMin(this.xTicks));
+        const maxYTick = Math.floor(getMax(this.yTicks));
+        const minYTick = Math.ceil(getMin(this.yTicks));
+
+        ctx.font = Math.min(
+            // font size for x-axis
+            getFontSize(
+                this.graphDimensions.width / (maxXTick - minXTick),
+                this.graphDimensions.height * 0.05,
+                ((maxXTick.toString().length > minXTick.toString().length) ?
+                    maxXTick.toString()
+                :
+                    minXTick.toString()),
+                (size) => `${size}px Arial`
+            ),
+            //font size for y-axis
+            getFontSize(
+                this.graphDimensions.width * 0.05,
+                this.graphDimensions.height / (maxYTick - minYTick),
+                ((maxYTick.toString().length > minYTick.toString().length) ?
+                    maxYTick.toString() + "  "
+                :
+                    minYTick.toString() + "  "),
+                (size) => `${size}px Arial`
+            )
+        ) * 0.5 + "px Arial";
+        // draw vertical gridlines
+        for (let i = minXTick; i <= maxXTick; i++){
+            let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
+            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.beginPath();
+            ctx.moveTo(gridlineX, this.graphDimensions.y);
+            ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
+            ctx.stroke();
+            ctx.fillText(i, gridlineX, this.graphDimensions.y + this.graphDimensions.height * 1.025);
         }
-        Plotly.newPlot(div.id, data, layout); //does not update after window rescaling
-        let gridElm = div.children[0].children[0].children[0].children[4].children[0].children[3];
-        this.graphDimensions = gridElm.getBoundingClientRect();
-        /*let test = new MarchingTriangles(this.xTicks, this.yTicks, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
-        test.data = this.getIsodose(this.refpoints[0]);
-        test.refreshPath();
-        test.draw();*/
+
+        ctx.fillText(
+            this.scale,
+            this.graphDimensions.x + this.graphDimensions.width / 2,
+            this.graphDimensions.y + this.graphDimensions.height * 1.075
+        );
+
+        // draw horizontal gridlines
+        ctx.textAlign = "end";
+        for (let i = minYTick; i <= maxYTick; i++){
+            let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
+            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.beginPath();
+            ctx.moveTo(this.graphDimensions.x, gridlineY);
+            ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);
+            ctx.stroke();
+            ctx.fillText(i + "  ", this.graphDimensions.x, gridlineY);
+        }
+
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.rotate(-Math.PI / 2);
+        
+        ctx.beginPath();
+        ctx.fillText(
+            this.scale,
+            -this.graphDimensions.y - this.graphDimensions.height / 2,
+            this.graphDimensions.x - this.graphDimensions.width * 0.075
+        );
+
+        ctx.restore();
+
+        ctx.textAlign = "start";
+        ctx.textBaseline = "alphabetic";
+
+        this.isolineGraph.draw();
+
+        // draw boarder
+        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.002;
+        ctx.strokeStyle = "black";
+        ctx.beginPath();
+        ctx.rect(this.graphDimensions.x, this.graphDimensions.y, this.graphDimensions.width, this.graphDimensions.height);
+        ctx.stroke();
     }
     drawRefPoints(){
         let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;
@@ -338,11 +400,13 @@ export class Graph {
             }
         });
         if (this.selectedSeed != -1){
-            ctx.fillStyle = "rgb(169, 255, 103)";
             let screenPos = this.graphToScreenPos(this.perspective(this.seeds[this.selectedSeed].pos));
-            ctx.beginPath();
-            ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
-            ctx.fill();
+            if (this.pointOnGraph(screenPos)){
+                ctx.fillStyle = "rgb(169, 255, 103)";
+                ctx.beginPath();
+                ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
+                ctx.fill();
+            }
         }
     }
     *checkClicked(){

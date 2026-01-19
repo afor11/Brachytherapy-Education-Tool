@@ -63,6 +63,9 @@ export let singleSeedPage = new Module({
             yield* this.labels.graph2DwellTime.draw();
             yield* this.sliders.graph2DwellTime.draw();
         }
+
+        this.graphs.graph1.drawGraph();
+        this.graphs.graph2.drawGraph();
         
         yield* this.labels.graph1AirKerma.draw();
         yield* this.sliders.graph1AirKerma.draw();
@@ -126,7 +129,7 @@ export let singleSeedPage = new Module({
         }
 
         Object.values(this.graphs).forEach((graph) => {
-            graph.drawGraph(document.getElementById(graph.name));
+            graph.refreshGraph();
         });
 
         if (view.width / view.height > 1){

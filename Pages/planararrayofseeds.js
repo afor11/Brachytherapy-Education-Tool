@@ -184,6 +184,7 @@ export let PlanarArrayOfSeeds = new Module({
             });
         }
 
+        this.graphs.graph1.drawGraph();
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
         yield* this.labels.graph1Reference.draw();
@@ -194,6 +195,7 @@ export let PlanarArrayOfSeeds = new Module({
         yield* this.labels.graph1SeedSpacing.draw();
         yield* this.dropDowns.graph1Model.draw();
 
+        this.graphs.graph2.drawGraph();
         this.graphs.graph2.drawGraphSeeds();
         this.graphs.graph2.drawRefPoints();
         yield* this.labels.graph2Reference.draw();
@@ -251,7 +253,7 @@ export let PlanarArrayOfSeeds = new Module({
         }
 
         Object.values(this.graphs).forEach((graph) => {
-            graph.drawGraph(document.getElementById(graph.name));
+            graph.refreshGraph();
         });
 
         if (view.width / view.height > 1){

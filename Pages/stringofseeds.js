@@ -21,7 +21,7 @@ export let stringofseedsPage = new Module({
             seeds: [
                 new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
             ],
-            xTicks: getRange(-10, 10, 0.125),
+            xTicks: getRange(-10, 10, 0.0625),
             yTicks: getRange(-2, 2, 0.0625),
             perspective: (point) => point,
             name: "graph1",
@@ -155,6 +155,7 @@ export let stringofseedsPage = new Module({
         yield* this.dropDowns.graph1Model.draw();
 
         // draw graph 1 seeds/reference point + label/mouse label
+        this.graphs.graph1.drawGraph();
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
         yield* this.labels.graph1Reference.draw();
@@ -193,9 +194,7 @@ export let stringofseedsPage = new Module({
             height: view.height - splitY
         }, {horizontal: 0, vertical: 0}));
 
-        Object.values(this.graphs).forEach((graph) => {
-            graph.drawGraph(document.getElementById(graph.name));
-        });
+        this.graphs.graph1.refreshGraph();
 
         //resize dropdowns
         rescaleDropdownButtons(this.dropDowns.graph1Model,{

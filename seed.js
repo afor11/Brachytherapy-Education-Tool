@@ -76,8 +76,22 @@ export class Seed {
     }
     calculateDose(pos){ //this all assumes the camera is looking such that further away is positive z, so none of these calcs include z
         if (this.enabled){
-            let doseRate = this.airKerma * this.model.doseRateConstant * (this.geometryFactor(pos) / this.geometryFactorAtRef) * this.g(pos.r) * this.F(pos);
-            return doseRate * 1.44 * this.model.halfLife * (this.model.HDRsource ? (1 - Math.exp(-this.dwellTime / (1.44 * this.model.halfLife))) : 1) / 100; // this is divided by 100 to convert to Gy
+            let doseRate = (
+                this.airKerma
+                * this.model.doseRateConstant
+                * (this.geometryFactor(pos) / this.geometryFactorAtRef)
+                * this.g(pos.r)
+                * this.F(pos)
+            );
+            return (
+                doseRate
+                * 1.44 * this.model.halfLife
+                * (this.model.HDRsource ?
+                    (1 - Math.exp(-this.dwellTime / (1.44 * this.model.halfLife)))
+                :
+                    1
+                )
+            ) / 100; // this is divided by 100 to convert to Gy
         }else{
             return 0;
         }

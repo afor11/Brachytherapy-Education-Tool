@@ -190,12 +190,12 @@ export let tandemAndRingPage = new Module({
             module.graphs.graph1.xTicks = getRange(
                 -(module.applicator.ringDiameter / 10) - 2.6,
                 (module.applicator.ringDiameter / 10) + 2.6,
-                0.125
+                0.0625
             );
             module.graphs.graph1.yTicks = getRange(
                 -3,
                 (module.applicator.length / 10) + 2,
-                0.125
+                0.0625
             );
 
             module.graphs.graph2.xTicks = [...module.graphs.graph1.xTicks];
@@ -318,6 +318,7 @@ export let tandemAndRingPage = new Module({
         yield* drawRing("graph3", "axial");
 
         Object.values(this.graphs).forEach((graph) => {
+            graph.drawGraph();
             graph.drawGraphSeeds();
             graph.drawRefPoints();
             graph.drawMouseLabel();
@@ -360,7 +361,7 @@ export let tandemAndRingPage = new Module({
                     graph.unitWidth() / graph.unitHeight())
                 );
 
-                graph.drawGraph(document.getElementById(graph.name));
+                graph.refreshGraph();
             });
 
             this.graphs.graph1.rescaleAnatomy();
@@ -428,7 +429,7 @@ export let tandemAndRingPage = new Module({
                     graph.unitWidth() / graph.unitHeight())
                 );
 
-                graph.drawGraph(document.getElementById(graph.name));
+                graph.refreshGraph();
             });
 
             splitX = Math.min(
