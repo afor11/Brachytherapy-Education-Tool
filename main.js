@@ -113,7 +113,7 @@ addEventListener("scroll",function (){
         y: window.scrollY
     }
 });
-addEventListener("mousemove",function (e){
+addEventListener("pointermove",function (e){
     updateMousePos(e);
     effectHandler({
         tryCode: function* () {
@@ -122,7 +122,7 @@ addEventListener("mousemove",function (e){
         handleCode: mainEffectHandler
     });
 });
-addEventListener("mousedown",function (e){
+addEventListener("pointerdown",function (e){
     updateMousePos(e);
     mouse.down = true;
     Object.values(navBar).forEach((pageButton) => {
@@ -138,7 +138,7 @@ addEventListener("mousedown",function (e){
         handleCode: mainEffectHandler
     });
 });
-addEventListener("mouseup",function (e){
+addEventListener("pointerup",function (e){
     updateMousePos(e);
     mouse.down = false;
     effectHandler({
@@ -151,7 +151,6 @@ addEventListener("mouseup",function (e){
 addEventListener("keydown", function (e) {
     effectHandler({
         tryCode: function* () {
-            console.log(e);
             yield* runFn(moduleData[module].onKeyDown, e);
         },
         handleCode: mainEffectHandler

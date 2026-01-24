@@ -174,15 +174,6 @@ export let stringofseedsPage = new Module({
             seed.pos.x = (ind - ((numSeeds - 1) / 2)) * this.seedSpacing;
         });
 
-        let graph2Div = document.getElementById("graph2");
-        let graph3Div = document.getElementById("graph3");
-        if (graph2Div.innerHTML !== ""){
-            graph2Div.innerHTML = "";
-        }
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
-
         let splitY = view.height * 0.25;
         let splitX = view.width / 2;
 

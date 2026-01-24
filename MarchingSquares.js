@@ -12,50 +12,39 @@ export class MarchingSquares {
         this.colors = colors;
     }
     refreshPath(){
-        const edgeLerp = (edgeA, edgeB) => 
-            (edgeA.x == edgeB.x) ?
-                this.lerp(
-                    {value: edgeA.y, weight: edgeA.value},
-                    {value: edgeB.y, weight: edgeB.value}
-                )
-            :
-                this.lerp(
-                    {value: edgeA.x, weight: edgeA.value},
-                    {value: edgeB.x, weight: edgeB.value}
-                );
 
         const pathFns = [
             () => [],
             (bottomLeft, bottomRight, topLeft) => {
                 return [{
-                    x1: edgeLerp(bottomLeft, bottomRight),
+                    x1: this.edgeLerp(bottomLeft, bottomRight),
                     y1: bottomLeft.y,
                     x2: bottomLeft.x,
-                    y2: edgeLerp(bottomLeft, topLeft)
+                    y2: this.edgeLerp(bottomLeft, topLeft)
                 }];
             },
             (bottomLeft, bottomRight, _, topRight) => {
                 return [{
-                    x1: edgeLerp(bottomLeft, bottomRight),
+                    x1: this.edgeLerp(bottomLeft, bottomRight),
                     y1: bottomLeft.y,
                     x2: bottomRight.x,
-                    y2: edgeLerp(bottomRight, topRight)
+                    y2: this.edgeLerp(bottomRight, topRight)
                 }];
             },
             (bottomLeft, bottomRight, topLeft, topRight) => {
                 return [{
                     x1: bottomLeft.x,
-                    y1: edgeLerp(bottomLeft, topLeft),
+                    y1: this.edgeLerp(bottomLeft, topLeft),
                     x2: bottomRight.x,
-                    y2: edgeLerp(bottomRight, topRight)
+                    y2: this.edgeLerp(bottomRight, topRight)
                 }];
             },
             (_, bottomRight, topLeft, topRight) => {
                 return [{
-                    x1: edgeLerp(topLeft, topRight),
+                    x1: this.edgeLerp(topLeft, topRight),
                     y1: topLeft.y,
                     x2: topRight.x,
-                    y2: edgeLerp(topRight, bottomRight)
+                    y2: this.edgeLerp(topRight, bottomRight)
                 }];
             },
             (bottomLeft, bottomRight, topLeft, topRight) => {
@@ -74,18 +63,18 @@ export class MarchingSquares {
             },
             (bottomLeft, bottomRight, topLeft, topRight) => {
                 return [{
-                    x1: edgeLerp(bottomLeft, bottomRight),
+                    x1: this.edgeLerp(bottomLeft, bottomRight),
                     y1: bottomLeft.y,
-                    x2: edgeLerp(topLeft, topRight),
+                    x2: this.edgeLerp(topLeft, topRight),
                     y2: topLeft.y
                 }];
             },
             (bottomLeft, _, topLeft, topRight) => {
                 return [{
-                    x1: edgeLerp(topLeft, topRight),
+                    x1: this.edgeLerp(topLeft, topRight),
                     y1: topLeft.y,
                     x2: bottomLeft.x,
-                    y2: edgeLerp(bottomLeft, topLeft)
+                    y2: this.edgeLerp(bottomLeft, topLeft)
                 }];
             },
             (bottomLeft, bottomRight, topLeft, topRight) => [
@@ -119,6 +108,29 @@ export class MarchingSquares {
             () => []
         ];
 
+        let xScreenPos = [];
+        for (let i = 0; i < this.xTicks.length; i++){
+            xScreenPos.push(
+                this.dimensions.x + (
+                    (this.xTicks[i] - this.xTicks[0])
+                    / (this.xTicks[this.xTicks.length - 1] - this.xTicks[0])
+                ) * this.dimensions.width
+            );
+        }
+        let yScreenPos = [];
+        for (let i = 0; i < this.yTicks.length; i++){
+            yScreenPos.push(
+                this.dimensions.y + this.dimensions.height - (
+                    (this.yTicks[i] - this.yTicks[0])
+                    / (this.yTicks[this.yTicks.length - 1] - this.yTicks[0])
+                ) * this.dimensions.height
+            );
+        }
+
+        this.isolines.forEach(() => {
+            this.paths.push([]);
+        });
+        
         for (let i = 0; i < this.yTicks.length - 1; i++){
             for (let j = 0; j < this.xTicks.length - 1; j++){
                 let bottomLeft = this.data[i][j];
@@ -133,10 +145,10 @@ export class MarchingSquares {
                         | ((bottomRight > isoline) << 1)
                         | (bottomLeft > isoline)
                     ](
-                        {value: bottomLeft - isoline, ...this.graphToScreenPos({x: this.xTicks[j], y: this.yTicks[i]})},
-                        {value: bottomRight - isoline, ...this.graphToScreenPos({x: this.xTicks[j + 1], y: this.yTicks[i]})},
-                        {value: topLeft - isoline, ...this.graphToScreenPos({x: this.xTicks[j], y: this.yTicks[i + 1]})},
-                        {value: topRight - isoline, ...this.graphToScreenPos({x: this.xTicks[j + 1], y: this.yTicks[i + 1]})}
+                        {value: bottomLeft - isoline, x: xScreenPos[j], y: yScreenPos[i]},
+                        {value: bottomRight - isoline, x: xScreenPos[j + 1], y: yScreenPos[i]},
+                        {value: topLeft - isoline, x: xScreenPos[j], y: yScreenPos[i + 1]},
+                        {value: topRight - isoline, x: xScreenPos[j + 1], y: yScreenPos[i + 1]}
                     );
                     if (path.length > 0){
                         path.forEach((line) => {
@@ -144,34 +156,36 @@ export class MarchingSquares {
                             canvasPath.moveTo(line.x1, line.y1);
                             canvasPath.lineTo(line.x2, line.y2);
 
-                            this.paths.push({line: canvasPath, color: this.colors[isolineInd]});
+                            this.paths[isolineInd].push(canvasPath);
                         });
                     }
                 });
             }
         }
     }
+    edgeLerp(edgeA, edgeB){
+        return ((edgeA.x == edgeB.x) ?
+            this.lerp(
+                {value: edgeA.y, weight: edgeA.value},
+                {value: edgeB.y, weight: edgeB.value}
+            )
+        :
+            this.lerp(
+                {value: edgeA.x, weight: edgeA.value},
+                {value: edgeB.x, weight: edgeB.value}
+            ));
+    }
     lerp(a, b){
         return (a.value - ((a.weight) / (b.weight - a.weight)) * (b.value - a.value));
-    }
-    graphToScreenPos(point){
-        return {
-            x: this.dimensions.x + (
-                (point.x - this.xTicks[0])
-                / (this.xTicks[this.xTicks.length - 1] - this.xTicks[0])
-            ) * this.dimensions.width,
-            y: this.dimensions.y + this.dimensions.height - (
-                (point.y - this.yTicks[0])
-                / (this.yTicks[this.yTicks.length - 1] - this.yTicks[0])
-            ) * this.dimensions.height
-        };
     }
     draw(){
         ctx.lineCap = "round";
         ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.002;
-        this.paths.forEach((path) => {
-            ctx.strokeStyle = path.color;
-            ctx.stroke(path.line);
+        this.paths.forEach((isoline, isolineInd) => {
+            ctx.strokeStyle = this.colors[isolineInd];
+            isoline.forEach((path) => {
+                ctx.stroke(path);
+            });
         });
         ctx.lineCap = "butt";
     }

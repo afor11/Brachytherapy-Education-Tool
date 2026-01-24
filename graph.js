@@ -46,12 +46,6 @@ export class Graph {
             );
             this.scaledAnatomy = {};
         }
-        // how many tick marks to skip evaluation of during getIsodose (useful for improving performance on
-        // worse computers) (default is 1, meaning every tick mark is evaluated, 2 would mean every other
-        // tick mark is evalutated and so fourth)
-        this.resolution = 1;
-        this.effectiveXTicks = this.xTicks.filter((_, ind) => (ind % this.resolution) == 0);
-        this.effectiveYTicks = this.yTicks.filter((_, ind) => (ind % this.resolution) == 0);
 
         this.scale = scale;
         this.isolineGraph = new MarchingSquares(this.xTicks, this.yTicks, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
@@ -69,7 +63,6 @@ export class Graph {
                 this.anatomyParams,
                 cloneObj(anatomyData)
             );
-            console.log(this.applicatorAnatomy);
             this.rescaleAnatomy();
         }
     }
@@ -81,7 +74,6 @@ export class Graph {
                 this.unit().height / 10,
                 this.applicatorAnatomy
             );
-            console.log(this.scaledAnatomy);
         }
     }
     overlayAnatomy(){
@@ -126,8 +118,8 @@ export class Graph {
     getGraphState(){
         return [
             this.zSlice,
-            this.effectiveXTicks,
-            this.effectiveYTicks,
+            this.xTicks,
+            this.yTicks,
             this.perspective,
             this.refpoints
         ].reduce((stateString, attribute) => stateString + "," + attribute, "");
@@ -142,13 +134,6 @@ export class Graph {
         ]);
     }
     getIsodose(refPoint){
-        if (this.resolution != 1){
-            this.effectiveXTicks = this.xTicks.filter((_, ind) => (ind % this.resolution) == 0);
-            this.effectiveYTicks = this.yTicks.filter((_, ind) => (ind % this.resolution) == 0);
-        }else{
-            this.effectiveXTicks = this.xTicks;
-            this.effectiveYTicks = this.yTicks;
-        }
 
         let usedCaches = new Map();
         this.cachedDose.forEach((_, seedString) => {
@@ -156,9 +141,9 @@ export class Graph {
         });
 
         let defaultDose = [];
-        for (let i = 0; i < this.effectiveYTicks.length; i++){
+        for (let i = 0; i < this.yTicks.length; i++){
             defaultDose.push(
-                new Array(this.effectiveXTicks.length).fill(0)
+                new Array(this.xTicks.length).fill(0)
             );
         }
 
@@ -189,8 +174,8 @@ export class Graph {
                 if (cachedDose.graphState === currGraphState){
                     // the graph state has not changed since the seed has been cached
                     let cachedDoseData = cachedDose.dose;
-                    for (let i = 0; i < this.effectiveYTicks.length; i++){
-                        for (let j = 0; j < this.effectiveXTicks.length; j++){
+                    for (let i = 0; i < this.yTicks.length; i++){
+                        for (let j = 0; j < this.xTicks.length; j++){
                             totalDose[i][j] += cachedDoseData[i][j] * doseScaleFactor;
                         }
                     }
@@ -209,11 +194,11 @@ export class Graph {
             };
 
             // calculate dose from the specific seed
-            for (let i = 0; i < this.effectiveYTicks.length; i++){
+            for (let i = 0; i < this.yTicks.length; i++){
                 let doseSlice = [];
                 let totalDoseSlice = [];
-                for (let j = 0; j < this.effectiveXTicks.length; j++){
-                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.effectiveXTicks[j], y: this.effectiveYTicks[i], z: this.zSlice}));
+                for (let j = 0; j < this.xTicks.length; j++){
+                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice}));
                     doseSlice.push(pointDose);
                     totalDoseSlice.push(totalDose[i][j] + pointDose);
                 }
@@ -237,9 +222,9 @@ export class Graph {
         refDose = ((refDose == 0) ? 1 : refDose); // prevent divide by 0 errors
 
         let isodose = [];
-        for (let i = 0; i < this.effectiveYTicks.length; i++){
+        for (let i = 0; i < this.yTicks.length; i++){
             let slice = [];
-            for (let j = 0; j < this.effectiveXTicks.length; j++){
+            for (let j = 0; j < this.xTicks.length; j++){
                 slice.push(100 * dose[i][j] / refDose);
             }
             isodose.push(slice);

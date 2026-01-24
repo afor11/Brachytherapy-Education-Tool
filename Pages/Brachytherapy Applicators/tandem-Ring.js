@@ -431,6 +431,10 @@ export let tandemAndRingPage = new Module({
 
                 graph.refreshGraph();
             });
+            
+            this.graphs.graph1.rescaleAnatomy();
+            this.graphs.graph2.rescaleAnatomy();
+            this.graphs.graph3.rescaleAnatomy();
 
             splitX = Math.min(
                 this.graphs.graph1.graphDimensions.x,

@@ -208,11 +208,6 @@ export let PlanarArrayOfSeeds = new Module({
     },
     onReload: function* () {
         refreshNavBar(thisModule);
-
-        let graph3Div = document.getElementById("graph3");
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
         
         if (view.width / view.height > 1){
             let splitY = view.height * 0.25;

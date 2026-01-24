@@ -78,12 +78,18 @@ export function biliniarInterpolateTable(data,xSpacing,ySpacing,x,y){
 
 //helper function for interpolate table and bilinear interpolate
 function getInterpolationIndex(spacingArr, ind){
-    for (let i = 0; i < spacingArr.length; i++){
-        if (spacingArr[i] >= ind){
-            return i;
+    let min = 0;
+    let max = spacingArr.length - 1;;
+    let retInd = Math.ceil((min + max) / 2);
+    while ((max - min) > 1){
+        if (spacingArr[retInd] <= ind){
+            min = retInd;
+        }else{
+            max = retInd;
         }
+        retInd = Math.ceil((min + max) / 2);
     }
-    return spacingArr.length - 1;
+    return retInd;
 }
 
 export function lerp(a,b,t){

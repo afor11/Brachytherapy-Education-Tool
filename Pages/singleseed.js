@@ -18,14 +18,14 @@ export let singleSeedPage = new Module({
             seeds: [
                 new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
             ],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 2, 0.0625), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
+            xTicks: getRange(-2, 2, 0.03125), yTicks: getRange(-2, 2, 0.03125), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [
                 new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
             ],
-            xTicks: getRange(-2, 2, 0.0625), yTicks: getRange(-2, 2, 0.0625), perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]
+            xTicks: getRange(-2, 2, 0.03125), yTicks: getRange(-2, 2, 0.03125), perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]
         })
     },
     sliders: {
@@ -84,11 +84,6 @@ export let singleSeedPage = new Module({
     },
     onReload: function* () {
         refreshNavBar(thisModule);
-
-        let graph3Div = document.getElementById("graph3");
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
         
         if (view.width / view.height > 1){
             let splitY = view.height * 0.25;
@@ -321,7 +316,6 @@ export let singleSeedPage = new Module({
     defaultInputHandler: {
         onMouseDown: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
-            console.log(module.labels.graph1DwellTime);
 
             //UI around graph1
             if (!module.dropDowns.graph1Model.showing){

@@ -78,9 +78,6 @@ export function* runAnimation(){
     let self = this;
     yield* chainEffectHandler({
         tryCode: function* () {
-            if (typeof self.animate === "object"){
-                console.log(self);
-            }
             yield* runFn(self.animate);
         },
         handleCode: function* (effect) {

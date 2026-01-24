@@ -277,15 +277,6 @@ export let vaginalCylinderPage = new Module({
     onReload: function* () {
         refreshNavBar("brachytherapy applicators");
 
-        let graph2Div = document.getElementById("graph2");
-        let graph3Div = document.getElementById("graph3");
-        if (graph2Div.innerHTML !== ""){
-            graph2Div.innerHTML = "";
-        }
-        if (graph3Div.innerHTML !== ""){
-            graph3Div.innerHTML = "";
-        }
-
         let splitX = view.width * 0.2;
         let yStep = view.height * 0.1;
 
