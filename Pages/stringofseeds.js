@@ -47,7 +47,7 @@ export let stringofseedsPage = new Module({
         seedSpacing: 1
     },
     dropDowns: {
-        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name),
+        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200),
     },
     labels: {
         graph1AirKerma: airKermaLabel("graph1"),

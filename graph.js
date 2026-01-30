@@ -49,6 +49,8 @@ export class Graph {
 
         this.scale = scale;
         this.isolineGraph = new MarchingSquares(this.xTicks, this.yTicks, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
+        this.isolines = [12.5, 50, 100, 200, 400, 800];
+        this.isolineColors = ["#D92684", "#D97B26","#D9262A", "#84D926", "#26D9D5", "#7B26D9"];
     }
     *refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
@@ -116,13 +118,13 @@ export class Graph {
         },0);
     }
     getGraphState(){
-        return [
+        return JSON.stringify([
             this.zSlice,
             this.xTicks,
             this.yTicks,
             this.perspective,
             this.refpoints
-        ].reduce((stateString, attribute) => stateString + "," + attribute, "");
+        ]);
     }
     getSeedState(seed){
         return JSON.stringify([
@@ -153,7 +155,7 @@ export class Graph {
             if (!seed.enabled || (seed.dwellTime == 0)){return totalDose;}
             let dose = [];
             let seedString = this.getSeedState(seed);
-            if (this.cachedDose.has(seedString)){
+            if ((this.cachedDose.has(seedString)) && (this.cachedDose.get(seedString).graphState === currGraphState)){
                 // this seed has been cached
                 let cachedDose = this.cachedDose.get(seedString);
                 
@@ -171,17 +173,15 @@ export class Graph {
                 );
                 let doseScaleFactor = airKermaScaleFactor * dwellTimeScaleFactor;
 
-                if (cachedDose.graphState === currGraphState){
-                    // the graph state has not changed since the seed has been cached
-                    let cachedDoseData = cachedDose.dose;
-                    for (let i = 0; i < this.yTicks.length; i++){
-                        for (let j = 0; j < this.xTicks.length; j++){
-                            totalDose[i][j] += cachedDoseData[i][j] * doseScaleFactor;
-                        }
+                // the graph state has not changed since the seed has been cached
+                let cachedDoseData = cachedDose.dose;
+                for (let i = 0; i < this.yTicks.length; i++){
+                    for (let j = 0; j < this.xTicks.length; j++){
+                        totalDose[i][j] += cachedDoseData[i][j] * doseScaleFactor;
                     }
-                    usedCaches.set(seedString, true);
-                    return totalDose;
                 }
+                usedCaches.set(seedString, true);
+                return totalDose;
             }
 
             // if the cache was not use, perpare to add the calculated dose as a cache entry
@@ -233,24 +233,25 @@ export class Graph {
         return isodose;
     }
     refreshGraph(){
-        this.isolineGraph = new MarchingSquares(
-            this.xTicks,
-            this.yTicks,
-            [12.5, 50, 100, 200, 400, 800],
-            ["#D92684", "#D97B26","#D9262A", "#84D926", "#26D9D5", "#7B26D9"],
-            {
+        Object.assign(this.isolineGraph, {
+            xTicks: this.xTicks,
+            yTicks: this.yTicks,
+            isolines: this.isolines,
+            colors: this.isolineColors,
+            dimensions: {
                 x: this.x + this.width * 0.1,
                 y: this.y + this.height * 0.1,
                 width: this.width * 0.8,
                 height: this.height * 0.8
             }
-        );
+        });
         this.isolineGraph.data = this.getIsodose(this.refpoints[0]);
         this.isolineGraph.refreshPath();
 
         this.graphDimensions = this.isolineGraph.dimensions;
     }
     drawGraph(){
+        // draw the surrounding text
         ctx.textAlign = "center";
         ctx.fillStyle = "black";
         ctx.textBaseline = "middle";
@@ -260,6 +261,7 @@ export class Graph {
         const maxYTick = Math.floor(getMax(this.yTicks));
         const minYTick = Math.ceil(getMin(this.yTicks));
 
+        // get font size
         ctx.font = Math.min(
             // font size for x-axis
             getFontSize(
@@ -282,6 +284,7 @@ export class Graph {
                 (size) => `${size}px Arial`
             )
         ) * 0.5 + "px Arial";
+
         // draw vertical gridlines
         for (let i = minXTick; i <= maxXTick; i++){
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
@@ -327,6 +330,7 @@ export class Graph {
         ctx.textAlign = "start";
         ctx.textBaseline = "alphabetic";
 
+        // draw the isoline graph
         this.isolineGraph.draw();
 
         // draw boarder

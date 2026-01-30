@@ -118,7 +118,7 @@ export let tandemAndRingPage = new Module({
         })
     },
     dropDowns: {
-        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
+        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus),
         applicatorModel: blankDropdown("Applicator: tandem+ring"),
         applicatorLength: blankDropdown("Length: 40mm"),
         ringDiameter: blankDropdown("Diameter: 30mm"),

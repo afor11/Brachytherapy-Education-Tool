@@ -429,12 +429,12 @@ export function* expandOnHover(detectClick = true) {
     self.lastButtonProps = encodedProps();
 }
 
-export function modelDropdown(modelOptions,graph,defaultLabel){
+export function modelDropdown(modelOptions, graph, defaultModel){
     let dropdown = new Dropdown(
         new Button({
             x: 0, y: 0, width: 0, height: 0, bgColor: "black",
             onClick: () => {},
-            label: {text: defaultLabel, font: "default", color: "white"},
+            label: {text: defaultModel.name + " (" + defaultModel.isotope + ")", font: "default", color: "white"},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             animate: expandOnHover,
             hoverCol: "black"

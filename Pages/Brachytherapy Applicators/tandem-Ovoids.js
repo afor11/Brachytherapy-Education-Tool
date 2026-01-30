@@ -118,7 +118,7 @@ export let tandemAndOvoidsPage = new Module({
         })
     },
     dropDowns: {
-        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
+        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus),
         applicatorModel: blankDropdown("Applicator: tandem+ovoid"),
         applicatorLength: blankDropdown("Length: 40mm"),
         ovoidDiameter: blankDropdown("Diameter: 30mm"),

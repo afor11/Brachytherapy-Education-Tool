@@ -69,7 +69,7 @@ export let vaginalCylinderPage = new Module({
             },
             numDecimalsEditing: 1
         }),
-        graph1Reference: referencePointLabel("graph1", 0, (value) => `5mm Depth Dose: ${value} Gy`)
+        graph1Reference: referencePointLabel("graph1", 0, (value) => `5mm Dose: ${value} Gy`)
     },
     buttons: {
         resetDwellTimes: new Button({
@@ -90,7 +90,7 @@ export let vaginalCylinderPage = new Module({
         })
     },
     dropDowns: {
-        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus.name),
+        graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus),
         applicatorModel: blankDropdown("VaginalCylinder"),
         applicatorLength: blankDropdown("Length: 30mm"),
         applicatorDiameter: blankDropdown("Diameter: 30mm")

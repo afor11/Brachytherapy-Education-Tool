@@ -12,6 +12,7 @@ export class MarchingSquares {
         this.colors = colors;
     }
     refreshPath(){
+        this.paths = [];
 
         const pathFns = [
             () => [],
@@ -188,5 +189,48 @@ export class MarchingSquares {
             });
         });
         ctx.lineCap = "butt";
+
+        //debugView.call(this);
     }
+}
+
+function debugView(){
+    let xScreenPos = [];
+    for (let i = 0; i < this.xTicks.length; i++){
+        xScreenPos.push(
+            this.dimensions.x + (
+                (this.xTicks[i] - this.xTicks[0])
+                / (this.xTicks[this.xTicks.length - 1] - this.xTicks[0])
+            ) * this.dimensions.width
+        );
+    }
+    let yScreenPos = [];
+    for (let i = 0; i < this.yTicks.length; i++){
+        yScreenPos.push(
+            this.dimensions.y + this.dimensions.height - (
+                (this.yTicks[i] - this.yTicks[0])
+                / (this.yTicks[this.yTicks.length - 1] - this.yTicks[0])
+            ) * this.dimensions.height
+        );
+    }
+    ctx.strokeStyle = "black";
+    yScreenPos.forEach((yTick, yInd) => {
+        if (yInd < yScreenPos.length - 1){
+            xScreenPos.forEach((xTick, xInd) => {
+                if (xInd < xScreenPos.length - 1){
+                    ctx.beginPath();
+                    ctx.lineWidth = 0.1;
+                    ctx.rect(
+                        xTick,
+                        yTick,
+                        xScreenPos[xInd + 1] - xTick,
+                        yScreenPos[yInd + 1] - yTick
+                    );
+                    ctx.stroke();
+                }
+            });
+        }
+    });
+
+    console.log("number of calculated points: " + (yScreenPos.length * xScreenPos.length));
 }

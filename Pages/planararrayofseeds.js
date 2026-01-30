@@ -67,8 +67,8 @@ export let PlanarArrayOfSeeds = new Module({
         }
     },
     dropDowns: {
-        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200.name),
-        graph2Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200.name)
+        graph1Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph1",TheraSeed200),
+        graph2Model: modelDropdown([TheraSeed200,Best2301,GammaMedHDRPlus,BEBIG_GK60M21,ElektaFlexisource],"graph2",TheraSeed200)
     },
     labels: {
         graph1AirKerma: airKermaLabel("graph1"),
@@ -701,17 +701,19 @@ function seedSpacingLabel(graph){
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
             setSeedSpacing(module, graph, clamp(value, 0.5, 1.5));
-            yield* runFn(module.onReload)
+            yield* runFn(module.onReload);
         },
         numDecimalsEditing: 2,
         animate: function* () {yield* expandOnHover(false)}
     });
 }
 
-function setSeedSpacing(module, graph,value){
+function setSeedSpacing(module, graph, value){
+    let scaleFactor = (1 / module.seedSpacing[graph]) * value;
+
     module.graphs[graph].seeds.forEach((seed) => {
-        seed.pos.x = (seed.pos.x / module.seedSpacing[graph]) * value;
-        seed.pos.y = (seed.pos.y / module.seedSpacing[graph]) * value;
+        seed.pos.x = seed.pos.x * scaleFactor;
+        seed.pos.y = seed.pos.y * scaleFactor;
     });
     module.seedSpacing[graph] = value;
 }
