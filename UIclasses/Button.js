@@ -5,7 +5,7 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Button {
-    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = "#D3D3D3"}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = "#D3D3D3", cornerRounding = 0}){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -19,28 +19,45 @@ export class Button {
         this.outlineThickness = outlineThickness;
         this.animate = animate;
         this.hoverCol = hoverCol;
+        this.cornerRounding = cornerRounding;
     }
     *draw(){
-        // every time a button is being drawn, check if the button should run the onHover function
+        // every time a button is being drawn, check if the button should run the animate function
         yield* runAnimation.call(this);
 
+        // get the appropriate font
         if (this.font === "default"){
             ctx.font = this.getDefaultFont() + "px Arial";
         }else{
             ctx.font = this.font;
         }
+
+        // get how much the corners of the rectangle should be rounded
+        let cornerRoundAmount = Math.min(this.width / 2, this.height / 2);
+        cornerRoundAmount = (
+            Array.isArray(this.cornerRounding) ?
+                this.cornerRounding.map((corner) => corner * cornerRoundAmount)
+            :
+                this.cornerRounding * cornerRoundAmount
+        );
+
+        // outline the rectangle
         let textDimensions = ctx.measureText(this.label);
         let textHeight = textDimensions.actualBoundingBoxAscent + textDimensions.actualBoundingBoxDescent;
         if (this.outlineThickness > 0){
             ctx.strokeStyle = this.outlineColor;
             ctx.lineWidth = this.outlineThickness;
             ctx.beginPath();
-            ctx.rect(this.x,this.y,this.width,this.height);
+            ctx.roundRect(this.x, this.y, this.width, this.height, cornerRoundAmount);
             ctx.stroke();
         }
-        ctx.fillStyle = this.hovering() ? this.hoverCol : this.bgColor;
+
+        // fill the rectangle
+        ctx.fillStyle = (yield* this.hovering()) ? this.hoverCol : this.bgColor;
         ctx.beginPath();
-        ctx.fillRect(this.x,this.y,this.width,this.height);
+        ctx.roundRect(this.x, this.y, this.width, this.height, cornerRoundAmount);
+        ctx.fill();
+
         ctx.fillStyle = this.fontColor;
         ctx.fillText(this.label, this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
     }
@@ -52,7 +69,7 @@ export class Button {
         );
     }
     *checkClicked(){
-        if (window.mouse.down && this.hovering()){
+        if (window.mouse.down && (yield* this.hovering())){
             let self = this;
             yield* chainEffectHandler({
                 tryCode: function*(){
@@ -69,8 +86,23 @@ export class Button {
         }
         return false;
     }
-    hovering(){
-        return ((window.mouse.x >= this.x) && (window.mouse.x <= this.x + this.width) && (window.mouse.y >= this.y) && (window.mouse.y <= this.y + this.height));
+    *hovering(){
+        return (
+            (window.mouse.x >= this.x)
+            && (window.mouse.x <= this.x + this.width)
+            && (window.mouse.y >= this.y)
+            && (window.mouse.y <= this.y + this.height)
+        );
+        /*if (
+            (window.mouse.x >= this.x)
+            && (window.mouse.x <= this.x + this.width)
+            && (window.mouse.y >= this.y)
+            && (window.mouse.y <= this.y + this.height)
+        ) {
+            return (yield new AlgebraicEffect("HOVERING"));
+        } else {
+            return false;
+        }*/
     }
 }
 
@@ -78,7 +110,7 @@ export function* runAnimation(){
     let self = this;
     yield* chainEffectHandler({
         tryCode: function* () {
-            yield* runFn(self.animate);
+            yield* runFn(self.animate.bind(self));
         },
         handleCode: function* (effect) {
             if (effect === "GET SELF"){

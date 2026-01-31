@@ -1,6 +1,6 @@
 import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
 import { anatomyData } from './constants.js';
-import { magnitude , cloneObj, getMax, getMin, getFontSize, distance } from './utils.js';
+import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, clamp } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
 import { MarchingSquares } from './MarchingSquares.js';
 
@@ -245,6 +245,7 @@ export class Graph {
                 height: this.height * 0.8
             }
         });
+
         this.isolineGraph.data = this.getIsodose(this.refpoints[0]);
         this.isolineGraph.refreshPath();
 
@@ -278,9 +279,9 @@ export class Graph {
                 this.graphDimensions.width * 0.05,
                 this.graphDimensions.height / (maxYTick - minYTick),
                 ((maxYTick.toString().length > minYTick.toString().length) ?
-                    maxYTick.toString() + "  "
+                    maxYTick.toString()
                 :
-                    minYTick.toString() + "  "),
+                    minYTick.toString()),
                 (size) => `${size}px Arial`
             )
         ) * 0.5 + "px Arial";
@@ -293,7 +294,7 @@ export class Graph {
             ctx.moveTo(gridlineX, this.graphDimensions.y);
             ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
             ctx.stroke();
-            ctx.fillText(i, gridlineX, this.graphDimensions.y + this.graphDimensions.height * 1.025);
+            ctx.fillText(i, gridlineX, this.y + this.height * 0.925);
         }
 
         ctx.fillText(
@@ -311,8 +312,42 @@ export class Graph {
             ctx.moveTo(this.graphDimensions.x, gridlineY);
             ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);
             ctx.stroke();
-            ctx.fillText(i + "  ", this.graphDimensions.x, gridlineY);
+            ctx.fillText(i, this.x + this.width * 0.075, gridlineY);
         }
+
+        // draw isoline legend
+        ctx.textAlign = "center";
+        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.003;
+        let boundingBoxMetrics = ctx.measureText("█"); //█ takes uo the entire bounding box
+        let elmSpacing = clamp(
+            this.graphDimensions.height / (this.isolines.length - 1),
+            0,
+            1.5 * (boundingBoxMetrics.actualBoundingBoxAscent + boundingBoxMetrics.actualBoundingBoxDescent)
+        );
+
+        this.isolines.forEach((isoline, ind) => {
+            let metrics = ctx.measureText(isoline);
+            const textY = this.graphDimensions.y + ind * elmSpacing;
+            const upperLineY = textY - metrics.actualBoundingBoxAscent - ctx.lineWidth;
+            const lowerLineY = textY + metrics.actualBoundingBoxDescent + ctx.lineWidth;
+
+            ctx.strokeStyle = this.isolineColors[ind];
+            // draw lower line
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width * 0.92, lowerLineY);
+            ctx.lineTo(this.x + this.width * 0.98, lowerLineY);
+            ctx.stroke();
+
+            // draw upper line
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width * 0.92, upperLineY);
+            ctx.lineTo(this.x + this.width * 0.98, upperLineY);
+            ctx.stroke();
+
+            // draw text
+            ctx.beginPath();
+            ctx.fillText(isoline + "%", this.x + this.width * 0.95, textY);
+        });
 
         ctx.save();
         ctx.textAlign = "center";
@@ -321,8 +356,8 @@ export class Graph {
         ctx.beginPath();
         ctx.fillText(
             this.scale,
-            -this.graphDimensions.y - this.graphDimensions.height / 2,
-            this.graphDimensions.x - this.graphDimensions.width * 0.075
+            -this.y - this.height / 2,
+            this.x + this.width * 0.04
         );
 
         ctx.restore();

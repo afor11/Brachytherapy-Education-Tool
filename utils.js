@@ -367,20 +367,21 @@ export function airKermaLabel(graph){
                 seed.airKerma = clampedVal;
             });
         },
-        numDecimalsEditing: 3,
-        animate: function* () {yield* expandOnHover(false)}
+        numDecimalsEditing: 3
     })
 }
 
-export function* expandOnHover(detectClick = true) {
+export function* expandOnHover(detectClick = true, expandHeight = false) {
     let self = yield new AlgebraicEffect("GET SELF");
 
     // a function to store any properties that may be modified into a restingButtonProps attribute
     let storeProps = () => {
-        self.restingButtonProps = {...self};
-        if (Object.hasOwn(self.restingButtonProps, "restingButtonProps")){
-            delete self.restingButtonProps.restingButtonProps;
-        }
+        self.restingButtonProps = {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height
+        };
     }
     // a function to encode the element's properties as a string (checked to see if any updates have occured)
     let encodedProps = () => JSON.stringify([
@@ -400,7 +401,7 @@ export function* expandOnHover(detectClick = true) {
     }
 
     // if the user is hovering expand slightly
-    if (self.hovering()){
+    if ((yield* self.hovering())){
         if (!Object.hasOwn(self, "restingButtonProps")){
             storeProps();
         }
@@ -408,10 +409,14 @@ export function* expandOnHover(detectClick = true) {
         // scale element
         if (mouse.down && detectClick){
             self.width = self.restingButtonProps.width;
-            self.height = self.restingButtonProps.height;
+            if (expandHeight) {
+                self.height = self.restingButtonProps.height;
+            }
         }else{
             self.width += (self.restingButtonProps.width * 1.1 - self.width) * 0.2;
-            self.height += (self.restingButtonProps.height * 1.1 - self.height) * 0.2;
+            if (expandHeight) {
+                self.height += (self.restingButtonProps.height * 1.1 - self.height) * 0.2;
+            }
         }
 
         // offset it to maintain the center position
@@ -420,7 +425,9 @@ export function* expandOnHover(detectClick = true) {
     }else if (Object.hasOwn(self, "restingButtonProps")){
         // otherwise shrink slightly
         self.width += (self.restingButtonProps.width - self.width) * 0.4;
-        self.height += (self.restingButtonProps.height - self.height) * 0.4;
+        if (expandHeight) {
+            self.height += (self.restingButtonProps.height - self.height) * 0.4;
+        }
         self.x = self.restingButtonProps.x - (self.width - self.restingButtonProps.width) / 2;
         self.y = self.restingButtonProps.y - (self.height - self.restingButtonProps.height) / 2;
     }
@@ -437,9 +444,16 @@ export function modelDropdown(modelOptions, graph, defaultModel){
             label: {text: defaultModel.name + " (" + defaultModel.isotope + ")", font: "default", color: "white"},
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             animate: expandOnHover,
-            hoverCol: "black"
-        }),[]
+            hoverCol: "black",
+            cornerRounding: 0.5
+        }),
+        []
     );
+    dropdown.button.onClick = function* () {
+        dropdown.showing = !dropdown.showing;
+
+        dropdown.animStart = Date.now();
+    }
     for (let i = 0; i < modelOptions.length; i++){
         let model = modelOptions[i];
         dropdown.options.push(new Button({
@@ -452,18 +466,61 @@ export function modelDropdown(modelOptions, graph, defaultModel){
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
-                let parent = yield new AlgebraicEffect("GET PARENT");
                 module.graphs[graph].seeds.forEach((seed) => {
                     seed.model = model;
                     seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
                     seed.dwellTime = 0.00833;
                     seed.enabled = true;
                 });
-                parent.button.label = model.name + " (" + model.isotope + ")";
-                parent.collapseDropdown();
+                dropdown.button.label = model.name + " (" + model.isotope + ")";
+                dropdown.collapseDropdown();
                 yield* runFn(module.onReload.bind(module));
             },
-            animate: expandOnHover
+            animate: function* () {
+                // if a dropdown animation is playing
+                if (Object.hasOwn(dropdown, "animStart")) {
+
+                    // if the animation is not initalized
+                    if (!Object.hasOwn(this, "animStartPos")) {
+                        // if the dropdown has different "resting properties" (for when the
+                        // dropwodn button is expanding), set the animation start position
+                        // based off these resting properties, otherwise, set it based on
+                        // how it is
+                        if (Object.hasOwn(dropdown.button, "restingButtonProps")) {
+                            let restingProps = dropdown.button.restingButtonProps;
+                            this.animStartPos = {
+                                x: restingProps.x,
+                                y: restingProps.y + restingProps.height / 2
+                            };
+                        } else {
+                            this.animStartPos = {
+                                x: dropdown.button.x,
+                                y: dropdown.button.y + dropdown.button.height / 2
+                            };
+                        }
+                        this.animEndPos = {x: this.x, y: this.y};
+                    }
+
+                    // easing function found here: https://easings.net/#easeOutQuint
+                    let t = clamp(1 - Math.pow(1 - (Date.now() - dropdown.animStart) / 1000, 5), 0, 1);
+                    this.x = this.animStartPos.x + t * (this.animEndPos.x - this.animStartPos.x);
+                    this.y = this.animStartPos.y + t * (this.animEndPos.y - this.animStartPos.y);
+
+                    if (t == 1) {
+                        delete dropdown.animStart;
+                        delete this.animStartPos;
+                        delete this.animEndPos;
+                    }
+                }
+            },
+            cornerRounding: (
+                (i == 0) ?
+                    [0.5, 0.5, 0, 0]
+                : (i == (modelOptions.length - 1)) ?
+                    [0, 0, 0.5, 0.5]
+                :
+                    0
+            )
         }));
     }
     return dropdown;

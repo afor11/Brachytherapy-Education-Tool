@@ -350,6 +350,7 @@ export let tandemAndRingPage = new Module({
             let splitY = view.height * 0.25;
 
             Object.values(this.graphs).forEach((graph, ind) => {
+                // the third graph is a little bigger, this is right, don't try to fix it
                 Object.assign(graph, getRegionBound(
                     {
                         x: (view.width / 3) * ind,

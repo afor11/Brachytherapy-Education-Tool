@@ -12,29 +12,34 @@ export class Dropdown {
         this.recalcFontOnDraw = true;
     }
     *draw(){ // this function does not have to be a genertor, but it is one for consistency
-        if (this.showing){
-            if (this.uniformFont){
-                let font;
-                if (this.recalcFontOnDraw){
-                    font = this.normalizeFont() + "px Arial";
-                }else{
-                    font = this.button.font;
-                }
-                this.options.forEach((option) => {
-                    if (typeof option.button !== "undefined"){
-                        option.button.font = font;
-                    }else{
-                        option.font = font;
+        yield* handleChildren(
+            this,
+            function*(){
+                if (this.showing){
+                    if (this.uniformFont){
+                        let font;
+                        if (this.recalcFontOnDraw){
+                            font = this.normalizeFont() + "px Arial";
+                        }else{
+                            font = this.button.font;
+                        }
+                        this.options.forEach((option) => {
+                            if (typeof option.button !== "undefined"){
+                                option.button.font = font;
+                            }else{
+                                option.font = font;
+                            }
+                        });
                     }
-                });
+                    for (let i = 0; i < this.options.length; i++){
+                        yield* this.options[i].draw();
+                    }
+                    yield* this.button.draw();
+                }else{
+                    yield* this.button.draw();
+                }
             }
-            yield* this.button.draw();
-            for (let i = 0; i < this.options.length; i++){
-                yield* this.options[i].draw();
-            }
-        }else{
-            yield* this.button.draw();
-        }
+        );
     }
     normalizeFont(){
         return this.options.reduce((minFont,option) => {
@@ -49,30 +54,19 @@ export class Dropdown {
         if (this.showing){
             for (let i = 0; i < this.options.length; i++){
                 let self = this;
-                let buttonClicked = yield* chainEffectHandler({
-                    tryCode: function*(){
+                let buttonClicked = yield* handleChildren(
+                    this,
+                    function*(){
                         return yield* self.options[i].checkClicked();
-                    },
-                    handleCode: function*(effect, ind = 0) {
-                        if (effect === "GET PARENT BY IND"){
-                            if (ind == 0){
-                                return self;
-                            }else{
-                                return (yield new AlgebraicEffect("GET PARENT BY IND", ind - 1));
-                            }
-                        }
-                        if (effect === "GET PARENT"){
-                            return self;
-                        }
                     }
-                });
+                );
 
                 if (buttonClicked){
                     return true;
                 }
             }
         }
-        return yield yield* this.button.checkClicked();
+        return yield* this.button.checkClicked();
     }
     collapseDropdown(){
         this.showing = false;
@@ -82,4 +76,22 @@ export class Dropdown {
             }
         });
     }
+}
+
+function* handleChildren(self, tryCode) {
+    return yield* chainEffectHandler({
+        tryCode: tryCode.bind(self),
+        handleCode: function*(effect, ind = 0) {
+            if (effect === "GET PARENT BY IND"){
+                if (ind == 0){
+                    return self;
+                }else{
+                    return (yield new AlgebraicEffect("GET PARENT BY IND", ind - 1));
+                }
+            }
+            if (effect === "GET PARENT"){
+                return self;
+            }
+        }
+    });
 }

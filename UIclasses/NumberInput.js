@@ -73,7 +73,7 @@ export class NumberInput {
             this.font = this.recalcFont(label);
         }
 
-        ctx.fillStyle = this.hovering() ?
+        ctx.fillStyle = (yield* this.hovering()) ?
             this.hoverCol[(this.editing ? "selected" : "notSelected")]
         :
             this.bgColor[(this.editing ? "selected" : "notSelected")];
@@ -101,7 +101,7 @@ export class NumberInput {
 
         //if the mouse is down, hovering, and not editing, set inital values
         // and return a button press
-        if (this.hovering() && !this.editing){
+        if ((yield* this.hovering()) && !this.editing){
             this.editingValue = yield* this.getValue();
             this.initalValue = yield* this.getValue();
             this.editing = true;
@@ -179,7 +179,7 @@ export class NumberInput {
     recalcFont(label){
         return getFontSize(this.width * 0.8,this.height * 0.6,label,(size) => `${size}px Arial`);
     }
-    hovering(){
+    *hovering(){
         return ((window.mouse.x >= this.x) && (window.mouse.x <= this.x + this.width) && (window.mouse.y >= this.y) && (window.mouse.y <= this.y + this.height));
     }
 }
