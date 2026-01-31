@@ -643,7 +643,7 @@ function expandArrayButton(graph){
         label: {text: "Expand Array", font: "default", color: "black"},
         outline: {color: "black", thickness: 0},
         animate: expandOnHover,
-        hoverCol: "#AFE1AF"
+        hoverCol: "#AFE1AF",
     });
 }
 
@@ -704,7 +704,7 @@ function seedSpacingLabel(graph){
             yield* runFn(module.onReload);
         },
         numDecimalsEditing: 2,
-        animate: function* () {yield* expandOnHover(false)}
+        animate: function* () {yield* expandOnHover(false)},
     });
 }
 

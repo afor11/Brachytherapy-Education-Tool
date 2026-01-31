@@ -23,7 +23,8 @@ export function resetNavBar(moduleData){
                 yield* runFn(moduleData[moduleName].onReload);
             },
             label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001}
+            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+            cornerRounding: 0
         });
         return navButtons;
     },{});

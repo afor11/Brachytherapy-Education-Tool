@@ -31,7 +31,7 @@ export class Dropdown {
                             }
                         });
                     }
-                    for (let i = 0; i < this.options.length; i++){
+                    for (let i = this.options.length - 1; i >= 0; i--){
                         yield* this.options[i].draw();
                     }
                     yield* this.button.draw();

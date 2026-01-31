@@ -1,4 +1,4 @@
-import { getFontSize, runFn } from '../utils.js';
+import { getFontSize, runFn, getCornerRounding } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 import { runAnimation } from './Button.js';
 
@@ -6,7 +6,7 @@ var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
 export class NumberInput {
-    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: "black" ,notSelected: "#D3D3D3"}}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: "black" ,notSelected: "#D3D3D3"}, cornerRounding = 0.5}){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -39,6 +39,8 @@ export class NumberInput {
         this.font = "";
         this.animate = animate;
         this.hoverCol = hoverCol;
+        this.layer = 0;
+        this.cornerRounding = cornerRounding;
     }
     *getValue(){
         let self = this;
@@ -54,6 +56,10 @@ export class NumberInput {
         });
     }
     *draw(){
+        // add a new layer
+        this.layer = yield new AlgebraicEffect("ADD LAYER");
+
+        // get the label
         let self = this;
         let label = yield* chainEffectHandler({
             tryCode: function*(){
@@ -67,19 +73,24 @@ export class NumberInput {
             }
         });
 
+        // run the animation
         yield* runAnimation.call(this);
 
+        // recalc font is nessicary
         if (this.recalcFontOnDraw){
             this.font = this.recalcFont(label);
         }
 
+        // change fill color based on hovering / fill rect
         ctx.fillStyle = (yield* this.hovering()) ?
             this.hoverCol[(this.editing ? "selected" : "notSelected")]
         :
             this.bgColor[(this.editing ? "selected" : "notSelected")];
         ctx.beginPath();
-        ctx.fillRect(this.x,this.y,this.width,this.height);
+        ctx.roundRect(this.x, this.y, this.width, this.height, getCornerRounding(this, this.cornerRounding));
+        ctx.fill();
 
+        // setup text
         ctx.font = this.font + "px Arial";
         ctx.fillStyle = this.color[(this.editing ? "selected" : "notSelected")];
         let textDimensions = ctx.measureText(label);
@@ -91,6 +102,7 @@ export class NumberInput {
         ctx.rect(this.x, this.y, this.width, this.height);
         ctx.clip();
 
+        // draw label (with clipping)
         ctx.fillText(label, this.x + (this.width - textDimensions.width) / 2, this.y + textDimensions.actualBoundingBoxAscent + (this.height - textHeight) / 2);
         ctx.restore();
     }

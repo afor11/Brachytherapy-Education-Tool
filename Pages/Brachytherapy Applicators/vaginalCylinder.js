@@ -67,7 +67,7 @@ export let vaginalCylinderPage = new Module({
                     seed.dwellTime = dwellTimePerSeed;
                 });
             },
-            numDecimalsEditing: 1
+            numDecimalsEditing: 1,
         }),
         graph1Reference: referencePointLabel("graph1", 0, (value) => `5mm Dose: ${value} Gy`)
     },
@@ -85,7 +85,7 @@ export let vaginalCylinderPage = new Module({
                 module.graphs.graph1.seeds.forEach((seed) => {
                     seed.dwellTime = 0.00833;
                 });
-                module.onReload();
+                yield* module.onReload();
             },
         })
     },

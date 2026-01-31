@@ -215,7 +215,7 @@ export function toggleSeedEnable(graph,seedInd){
         label: {text: "disable seed", font: "default", color: "white"},
         outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
         hoverCol: "black",
-        animate: function* () {yield* expandOnHover(false)}
+        animate: function* () {yield* expandOnHover(false)},
     });
 }
 
@@ -239,7 +239,7 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
             );
         },
         numDecimalsEditing: 3,
-        animate: function* () {yield* expandOnHover(false)}
+        animate: function* () {yield* expandOnHover(false)},
     })
 }
 
@@ -320,7 +320,7 @@ export function multSeedDwellTimeLabel(graph){
             yield* runFn(module.onReload.bind(module));
         },
         numDecimalsEditing: 3,
-        animate: function* () {yield* expandOnHover(false)}
+        animate: function* () {yield* expandOnHover(false)},
     });
 }
 
@@ -341,7 +341,7 @@ export function dwellTimeLabel(graph){
             yield* runFn(module.onReload);
         },
         numDecimalsEditing: 3,
-        animate: function* () {yield* expandOnHover(false)}
+        animate: function* () {yield* expandOnHover(false)},
     });
 }
 
@@ -367,8 +367,23 @@ export function airKermaLabel(graph){
                 seed.airKerma = clampedVal;
             });
         },
-        numDecimalsEditing: 3
+        numDecimalsEditing: 3,
     })
+}
+
+// check if an object has bee changed since it was last passed through this function
+function objChanged(obj, changePropName, stateFn) {
+    if (Object.hasOwn(obj, changePropName)) {
+        if (obj[changePropName] === stateFn(obj)) {
+            return false;
+        } else {
+            obj[changePropName] = stateFn(obj);
+            return true;
+        }
+    } else {
+        obj[changePropName] = stateFn(obj);
+        return true;
+    }
 }
 
 export function* expandOnHover(detectClick = true, expandHeight = false) {
@@ -384,20 +399,18 @@ export function* expandOnHover(detectClick = true, expandHeight = false) {
         };
     }
     // a function to encode the element's properties as a string (checked to see if any updates have occured)
-    let encodedProps = () => JSON.stringify([
-        self.width,
-        self.height,
-        self.x,
-        self.y,
+    let encodedProps = (obj) => JSON.stringify([
+        obj.width,
+        obj.height,
+        obj.x,
+        obj.y,
     ]);
 
     // if any of the button's properties have been changed since this function was last there,
     // (if the button was modified by an outside source), assume that these are the new
     // dimensions to conform to
-    if (Object.hasOwn(self, "lastButtonProps")){
-        if (self.lastButtonProps !== encodedProps()){
-            storeProps();
-        }
+    if (objChanged(self, "lastButtonProps", encodedProps)) {
+        storeProps();
     }
 
     // if the user is hovering expand slightly
@@ -433,7 +446,7 @@ export function* expandOnHover(detectClick = true, expandHeight = false) {
     }
 
     // record button properties to be checked next time
-    self.lastButtonProps = encodedProps();
+    objChanged(self, "lastButtonProps", encodedProps);
 }
 
 export function modelDropdown(modelOptions, graph, defaultModel){
@@ -445,7 +458,6 @@ export function modelDropdown(modelOptions, graph, defaultModel){
             outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
             animate: expandOnHover,
             hoverCol: "black",
-            cornerRounding: 0.5
         }),
         []
     );
@@ -477,41 +489,47 @@ export function modelDropdown(modelOptions, graph, defaultModel){
                 yield* runFn(module.onReload.bind(module));
             },
             animate: function* () {
+                if (objChanged(this, "dropDownState", (self) => JSON.stringify([self.x, self.y]))) {
+                    this.animEndPos = {x: this.x, y: this.y};
+                }
                 // if a dropdown animation is playing
                 if (Object.hasOwn(dropdown, "animStart")) {
 
                     // if the animation is not initalized
-                    if (!Object.hasOwn(this, "animStartPos")) {
-                        // if the dropdown has different "resting properties" (for when the
-                        // dropwodn button is expanding), set the animation start position
-                        // based off these resting properties, otherwise, set it based on
-                        // how it is
-                        if (Object.hasOwn(dropdown.button, "restingButtonProps")) {
-                            let restingProps = dropdown.button.restingButtonProps;
-                            this.animStartPos = {
-                                x: restingProps.x,
-                                y: restingProps.y + restingProps.height / 2
-                            };
-                        } else {
-                            this.animStartPos = {
-                                x: dropdown.button.x,
-                                y: dropdown.button.y + dropdown.button.height / 2
-                            };
-                        }
+                    if (!Object.hasOwn(this, "animEndPos")) {
                         this.animEndPos = {x: this.x, y: this.y};
+                    }
+
+                    // if the dropdown has different "resting properties" (for when the
+                    // dropdown button is expanding), set the animation start position
+                    // based off these resting properties, otherwise, set it based on
+                    // how it is
+                    let animStartPos;
+                    if (Object.hasOwn(dropdown.button, "restingButtonProps")) {
+                        let restingProps = dropdown.button.restingButtonProps;
+                        animStartPos = {
+                            x: restingProps.x,
+                            y: restingProps.y + restingProps.height / 2
+                        };
+                    } else {
+                        animStartPos = {
+                            x: dropdown.button.x,
+                            y: dropdown.button.y + dropdown.button.height / 2
+                        };
                     }
 
                     // easing function found here: https://easings.net/#easeOutQuint
                     let t = clamp(1 - Math.pow(1 - (Date.now() - dropdown.animStart) / 1000, 5), 0, 1);
-                    this.x = this.animStartPos.x + t * (this.animEndPos.x - this.animStartPos.x);
-                    this.y = this.animStartPos.y + t * (this.animEndPos.y - this.animStartPos.y);
+                    this.x = animStartPos.x + t * (this.animEndPos.x - animStartPos.x);
+                    this.y = animStartPos.y + t * (this.animEndPos.y - animStartPos.y);
 
                     if (t == 1) {
                         delete dropdown.animStart;
-                        delete this.animStartPos;
                         delete this.animEndPos;
                     }
                 }
+
+                objChanged(this, "dropDownState", (self) => JSON.stringify([self.x, self.y]))
             },
             cornerRounding: (
                 (i == 0) ?
@@ -704,4 +722,15 @@ export function *addDropdownOptions(dropdown, options, text, onClick, module){
             })
         );
     }
+}
+
+export function getCornerRounding(dimensions, cornerRounding) {
+    // get how much the corners of the rectangle should be rounded
+    let cornerRoundAmount = Math.min(dimensions.width / 2, dimensions.height / 2);
+    return (
+        Array.isArray(cornerRounding) ?
+            cornerRounding.map((corner) => corner * cornerRoundAmount)
+        :
+            cornerRounding * cornerRoundAmount
+    );
 }

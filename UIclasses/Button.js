@@ -1,11 +1,11 @@
-import { getFontSize, runFn } from '../utils.js';
+import { getFontSize, runFn, getCornerRounding } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Button {
-    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = "#D3D3D3", cornerRounding = 0}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = "#D3D3D3", cornerRounding = 0.5}){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -20,8 +20,10 @@ export class Button {
         this.animate = animate;
         this.hoverCol = hoverCol;
         this.cornerRounding = cornerRounding;
+        this.layer = 0;
     }
     *draw(){
+        this.layer = yield new AlgebraicEffect("ADD LAYER");
         // every time a button is being drawn, check if the button should run the animate function
         yield* runAnimation.call(this);
 
@@ -33,13 +35,7 @@ export class Button {
         }
 
         // get how much the corners of the rectangle should be rounded
-        let cornerRoundAmount = Math.min(this.width / 2, this.height / 2);
-        cornerRoundAmount = (
-            Array.isArray(this.cornerRounding) ?
-                this.cornerRounding.map((corner) => corner * cornerRoundAmount)
-            :
-                this.cornerRounding * cornerRoundAmount
-        );
+        let cornerRoundAmount = getCornerRounding(this, this.cornerRounding);
 
         // outline the rectangle
         let textDimensions = ctx.measureText(this.label);
@@ -86,23 +82,17 @@ export class Button {
         }
         return false;
     }
-    *hovering(){
-        return (
-            (window.mouse.x >= this.x)
-            && (window.mouse.x <= this.x + this.width)
-            && (window.mouse.y >= this.y)
-            && (window.mouse.y <= this.y + this.height)
-        );
-        /*if (
-            (window.mouse.x >= this.x)
-            && (window.mouse.x <= this.x + this.width)
-            && (window.mouse.y >= this.y)
-            && (window.mouse.y <= this.y + this.height)
+    *hovering(pos = window.mouse){
+        if (
+            (pos.x >= this.x)
+            && (pos.x <= this.x + this.width)
+            && (pos.y >= this.y)
+            && (pos.y <= this.y + this.height)
         ) {
-            return (yield new AlgebraicEffect("HOVERING"));
+            return (yield new AlgebraicEffect("HOVERING", this.layer));
         } else {
             return false;
-        }*/
+        }
     }
 }
 

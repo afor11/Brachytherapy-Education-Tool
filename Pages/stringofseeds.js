@@ -68,7 +68,7 @@ export let stringofseedsPage = new Module({
                 yield* runFn(module.onReload);
             },
             numDecimalsEditing: 2,
-            animate: function* () {yield* expandOnHover(false)}
+            animate: function* () {yield* expandOnHover(false)},
         })
     },
     buttons: {
@@ -97,7 +97,7 @@ export let stringofseedsPage = new Module({
             },
             outline: {color: "black", thickness: 0},
             animate: expandOnHover,
-            hoverCol: "#AFE1AF"
+            hoverCol: "#AFE1AF",
         }),
         graph1RemoveSeed: new Button({
             x: 0, y: 0, width: 0, height: 0,

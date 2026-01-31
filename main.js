@@ -18,6 +18,9 @@ let backCtx = backCanvas.getContext("2d");
 backCanvas.width = canvas.width;
 backCanvas.height = canvas.height;
 
+// keeps track of the current layer that is being drawn on
+let layerNum = 0;
+
 export let module = "single seed";
 export function setModule(newModule) {module = newModule;}
 let scrollPos = {
@@ -80,6 +83,8 @@ setInterval(tick,50);
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     backCtx.clearRect(0,0,canvas.width,canvas.height);
+    layerNum = 0;
+
     effectHandler({
         tryCode: function* () {
             yield* runFn(moduleData[module].onUpdate);
@@ -168,5 +173,11 @@ function mainEffectHandler(effect, ...args){
     }
     if (effect === "ERROR"){
         console.error("error");
+    }
+    if (effect === "ADD LAYER") {
+        return ++layerNum;
+    }
+    if (effect === "HOVERING") {
+        return true; //#
     }
 }

@@ -94,7 +94,7 @@ export let tandemAndOvoidsPage = new Module({
                     seed.dwellTime = dwellTimePerSeed;
                 });
             },
-            numDecimalsEditing: 1
+            numDecimalsEditing: 1,
         }),
         graph1ReferenceRight: referencePointLabel("graph1", 0, (value) => `Point A Right: ${value} Gy`),
         graph1ReferenceLeft: referencePointLabel("graph1", 1, (value) => `Point A Left: ${value} Gy`)
