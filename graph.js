@@ -11,7 +11,7 @@ let backCanvas = document.getElementById("backCanvas");
 let backCtx = backCanvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm"}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1}){
         this.x = x;
         this.y = y;
         this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -51,6 +51,7 @@ export class Graph {
         this.isolineGraph = new MarchingSquares(this.xTicks, this.yTicks, [0.5, 1, 2], {x: this.x, y: this.y, width: this.width, height: this.height});
         this.isolines = [12.5, 50, 100, 200, 400, 800];
         this.isolineColors = ["#D92684", "#D97B26","#D9262A", "#84D926", "#26D9D5", "#7B26D9"];
+        this.cornerRounding = cornerRounding;
     }
     *refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
@@ -83,11 +84,16 @@ export class Graph {
             backCtx.save();
 
             let clippingRegion = new Path2D();
-            clippingRegion.rect(
+            const cornerRounding = Math.min(this.graphDimensions.width / 2, this.graphDimensions.height / 2);
+            clippingRegion.roundRect(
                 this.graphDimensions.x,
                 this.graphDimensions.y,
                 this.graphDimensions.width,
-                this.graphDimensions.height
+                this.graphDimensions.height,
+                Array.isArray(this.cornerRounding) ?
+                    this.cornerRounding.map((corner) => corner * cornerRounding)
+                :
+                    this.cornerRounding * cornerRounding
             );
             backCtx.clip(clippingRegion);
 
@@ -252,7 +258,7 @@ export class Graph {
         this.graphDimensions = this.isolineGraph.dimensions;
     }
     drawGraph(){
-        // draw the surrounding text
+        // setup constants and ctx
         ctx.textAlign = "center";
         ctx.fillStyle = "black";
         ctx.textBaseline = "middle";
@@ -261,6 +267,53 @@ export class Graph {
         const minXTick = Math.ceil(getMin(this.xTicks));
         const maxYTick = Math.floor(getMax(this.yTicks));
         const minYTick = Math.ceil(getMin(this.yTicks));
+
+        ctx.save();
+
+        // make the boarder a clipping path
+        let boarder = new Path2D();
+        const cornerRounding = Math.min(this.graphDimensions.width / 2, this.graphDimensions.height / 2);
+        boarder.roundRect(
+            this.graphDimensions.x,
+            this.graphDimensions.y,
+            this.graphDimensions.width,
+            this.graphDimensions.height,
+            Array.isArray(this.cornerRounding) ?
+                this.cornerRounding.map((corner) => corner * cornerRounding)
+            :
+                this.cornerRounding * cornerRounding
+        );
+        ctx.clip(boarder);
+
+        // draw vertical gridlines
+        for (let i = minXTick; i <= maxXTick; i++){
+            let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
+            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.beginPath();
+            ctx.moveTo(gridlineX, this.graphDimensions.y);
+            ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
+            ctx.stroke();
+        }
+
+        // draw horizontal gridlines
+        for (let i = minYTick; i <= maxYTick; i++){
+            let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
+            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.beginPath();
+            ctx.moveTo(this.graphDimensions.x, gridlineY);
+            ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);
+            ctx.stroke();
+        }
+
+        // draw the isoline graph
+        this.isolineGraph.draw();
+
+        ctx.restore();
+
+        // draw boarder
+        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.002;
+        ctx.strokeStyle = "black";
+        ctx.stroke(boarder);
 
         // get font size
         ctx.font = Math.min(
@@ -286,14 +339,9 @@ export class Graph {
             )
         ) * 0.5 + "px Arial";
 
-        // draw vertical gridlines
+        // draw vertical labels
         for (let i = minXTick; i <= maxXTick; i++){
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
-            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
-            ctx.beginPath();
-            ctx.moveTo(gridlineX, this.graphDimensions.y);
-            ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
-            ctx.stroke();
             ctx.fillText(i, gridlineX, this.y + this.height * 0.925);
         }
 
@@ -303,15 +351,10 @@ export class Graph {
             this.graphDimensions.y + this.graphDimensions.height * 1.075
         );
 
-        // draw horizontal gridlines
+        // draw horizontal labels
         ctx.textAlign = "end";
         for (let i = minYTick; i <= maxYTick; i++){
             let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
-            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
-            ctx.beginPath();
-            ctx.moveTo(this.graphDimensions.x, gridlineY);
-            ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);
-            ctx.stroke();
             ctx.fillText(i, this.x + this.width * 0.075, gridlineY);
         }
 
@@ -359,21 +402,10 @@ export class Graph {
             -this.y - this.height / 2,
             this.x + this.width * 0.04
         );
-
         ctx.restore();
 
         ctx.textAlign = "start";
         ctx.textBaseline = "alphabetic";
-
-        // draw the isoline graph
-        this.isolineGraph.draw();
-
-        // draw boarder
-        ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.002;
-        ctx.strokeStyle = "black";
-        ctx.beginPath();
-        ctx.rect(this.graphDimensions.x, this.graphDimensions.y, this.graphDimensions.width, this.graphDimensions.height);
-        ctx.stroke();
     }
     drawRefPoints(){
         let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;

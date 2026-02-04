@@ -34,10 +34,12 @@ export class Slider{
         ctx.fillStyle = this.color;
         ctx.strokeStyle = this.color;
         ctx.lineWidth = this.thickness;
+        ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(this.x,this.y);
         ctx.lineTo(this.x + this.length * Math.cos(this.angle),this.y + this.length * Math.sin(this.angle));
         ctx.stroke();
+        ctx.lineCap = "butt";
         ctx.beginPath();
         ctx.arc(
             this.x + value * this.length * Math.cos(this.angle),
