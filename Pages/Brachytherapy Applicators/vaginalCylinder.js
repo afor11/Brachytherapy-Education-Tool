@@ -1,9 +1,9 @@
-import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, anatomyData } from '../../constants.js';
+import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, cloneObj } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -68,6 +68,7 @@ export let vaginalCylinderPage = new Module({
                 });
             },
             numDecimalsEditing: 1,
+            animate: expandOnHover
         }),
         graph1Reference: referencePointLabel("graph1", 0, (value) => `5mm Dose: ${value} Gy`)
     },
@@ -341,12 +342,17 @@ export let vaginalCylinderPage = new Module({
                 width: splitX,
                 height: yStep
             }, {horizontal: 0.2, vertical: 0.2}),
-            optionProps: (ind) => getRegionBound({
-                x: splitX * 0.9 + (splitX * 0.3) * ind,
-                y: view.y + yStep * 6,
-                width: splitX * 0.3,
-                height: yStep
-            }, {horizontal: 0, vertical: 0.2})
+            optionProps: (ind) => {
+                return {
+                    cornerRounding: [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0.5, 0.5, 0]][ind],
+                    ...getRegionBound({
+                        x: splitX * 0.9 + (splitX * 0.3) * ind,
+                        y: view.y + yStep * 6,
+                        width: splitX * 0.3,
+                        height: yStep
+                    }, {horizontal: 0, vertical: 0.2})
+                };
+            }
         });
 
         [

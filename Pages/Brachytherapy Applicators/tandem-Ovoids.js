@@ -3,9 +3,9 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, setDropdownProps, expandOnHover } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
-import { module, view } from '../../main.js';
+import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
 import { AlgebraicEffect } from '../../algebraicEffect.js';
 import { drawTandem } from './vaginalCylinder.js';
@@ -95,6 +95,7 @@ export let tandemAndOvoidsPage = new Module({
                 });
             },
             numDecimalsEditing: 1,
+            animate: expandOnHover
         }),
         graph1ReferenceRight: referencePointLabel("graph1", 0, (value) => `Point A Right: ${value} Gy`),
         graph1ReferenceLeft: referencePointLabel("graph1", 1, (value) => `Point A Left: ${value} Gy`)
@@ -115,6 +116,7 @@ export let tandemAndOvoidsPage = new Module({
                 });
                 yield* module.onReload.call(module);
             },
+            animate: expandOnHover
         })
     },
     dropDowns: {
@@ -417,10 +419,21 @@ export let tandemAndOvoidsPage = new Module({
             ];
 
             if (elm.constructor.name === "Dropdown"){
-                rescaleDropdownButtons(elm,...region);
-                return;
-            }
-            if (elm.constructor.name === "Slider"){
+                rescaleDropdownButtons(elm, ...region);
+                setDropdownProps(elm,
+                    {
+                        optionProps: (ind) => {
+                            if (ind == (elm.options.length - 1)) {
+                                return {cornerRounding: [0, 0, 0.5, 0.5]};
+                            }
+                            if (ind == 0) {
+                                return {cornerRounding: [0.5, 0.5, 0, 0]};
+                            }
+                            return {cornerRounding: [0, 0, 0, 0]};
+                        }
+                    }
+                );
+            } else if (elm.constructor.name === "Slider"){
                 let regionBound = getRegionBound(...region);
                 Object.assign(elm, {
                     x: regionBound.x,
@@ -428,9 +441,9 @@ export let tandemAndOvoidsPage = new Module({
                     length: regionBound.width,
                     thickness: regionBound.height * 0.2
                 });
-                return;
+            } else {
+                Object.assign(elm, getRegionBound(...region));
             }
-            Object.assign(elm, getRegionBound(...region));
         });
 
         this.graphs.graph1.rescaleAnatomy();

@@ -703,6 +703,7 @@ export function blankDropdown(buttonText){
     )
 }
 
+// this function just initalizes the options of a dropdown; the width, height, position, corner rounding, etc can be set later
 export function *addDropdownOptions(dropdown, options, text, onClick, module){
     if (typeof module === "undefined"){
         module = yield new AlgebraicEffect("GET MODULE");
