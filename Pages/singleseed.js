@@ -16,14 +16,14 @@ export let singleSeedPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [
-                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
+                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits[TheraSeed200.isotope].min,0.00833)
             ],
             xTicks: getRange(-2, 2, 0.03125), yTicks: getRange(-2, 2, 0.03125), perspective: (point) => point, name: "graph1", refpoints: [{x: 0, y: 1, z: 0}]
         }),
         graph2: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [
-                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits.LDR.min,0.00833)
+                new Seed({x:0, y:0, z:0},{phi: 0, theta: 0},TheraSeed200,airKermaSliderLimits[TheraSeed200.isotope].min,0.00833)
             ],
             xTicks: getRange(-2, 2, 0.03125), yTicks: getRange(-2, 2, 0.03125), perspective: (point) => point, name: "graph2", refpoints: [{x: 0, y: 1, z: 0}]
         })

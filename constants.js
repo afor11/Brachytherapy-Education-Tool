@@ -16,13 +16,21 @@ export const conversionFactors = {
     },
 };
 export const airKermaSliderLimits = {
-    HDR: {
-        min: 1000,
-        max: 10000
+    "103-Pd": {
+        min: 0.2,
+        max: 4
     },
-    LDR: {
-        min: 1,
-        max: 5
+    "125-I": {
+        min: 0.2,
+        max: 4
+    },
+    "192-Ir": {
+        min: 10000,
+        max: 60000
+    },
+    "60-Co": {
+        min: 100000,
+        max: 900000
     }
 };
 export const TheraSeed200 = {

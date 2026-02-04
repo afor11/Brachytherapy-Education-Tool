@@ -23,7 +23,7 @@ for (let x = -1.5; x <= 1.5; x++){
                 {x:x, y:y, z:0},
                 {phi: 0, theta: 0},
                 TheraSeed200,
-                airKermaSliderLimits.LDR.min,
+                airKermaSliderLimits[TheraSeed200.isotope].min,
                 0.00833
             )
         );
@@ -32,7 +32,7 @@ for (let x = -1.5; x <= 1.5; x++){
                 {x:x, y:y, z:0},
                 {phi: 0, theta: 0},
                 TheraSeed200,
-                airKermaSliderLimits.LDR.min,
+                airKermaSliderLimits[TheraSeed200.isotope].min,
                 0.00833
             )
         );
@@ -590,20 +590,20 @@ function expandArrayButton(graph){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: "#50C878",
         onClick: function* () {
+            // get module data and graph data
             let module = yield new AlgebraicEffect("GET MODULE");
-            let sideLength = Math.sqrt(module.graphs[graph].seeds.length);
+            let editingGraph = module.graphs[graph];
+
+            let sideLength = Math.sqrt(editingGraph.seeds.length);
             let seeds = [];
+            let seedModel = editingGraph.seedType();
             // add the correct number of seeds to a buffer array
             for (let i = 0; i < (sideLength + 1) * 4; i++){
                 seeds.push(new Seed(
-                    {x: 0, y: 0, z: module.graphs[graph].zSlice},
+                    {x: 0, y: 0, z: editingGraph.zSlice},
                     {phi: 0, theta: 0},
-                    module.graphs[graph].seeds[0].model,
-                    (module.graphs[graph].seeds[0].model.HDRsource ?
-                        airKermaSliderLimits.HDR.min
-                    :
-                        airKermaSliderLimits.LDR.min
-                    ),
+                    seedModel,
+                    airKermaSliderLimits[seedModel.isotope].min,
                     0.00833
                 ));
             }
@@ -618,25 +618,25 @@ function expandArrayButton(graph){
             for (let i = 0; i < sideLength + 2; i++){
                 seeds[i].pos.x = ((-sideLength - 1) / 2) * seedSpacing;
                 seeds[i].pos.y = (i + (-sideLength - 1) / 2) * seedSpacing;
-                module.graphs[graph].seeds.push(seeds[i]);
+                editingGraph.seeds.push(seeds[i]);
             }
             // push right side
             for (let i = sideLength + 2; i < 2 * sideLength + 4; i++){
                 seeds[i].pos.x = ((sideLength + 1) / 2) * seedSpacing;
                 seeds[i].pos.y = ((i - sideLength - 2) + (-sideLength - 1) / 2) * seedSpacing;
-                module.graphs[graph].seeds.push(seeds[i]);
+                editingGraph.seeds.push(seeds[i]);
             }
             // push bottom side
             for (let i = 2 * sideLength + 4; i < 3 * sideLength + 4; i++){
                 seeds[i].pos.x = ((i - 2 * sideLength - 4) - (sideLength - 1) / 2) * seedSpacing;
                 seeds[i].pos.y = ((-sideLength - 1) / 2) * seedSpacing;
-                module.graphs[graph].seeds.push(seeds[i]);
+                editingGraph.seeds.push(seeds[i]);
             }
             // push top side
             for (let i = 3 * sideLength + 4; i < 4 * sideLength + 4; i++){
                 seeds[i].pos.x = ((i - 3 * sideLength - 4) - (sideLength - 1) / 2) * seedSpacing;
                 seeds[i].pos.y = ((sideLength + 1) / 2) * seedSpacing;
-                module.graphs[graph].seeds.push(seeds[i]);
+                editingGraph.seeds.push(seeds[i]);
             }
             yield* runFn(module.onReload);
         },

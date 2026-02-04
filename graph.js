@@ -35,6 +35,7 @@ export class Graph {
         this.cachedDose = new Map();
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units
+        this.seedType = () => this.seeds[0]?.model;
         if (typeof anatomyView !== "undefined"){
             this.anatomyView = anatomyView;
             this.anatomyApplicator = anatomyApplicator;

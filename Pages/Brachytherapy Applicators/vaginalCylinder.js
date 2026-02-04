@@ -126,7 +126,7 @@ export let vaginalCylinderPage = new Module({
                             {x: 0, y: i, z: 0},
                             {phi: Math.PI / 2, theta: 0},
                             seedModel,
-                            airKermaSliderLimits.HDR.min,
+                            airKermaSliderLimits[GammaMedHDRPlus.isotope].min,
                             0.00833
                         )
                     );

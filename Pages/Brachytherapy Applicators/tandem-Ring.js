@@ -153,7 +153,7 @@ export let tandemAndRingPage = new Module({
                             {x: 0, y: i, z: 0},
                             {phi: Math.PI / 2, theta: 0},
                             seedModel,
-                            airKermaSliderLimits.HDR.min,
+                            airKermaSliderLimits[GammaMedHDRPlus.isotope].min,
                             0.00833
                         )
                     );
@@ -179,7 +179,7 @@ export let tandemAndRingPage = new Module({
                             },
                             {phi: 0, theta: angle + error + Math.PI / 2},
                             seedModel,
-                            airKermaSliderLimits.HDR.min,
+                            airKermaSliderLimits[GammaMedHDRPlus.isotope].min,
                             0.00833
                         )
                     );

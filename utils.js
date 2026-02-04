@@ -288,8 +288,8 @@ export function* setDoseAtPoint(graph,dose,point){
         // calculate the updated air kerma with simple division
         let updatedAirKerma = clamp(
             dose / (graph.getPointDose(point)),
-            airKermaSliderLimits.LDR.min,
-            airKermaSliderLimits.LDR.max
+            airKermaSliderLimits[graph.seedType().isotope].min,
+            airKermaSliderLimits[graph.seedType().isotope].max
         );
 
         // update seeds with new air kerma
@@ -345,7 +345,7 @@ export function dwellTimeLabel(graph){
     });
 }
 
-export function airKermaLabel(graph){
+export function airKermaLabel(graph) {
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
@@ -357,13 +357,13 @@ export function airKermaLabel(graph){
         },
         onEnter: function* (value){
             let module = yield new AlgebraicEffect("GET MODULE");
-            let clampedVal = (
-                (module.graphs[graph].seeds[0].model.HDRsource) ?
-                    clamp(value, airKermaSliderLimits.HDR.min, airKermaSliderLimits.HDR.max)
-                :
-                    clamp(value, airKermaSliderLimits.LDR.min, airKermaSliderLimits.LDR.max)
+            let editingGraph = module.graphs[graph];
+            let clampedVal = clamp(
+                value,
+                airKermaSliderLimits[editingGraph.seedType().isotope].min,
+                airKermaSliderLimits[editingGraph.seedType().isotope].max
             );
-            module.graphs[graph].seeds.forEach((seed) => {
+            editingGraph.seeds.forEach((seed) => {
                 seed.airKerma = clampedVal;
             });
         },
@@ -480,7 +480,7 @@ export function modelDropdown(modelOptions, graph, defaultModel){
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.graphs[graph].seeds.forEach((seed) => {
                     seed.model = model;
-                    seed.airKerma = (seed.model.HDRsource ? airKermaSliderLimits.HDR.min : airKermaSliderLimits.LDR.min);
+                    seed.airKerma = airKermaSliderLimits[model.isotope].min
                     seed.dwellTime = 0.00833;
                     seed.enabled = true;
                 });
@@ -612,18 +612,14 @@ export function dwellTimeSlider(graph){
     });
 }
 
-function getAirKermaFromSlider(value,source){
-    if (source.model.HDRsource){
-        return airKermaSliderLimits.HDR.min + value * (airKermaSliderLimits.HDR.max - airKermaSliderLimits.HDR.min);
-    }
-    return airKermaSliderLimits.LDR.min + value * (airKermaSliderLimits.LDR.max - airKermaSliderLimits.LDR.min);
+function getAirKermaFromSlider(value, source) {
+    let sliderLimits = airKermaSliderLimits[source.model.isotope];
+    return sliderLimits.min + value * (sliderLimits.max - sliderLimits.min);
 }
 
 function getValueFromAirKerma(seed){
-    return seed.model.HDRsource ?
-            ((seed.airKerma - airKermaSliderLimits.HDR.min) / (airKermaSliderLimits.HDR.max - airKermaSliderLimits.HDR.min))
-            : 
-            ((seed.airKerma - airKermaSliderLimits.LDR.min) / (airKermaSliderLimits.LDR.max - airKermaSliderLimits.LDR.min))
+    let sliderLimits = airKermaSliderLimits[seed.model.isotope];
+    return (seed.airKerma - sliderLimits.min) / (sliderLimits.max - sliderLimits.min);
 }
 
 function getDwellTimeFromSlider(value){
