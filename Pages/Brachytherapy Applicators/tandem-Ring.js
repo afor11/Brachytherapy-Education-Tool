@@ -1,4 +1,4 @@
-import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
+import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, colorPalette } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
@@ -75,8 +75,8 @@ export let tandemAndRingPage = new Module({
             x: 0, y: 0, width: 0, height: 0,
             label: {
                 text: (value) => `Total treatment time: ${value} mins`,
-                color: {selected: "white", notSelected: "black"}
-            },bgColor: {selected: "black", notSelected: "white"},
+                color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+            },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
             getValue: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 return module.graphs.graph1.seeds.reduce(
@@ -102,13 +102,13 @@ export let tandemAndRingPage = new Module({
     },
     buttons: {
         resetDwellTimes: new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.primary,
             label: {
                 text: "Reset Dwell Times",
                 font: "default",
-                color: "black"
+                color: colorPalette.accent
             },
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.graphs.graph1.seeds.forEach((seed) => {
@@ -575,13 +575,13 @@ function* drawRing(graphStr, view){
     backCtx.clip(clippingRegion, "evenodd");
 
     ctx.lineWidth = 0.5 * mm.width;
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = colorPalette.accent;
 
     const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
     const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
 
     backCtx.lineWidth = 0.5 * mm.width;
-    backCtx.strokeStyle = "black";
+    backCtx.strokeStyle = colorPalette.accent;
 
     if (view == "axial"){
         let ring = new Path2D();
@@ -604,7 +604,7 @@ function* drawRing(graphStr, view){
             0, 0, 2 * Math.PI
         );
 
-        backCtx.fillStyle = "white";
+        backCtx.fillStyle = colorPalette.primary;
         backCtx.clip(ring, "evenodd");
         backCtx.fill(ring);
         ctx.stroke(ring);
@@ -634,7 +634,7 @@ function* drawRing(graphStr, view){
             cornerRadii
         );
 
-        backCtx.fillStyle = "white";
+        backCtx.fillStyle = colorPalette.primary;
         backCtx.fill(leftRing);
         backCtx.fill(rightRing);
         ctx.stroke(leftRing);

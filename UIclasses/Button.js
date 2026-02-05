@@ -1,11 +1,12 @@
 import { getFontSize, runFn, getCornerRounding } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
+import { colorPalette } from '../constants.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Button {
-    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = "#D3D3D3", cornerRounding = 0.5}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:label, font:font, color: color}, bgColor:bgColor, onClick:onClick, outline:{color:outlineColor, thickness:outlineThickness}, animate = function* () {}, hoverCol = colorPalette.grey, cornerRounding = 0.5}){
         this.x = x;
         this.y = y;
         this.width = width;

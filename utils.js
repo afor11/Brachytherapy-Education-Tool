@@ -1,4 +1,4 @@
-import { conversionFactors, airKermaSliderLimits } from './constants.js';
+import { conversionFactors, airKermaSliderLimits, colorPalette } from './constants.js';
 import { Button } from './UIclasses/Button.js';
 import { Dropdown } from './UIclasses/Dropdown.js';
 import { NumberInput } from './UIclasses/NumberInput.js';
@@ -199,7 +199,7 @@ export function getRange(min, max, step){
 
 export function toggleSeedEnable(graph,seedInd){
     return new Button({
-        x: 0, y: 0, width: 0, height: 0, bgColor: "black",
+        x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.secondary,
         onClick: function* () {
             let thisModule = yield new AlgebraicEffect("GET MODULE");
             let self = yield new AlgebraicEffect("GET SELF");
@@ -212,9 +212,9 @@ export function toggleSeedEnable(graph,seedInd){
 
             yield* runFn(thisModule.onReload);
         },
-        label: {text: "disable seed", font: "default", color: "white"},
-        outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
-        hoverCol: "black",
+        label: {text: "disable seed", font: "default", color: colorPalette.primary},
+        outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.001},
+        hoverCol: colorPalette.secondary,
         animate: function* () {yield* expandOnHover(false)},
     });
 }
@@ -224,8 +224,8 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: label,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
+            color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+        },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
         getValue: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
             return module.graphs[graph].getPointDose(module.graphs[graph].refpoints[ind]);
@@ -305,8 +305,8 @@ export function multSeedDwellTimeLabel(graph){
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dwell Time: ${value} seconds`,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
+            color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+        },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
         getValue: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
             if (module.graphs[graph].selectedSeed != -1){
@@ -329,8 +329,8 @@ export function dwellTimeLabel(graph){
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Dwell Time: ${value} seconds`,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
+            color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+        },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
         getValue: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
             return module.graphs[graph].seeds[0].dwellTime * 3600;
@@ -350,8 +350,8 @@ export function airKermaLabel(graph) {
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Air Kerma: ${value}U`,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
+            color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+        },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
         getValue: function* () {
             return (yield new AlgebraicEffect("GET MODULE")).graphs[graph].seeds[0].airKerma;
         },
@@ -452,12 +452,12 @@ export function* expandOnHover(detectClick = true, expandHeight = false) {
 export function modelDropdown(modelOptions, graph, defaultModel){
     let dropdown = new Dropdown(
         new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "black",
+            x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.secondary,
             onClick: () => {},
-            label: {text: defaultModel.name + " (" + defaultModel.isotope + ")", font: "default", color: "white"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
+            label: {text: defaultModel.name + " (" + defaultModel.isotope + ")", font: "default", color: colorPalette.primary},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.01},
             animate: expandOnHover,
-            hoverCol: "black",
+            hoverCol: colorPalette.secondary,
         }),
         []
     );
@@ -469,13 +469,13 @@ export function modelDropdown(modelOptions, graph, defaultModel){
     for (let i = 0; i < modelOptions.length; i++){
         let model = modelOptions[i];
         dropdown.options.push(new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.primary,
             label: {
                 text: model.name + " (" + model.isotope + ")",
                 font: "default",
-                color: "black"
+                color: colorPalette.accent
             },
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.graphs[graph].seeds.forEach((seed) => {
@@ -561,7 +561,7 @@ export function rescaleDropdownButtons(dropdown, region, padding){
 
 export function airKermaSlider(graph){
     return new Slider({
-        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+        x: 0, y: 0, length: 0, angle: 0, color: colorPalette.accent, thickness: 0,
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds.forEach((seed) => {
@@ -577,7 +577,7 @@ export function airKermaSlider(graph){
 
 export function multSeedDwellTimeSlider(graph){
     return new Slider({
-        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
+        x: 0, y: 0, length: 0, angle: 0, color: colorPalette.accent, thickness: 0, initalValue: 0,
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             if (module.graphs[graph].selectedSeed != -1){
@@ -599,7 +599,7 @@ export function multSeedDwellTimeSlider(graph){
 
 export function dwellTimeSlider(graph){
     return new Slider({
-        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0, initalValue: 0,
+        x: 0, y: 0, length: 0, angle: 0, color: colorPalette.accent, thickness: 0, initalValue: 0,
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             module.graphs[graph].seeds[0].dwellTime = getDwellTimeFromSlider(value);
@@ -691,10 +691,10 @@ export function* setEqualFont(elms) {
 export function blankDropdown(buttonText){
     return new Dropdown(
         new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.primary,
             onClick: () => {},
-            label: {text: buttonText, font: "default", color: "black"},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01}}
+            label: {text: buttonText, font: "default", color: colorPalette.accent},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.01}}
         ),[]
     )
 }
@@ -708,13 +708,13 @@ export function *addDropdownOptions(dropdown, options, text, onClick, module){
     for (let opt of options){
         dropdown.options.push(
             new Button({
-                x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+                x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.primary,
                 label: {
                     text: text(opt),
                     font: "default",
-                    color: "black"
+                    color: colorPalette.accent
                 },
-                outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+                outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.001},
                 onClick: onClick(opt),
             })
         );

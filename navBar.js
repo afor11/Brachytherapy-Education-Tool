@@ -2,6 +2,7 @@ import { AlgebraicEffect, effectHandler } from "./algebraicEffect.js";
 import { module, setModule } from "./main.js";
 import { Button } from './UIclasses/Button.js';
 import { setEqualFont, runFn } from "./utils.js";
+import { colorPalette } from "./constants.js";
 
 export let navBar = {};
 
@@ -12,18 +13,18 @@ export function resetNavBar(moduleData){
             y: 0,
             width: (canvas.width / arr.length),
             height: canvas.height * 0.1,
-            bgColor: ((moduleName === module) ? "black" : "white"),
+            bgColor: ((moduleName === module) ? colorPalette.secondary : colorPalette.primary),
             onClick: function* () {
                 let self = yield new AlgebraicEffect("GET SELF");
-                self.bgColor = "white";
-                self.fontColor = "black";
-                navBar[moduleName].bgColor = "black";
-                navBar[moduleName].fontColor = "white";
+                self.bgColor = colorPalette.primary;
+                self.fontColor = colorPalette.accent;
+                navBar[moduleName].bgColor = colorPalette.secondary;
+                navBar[moduleName].fontColor = colorPalette.primary;
                 setModule(moduleName);
                 yield* runFn(moduleData[moduleName].onReload);
             },
-            label: {text: moduleName, font: "default", color: ((moduleName === module) ? "white" : "black")},
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.001},
+            label: {text: moduleName, font: "default", color: ((moduleName === module) ? colorPalette.primary : colorPalette.secondary)},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.001},
             cornerRounding: 0
         });
         return navButtons;
@@ -37,10 +38,10 @@ export function refreshNavBar(moduleOpen){
         button.x = (canvas.width / numButtons) * ind;
         button.width = (canvas.width / numButtons);
         button.height = canvas.height * 0.1;
-        button.bgColor = ((buttonName === moduleOpen) ? "black" : "white");
-        button.fontColor = ((buttonName === moduleOpen) ? "white" : "black");
+        button.bgColor = ((buttonName === moduleOpen) ? colorPalette.secondary : colorPalette.primary);
+        button.fontColor = ((buttonName === moduleOpen) ? colorPalette.primary : colorPalette.secondary);
         button.outlineThickness = Math.min(canvas.width,canvas.height) * 0.001;
-        button.hoverCol = ((buttonName === moduleOpen) ? "black" : "#D3D3D3");
+        button.hoverCol = ((buttonName === moduleOpen) ? colorPalette.secondary : colorPalette.grey);
     });
     effectHandler({
         tryCode: function* () {

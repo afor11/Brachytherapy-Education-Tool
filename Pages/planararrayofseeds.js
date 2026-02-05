@@ -1,4 +1,4 @@
-import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../constants.js';
+import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, colorPalette } from '../constants.js';
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
@@ -588,7 +588,7 @@ export let PlanarArrayOfSeeds = new Module({
 
 function expandArrayButton(graph){
     return new Button({
-        x: 0, y: 0, width: 0, height: 0, bgColor: "#50C878",
+        x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.green.dark,
         onClick: function* () {
             // get module data and graph data
             let module = yield new AlgebraicEffect("GET MODULE");
@@ -640,16 +640,16 @@ function expandArrayButton(graph){
             }
             yield* runFn(module.onReload);
         },
-        label: {text: "Expand Array", font: "default", color: "black"},
-        outline: {color: "black", thickness: 0},
+        label: {text: "Expand Array", font: "default", color: colorPalette.accent},
+        outline: {color: colorPalette.accent, thickness: 0},
         animate: expandOnHover,
-        hoverCol: "#AFE1AF",
+        hoverCol: colorPalette.green.light,
     });
 }
 
 function shrinkArrayButton(graph){
     return new Button({
-        x: 0, y: 0, width: 0, height: 0, bgColor: "#EE4B2B",
+        x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.red.dark,
         onClick: function* () {
             let module = yield new AlgebraicEffect("GET MODULE");
             let newSideLength = (Math.sqrt(module.graphs[graph].seeds.length) - 2) * module.seedSpacing[graph];
@@ -667,16 +667,16 @@ function shrinkArrayButton(graph){
                 yield* runFn(module.onReload);
             }
         },
-        label: {text: "Shrink Array", font: "default", color: "black"},
-        outline: {color: "black", thickness: 0},
+        label: {text: "Shrink Array", font: "default", color: colorPalette.accent},
+        outline: {color: colorPalette.accent, thickness: 0},
         animate: expandOnHover,
-        hoverCol: "rgba(216, 83, 109, 1)",
+        hoverCol: colorPalette.red.light,
     });
 }
 
 function seedSpacingSlider(graph){
     return new Slider({
-        x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+        x: 0, y: 0, length: 0, angle: 0, color: colorPalette.accent, thickness: 0,
         updateValue: function* (value) {
             let module = yield new AlgebraicEffect("GET MODULE");
             setSeedSpacing(module, graph, value + 0.5);
@@ -693,8 +693,8 @@ function seedSpacingLabel(graph){
         x: 0, y: 0, width: 0, height: 0,
         label: {
             text: (value) => `Seed Spacing: ${value} cm`,
-            color: {selected: "white", notSelected: "black"}
-        },bgColor: {selected: "black", notSelected: "white"},
+            color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+        },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
         getValue: function* (){
             return (yield new AlgebraicEffect("GET MODULE")).seedSpacing[graph];
         },

@@ -1,5 +1,5 @@
 import { drawAnatomy, getAnatomy, scaleAnatomy } from './interpolateAnatomy.js';
-import { anatomyData } from './constants.js';
+import { anatomyData, colorPalette } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, clamp } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
 import { MarchingSquares } from './MarchingSquares.js';
@@ -261,7 +261,7 @@ export class Graph {
     drawGraph(){
         // setup constants and ctx
         ctx.textAlign = "center";
-        ctx.fillStyle = "black";
+        ctx.fillStyle = colorPalette.accent;
         ctx.textBaseline = "middle";
         ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.001;
         const maxXTick = Math.floor(getMax(this.xTicks));
@@ -289,7 +289,7 @@ export class Graph {
         // draw vertical gridlines
         for (let i = minXTick; i <= maxXTick; i++){
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
-            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey;
             ctx.beginPath();
             ctx.moveTo(gridlineX, this.graphDimensions.y);
             ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
@@ -299,7 +299,7 @@ export class Graph {
         // draw horizontal gridlines
         for (let i = minYTick; i <= maxYTick; i++){
             let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
-            ctx.strokeStyle = (i == 0) ? "black" : "#D3D3D3";
+            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey;
             ctx.beginPath();
             ctx.moveTo(this.graphDimensions.x, gridlineY);
             ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);
@@ -313,7 +313,7 @@ export class Graph {
 
         // draw boarder
         ctx.lineWidth = Math.min(canvas.width, canvas.height) * 0.002;
-        ctx.strokeStyle = "black";
+        ctx.strokeStyle = colorPalette.accent;
         ctx.stroke(boarder);
 
         // get font size
@@ -510,14 +510,14 @@ export class Graph {
                 height: this.graphDimensions.height * 0.05,
             };
 
-            ctx.fillStyle = "white";
+            ctx.fillStyle = colorPalette.primary;
             ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px Arial`) + "px Arial";
             let metrics = ctx.measureText(doseAtMouse);
             let labelTextWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
             let labelTextHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
             ctx.fillRect(boundingBox.x,boundingBox.y - labelTextHeight,labelTextWidth,labelTextHeight);
             
-            ctx.fillStyle = "black";
+            ctx.fillStyle = colorPalette.accent;
             ctx.textBaseline = "bottom";
             ctx.fillText(doseAtMouse,boundingBox.x,boundingBox.y);
             ctx.textBaseline = "alphabetic";

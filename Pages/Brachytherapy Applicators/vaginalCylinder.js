@@ -1,4 +1,4 @@
-import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../../constants.js';
+import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, colorPalette } from '../../constants.js';
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
@@ -44,8 +44,8 @@ export let vaginalCylinderPage = new Module({
             x: 0, y: 0, width: 0, height: 0,
             label: {
                 text: (value) => `Total treatment time: ${value} mins`,
-                color: {selected: "white", notSelected: "black"}
-            },bgColor: {selected: "black", notSelected: "white"},
+                color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+            },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
             getValue: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 return module.graphs.graph1.seeds.reduce(
@@ -74,13 +74,13 @@ export let vaginalCylinderPage = new Module({
     },
     buttons: {
         resetDwellTimes: new Button({
-            x: 0, y: 0, width: 0, height: 0, bgColor: "white",
+            x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.primary,
             label: {
                 text: "Reset Dwell Times",
                 font: "default",
-                color: "black"
+                color: colorPalette.accent
             },
-            outline: {color: "black", thickness: Math.min(canvas.width,canvas.height) * 0.01},
+            outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.01},
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.graphs.graph1.seeds.forEach((seed) => {
@@ -234,8 +234,8 @@ export let vaginalCylinderPage = new Module({
 
         if (this.graphs.graph1.selectedSeed != -1){
             ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
-            ctx.strokeStyle = "black";
-            ctx.fillStyle = "white";
+            ctx.strokeStyle = colorPalette.accent;
+            ctx.fillStyle = colorPalette.primary;
             ctx.beginPath();
             ctx.rect(this.menu.x, this.menu.y, this.menu.width, this.menu.height);
             ctx.fill();
@@ -343,8 +343,15 @@ export let vaginalCylinderPage = new Module({
                 height: yStep
             }, {horizontal: 0.2, vertical: 0.2}),
             optionProps: (ind) => {
+                let cornerRounding = [0, 0, 0, 0];
+                if (ind == 0) {
+                    cornerRounding = [0.5, 0, 0, 0.5];
+                }
+                if (ind == (this.dropDowns.applicatorModel.options.length - 1)) {
+                    cornerRounding = [0, 0.5, 0.5, 0];
+                }
                 return {
-                    cornerRounding: [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0.5, 0.5, 0]][ind],
+                    cornerRounding: cornerRounding,
                     ...getRegionBound({
                         x: splitX * 0.9 + (splitX * 0.3) * ind,
                         y: view.y + yStep * 6,
@@ -366,12 +373,24 @@ export let vaginalCylinderPage = new Module({
                     width: splitX,
                     height: yStep
                 }, {horizontal: 0.2, vertical: 0.2}),
-                optionProps: (ind) => getRegionBound({
-                    x: splitX * 0.9 + (splitX * 0.15) * ind,
-                    y: view.y + yStep * (7 + yInd),
-                    width: splitX * 0.15,
-                    height: yStep
-                }, {horizontal: 0, vertical: 0.2})
+                optionProps: (ind) => {
+                    let cornerRounding = [0, 0, 0, 0];
+                    if (ind == 0) {
+                        cornerRounding = [0.5, 0, 0, 0.5];
+                    }
+                    if (ind == (appDropdown.options.length - 1)) {
+                        cornerRounding = [0, 0.5, 0.5, 0];
+                    }
+                    return {
+                        cornerRounding: cornerRounding,
+                        ...getRegionBound({
+                            x: splitX * 0.9 + (splitX * 0.15) * ind,
+                            y: view.y + yStep * (7 + yInd),
+                            width: splitX * 0.15,
+                            height: yStep
+                        }, {horizontal: 0, vertical: 0.2})
+                    };
+                }
             });
         });
 
@@ -484,7 +503,7 @@ export function* drawTandem(graphStr, view){
     ctx.clip(clippingRegion);
 
     ctx.lineWidth = appDiameter * mm.width;
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = colorPalette.accent;
 
     // draws the catheter
     ctx.moveTo(origin.x, origin.y);
@@ -506,7 +525,7 @@ export function* drawTandem(graphStr, view){
         ctx.lineTo(origin.x, origin.y - 10 * cm.height);
         ctx.stroke();
 
-        ctx.fillStyle = "black";
+        ctx.fillStyle = colorPalette.secondary;
         ctx.beginPath();
         ctx.arc(origin.x, origin.y, appDiameter / 2 * mm.width, 0, 2 * Math.PI);
         ctx.fill();
@@ -535,7 +554,7 @@ export function* drawTandem(graphStr, view){
 
         // fill the tandem in white below the grid lines so anatomy may be draw without making
         // the applicator anatomy colored
-        backCtx.fillStyle = "white";
+        backCtx.fillStyle = colorPalette.primary;
         backCtx.fill(new Path2D(tandemPath));
     }
 

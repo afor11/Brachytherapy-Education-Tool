@@ -5,6 +5,7 @@ import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/
 import { navBar, resetNavBar } from './navBar.js';
 import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
 import { runFn } from './utils.js';
+import { colorPalette } from './constants.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -83,6 +84,10 @@ setInterval(tick,50);
 function tick(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     backCtx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = colorPalette.primary;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    backCtx.fillStyle = colorPalette.primary;
+    backCtx.fillRect(0, 0, canvas.width, canvas.height);
     layerNum = 0;
 
     effectHandler({

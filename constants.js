@@ -15,6 +15,35 @@ export const conversionFactors = {
         U: 1,
     },
 };
+export let colorPalette = {
+    primary: "#FAF9F6",
+    secondary: "#1E1E1E",
+    accent: "#1E1E1E",
+    green: {dark: "#50C878", light: "#AFE1AF"},
+    red: {dark: "#EE4B2B", light: "rgba(216, 83, 109, 1)"},
+    grey: "#D3D3D3"
+};
+
+/*
+dark mode:
+{
+    primary: "#1E1E1E",
+    secondary: "#EDEADE",
+    accent: "#EDEADE",
+    green: {dark: "#50C878", light: "#AFE1AF"},
+    red: {dark: "#EE4B2B", light: "rgba(216, 83, 109, 1)"},
+    grey: "#616161"
+}
+light mode:
+{
+    primary: "#FAF9F6",
+    secondary: "#1E1E1E",
+    accent: "#1E1E1E",
+    green: {dark: "#50C878", light: "#AFE1AF"},
+    red: {dark: "#EE4B2B", light: "rgba(216, 83, 109, 1)"},
+    grey: "#D3D3D3"
+}
+*/
 export const airKermaSliderLimits = {
     "103-Pd": {
         min: 0.2,
@@ -33,6 +62,24 @@ export const airKermaSliderLimits = {
         max: 900000
     }
 };
+
+/*
+Data for TheraSeed200, Best2301:
+
+Rivard, M. J., Ballester, F., Butler, W. M., DeWerd, L. A., Ibbott, G. S., Meigooni,
+A. S., Melhus, C. S., Mitch, M. G., Nath, R., & Papagiannis, P. (2017). Supplement 2
+for the 2004 update of the AAPM Task Group No. 43 Report: Joint recommendations by
+the AAPM and GEC-ESTRO. Medical physics, 44(9), e297–e338. https://doi.org/10.1002/mp.12430
+
+================================================================================================
+
+Data for GammaMed HDR Plus, BEBIG GK60M21, ElektaFlexisource:
+
+Perez-Calatayud, J., Ballester, F., Das, R. K., Dewerd, L. A., Ibbott, G. S., Meigooni,
+A. S., Ouhib, Z., Rivard, M. J., Sloboda, R. S., & Williamson, J. F. (2012). Dose calculation
+for photon-emitting brachytherapy sources with average energy higher than 50 keV: report of
+the AAPM and ESTRO. Medical physics, 39(5), 2904–2929. https://doi.org/10.1118/1.3703892
+*/
 export const TheraSeed200 = {
     name: "TheraSeed200",
     doseRateConstant: 0.686, // in cGy/h/U

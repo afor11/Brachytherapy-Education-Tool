@@ -1,4 +1,4 @@
-import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits } from '../constants.js';
+import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits, colorPalette } from '../constants.js';
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
@@ -32,7 +32,7 @@ export let stringofseedsPage = new Module({
         graph1AirKerma: airKermaSlider("graph1"),
         graph1DwellTime: multSeedDwellTimeSlider("graph1"),
         graph1Seedspacing: new Slider({
-            x: 0, y: 0, length: 0, angle: 0, color: "black", thickness: 0,
+            x: 0, y: 0, length: 0, angle: 0, color: colorPalette.accent, thickness: 0,
             updateValue: function* (value) {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 module.seedSpacing = 0.5 + value;
@@ -57,8 +57,8 @@ export let stringofseedsPage = new Module({
             x: 0, y: 0, width: 0, height: 0,
             label: {
                 text: (value) => `Seed Spacing: ${value} cm`,
-                color: {selected: "white", notSelected: "black"}
-            },bgColor: {selected: "black", notSelected: "white"},
+                color: {selected: colorPalette.primary, notSelected: colorPalette.accent}
+            },bgColor: {selected: colorPalette.secondary, notSelected: colorPalette.primary},
             getValue: function* () {
                 return (yield new AlgebraicEffect("GET MODULE")).seedSpacing;
             },
@@ -78,12 +78,11 @@ export let stringofseedsPage = new Module({
             label: {
                 text: "Add Seed",
                 font: "default",
-                color: "black"
+                color: colorPalette.accent
             },
-            bgColor: "#50C878",
+            bgColor: colorPalette.green.dark,
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
-                let model = module.graphs.graph1.seeds[0].model;
                 module.graphs.graph1.seeds.push(
                     new Seed(
                         {x: 0, y: 0, z: 0},
@@ -95,18 +94,18 @@ export let stringofseedsPage = new Module({
                 );
                 yield* runFn(module.onReload)
             },
-            outline: {color: "black", thickness: 0},
+            outline: {color: colorPalette.accent, thickness: 0},
             animate: expandOnHover,
-            hoverCol: "#AFE1AF",
+            hoverCol: colorPalette.green.light,
         }),
         graph1RemoveSeed: new Button({
             x: 0, y: 0, width: 0, height: 0,
             label: {
                 text: "Remove Seed",
                 font: "default",
-                color: "black"
+                color: colorPalette.accent
             },
-            bgColor: "#EE4B2B",
+            bgColor: colorPalette.red.dark,
             onClick: function* () {
                 let module = yield new AlgebraicEffect("GET MODULE");
                 if (module.graphs.graph1.seeds.length > 1){
@@ -117,9 +116,9 @@ export let stringofseedsPage = new Module({
                     yield* runFn(module.onReload)
                 }
             },
-            outline: {color: "black", thickness: 0},
+            outline: {color: colorPalette.accent, thickness: 0},
             animate: expandOnHover,
-            hoverCol: "rgba(216, 83, 109, 1)",
+            hoverCol: colorPalette.red.light,
         })
     },
     onUpdate: function* () {

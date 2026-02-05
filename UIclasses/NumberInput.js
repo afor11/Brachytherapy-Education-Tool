@@ -1,12 +1,13 @@
 import { getFontSize, runFn, getCornerRounding } from '../utils.js';
 import { AlgebraicEffect, chainEffectHandler } from '../algebraicEffect.js';
 import { runAnimation } from './Button.js';
+import { colorPalette } from '../constants.js';
 
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
 export class NumberInput {
-    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: "black" ,notSelected: "#D3D3D3"}, cornerRounding = 0.5}){
+    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: colorPalette.secondary ,notSelected: colorPalette.grey}, cornerRounding = 0.5}){
         this.x = x;
         this.y = y;
         this.width = width;
