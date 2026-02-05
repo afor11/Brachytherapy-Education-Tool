@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn, expandOnHover } from '../utils.js';
+import { getRegionBound, getRange, toggleSeedEnable, referencePointLabel, multSeedDwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, multSeedDwellTimeSlider, rescaleDropdownButtons, runUntilTrue, clamp, runFn, expandOnHover, resetCanvas } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view } from "../main.js";
 import { Button } from '../UIclasses/Button.js';
@@ -123,7 +123,7 @@ export let stringofseedsPage = new Module({
     },
     onUpdate: function* () {
         //reset canvas
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        resetCanvas(ctx);
 
         //draw nav bar
         let navButtons = Object.values(navBar);

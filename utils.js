@@ -731,3 +731,9 @@ export function getCornerRounding(dimensions, cornerRounding) {
             cornerRounding * cornerRoundAmount
     );
 }
+
+export function resetCanvas(context) {
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    context.fillStyle = colorPalette.primary;
+    context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+}

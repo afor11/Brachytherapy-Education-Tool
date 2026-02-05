@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, setDropdownProps, expandOnHover } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, setDropdownProps, expandOnHover, resetCanvas } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -291,7 +291,7 @@ export let tandemAndOvoidsPage = new Module({
         }
     },
     onUpdate: function* () {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        resetCanvas(ctx);
 
         //draw nav bar
         let navButtons = Object.values(navBar);

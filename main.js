@@ -4,8 +4,7 @@ import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
 import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/brachytherapyapplicators.js';
 import { navBar, resetNavBar } from './navBar.js';
 import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
-import { runFn } from './utils.js';
-import { colorPalette } from './constants.js';
+import { runFn, resetCanvas } from './utils.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -82,12 +81,8 @@ effectHandler({
 setInterval(tick,50);
 
 function tick(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    backCtx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = colorPalette.primary;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    backCtx.fillStyle = colorPalette.primary;
-    backCtx.fillRect(0, 0, canvas.width, canvas.height);
+    resetCanvas(ctx);
+    resetCanvas(backCtx);
     layerNum = 0;
 
     effectHandler({

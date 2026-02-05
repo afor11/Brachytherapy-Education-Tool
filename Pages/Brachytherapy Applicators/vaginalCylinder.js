@@ -3,7 +3,7 @@ import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover, resetCanvas } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -221,7 +221,7 @@ export let vaginalCylinderPage = new Module({
         }
     },
     onUpdate: function* () {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        resetCanvas(ctx);
 
         //draw nav bar
         let navButtons = Object.values(navBar);
@@ -278,7 +278,7 @@ export let vaginalCylinderPage = new Module({
     onReload: function* () {
         refreshNavBar("brachytherapy applicators");
 
-        let splitX = view.width * 0.2;
+        let splitX = view.width * 0.5;
         let yStep = view.height * 0.1;
 
         //resize graphs
@@ -408,9 +408,8 @@ export let vaginalCylinderPage = new Module({
                 width: view.width * 0.2,
                 height: view.height * 0.1
             };
-            if ((this.menu.x + this.menu.width) > view.width){
-                this.menu.x -= this.menu.width + view.width * 0.4;
-            }
+            // shift the menu over if it is past the edge
+            this.menu.x = Math.min(this.menu.x, view.width - this.menu.width);
 
             // split the menu into two halves and fit the label and slider to their respective halves
             let halfMenuBound = {

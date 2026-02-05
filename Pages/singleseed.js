@@ -2,7 +2,7 @@ import { TheraSeed200, Best2301, GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisour
 import { Seed } from '../seed.js';
 import { Graph } from '../graph.js';
 import { Module } from '../module.js';
-import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons } from '../utils.js';
+import { getRegionBound, getRange, referencePointLabel, dwellTimeLabel, airKermaLabel, modelDropdown, airKermaSlider, dwellTimeSlider, rescaleDropdownButtons, resetCanvas } from '../utils.js';
 import { refreshNavBar, navBar } from "../navBar.js";
 import { view } from "../main.js";
 import { AlgebraicEffect } from '../algebraicEffect.js';
@@ -47,7 +47,7 @@ export let singleSeedPage = new Module({
         graph2Reference: referencePointLabel("graph2",0),
     },
     onUpdate: function* () {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        resetCanvas(ctx);
 
         let navButtons = Object.values(navBar);
         for (let i = 0; i < navButtons.length; i++){
