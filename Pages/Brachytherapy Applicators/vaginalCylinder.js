@@ -332,6 +332,7 @@ export let vaginalCylinderPage = new Module({
         });
 
         // rescale applicator dropdowns
+        let buttonWidth = (canvas.width - splitX) / this.dropDowns.applicatorModel.options.length;
         setDropdownProps(this.dropDowns.applicatorModel, {
             button: getRegionBound({
                 x: 0,
@@ -350,9 +351,9 @@ export let vaginalCylinderPage = new Module({
                 return {
                     cornerRounding: cornerRounding,
                     ...getRegionBound({
-                        x: splitX * 0.9 + (splitX * 0.3) * ind,
+                        x: splitX * 0.9 + buttonWidth * ind,
                         y: view.y + yStep * 6,
-                        width: splitX * 0.3,
+                        width: buttonWidth,
                         height: yStep
                     }, {horizontal: 0, vertical: 0.2})
                 };
@@ -363,6 +364,7 @@ export let vaginalCylinderPage = new Module({
             this.dropDowns.applicatorLength,
             this.dropDowns.applicatorDiameter
         ].forEach((appDropdown, yInd) => {
+            let buttonWidth = (canvas.width - splitX) / appDropdown.options.length;
             setDropdownProps(appDropdown, {
                 button: getRegionBound({
                     x: 0,
@@ -381,9 +383,9 @@ export let vaginalCylinderPage = new Module({
                     return {
                         cornerRounding: cornerRounding,
                         ...getRegionBound({
-                            x: splitX * 0.9 + (splitX * 0.15) * ind,
+                            x: splitX * 0.9 + buttonWidth * ind,
                             y: view.y + yStep * (7 + yInd),
-                            width: splitX * 0.15,
+                            width: buttonWidth,
                             height: yStep
                         }, {horizontal: 0, vertical: 0.2})
                     };
