@@ -13,9 +13,6 @@ import { drawTandem } from './vaginalCylinder.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
-
 export let tandemAndOvoidsPage = new Module({
     graphs: {
         graph1: new Graph({
@@ -582,10 +579,10 @@ function* drawOvoids(graphStr, view){
         );
     }
     ctx.stroke(ovoidLeft);
-    backCtx.fillStyle = colorPalette.primary;
-    backCtx.fill(ovoidLeft);
+    ctx.fillStyle = colorPalette.primary;
+    ctx.fill(ovoidLeft);
     ctx.stroke(ovoidRight);
-    backCtx.fill(ovoidRight);
+    ctx.fill(ovoidRight);
 
     ctx.restore();
 }

@@ -13,9 +13,6 @@ import { drawTandem } from './vaginalCylinder.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
-
 export let tandemAndRingPage = new Module({
     graphs: {
         graph1: new Graph({
@@ -569,19 +566,13 @@ function* drawRing(graphStr, view){
 
     // set clipping region so drawing does not go outside of graph
     ctx.save();
-    ctx.clip(clippingRegion);
-
-    backCtx.save();
-    backCtx.clip(clippingRegion, "evenodd");
+    ctx.clip(clippingRegion, "evenodd");
 
     ctx.lineWidth = 0.5 * mm.width;
     ctx.strokeStyle = colorPalette.accent;
 
     const innerRadius = (applicator.ringDiameter / 2) - 6; // in mm
     const outerRadius = (applicator.ringDiameter / 2) + 6; // in mm
-
-    backCtx.lineWidth = 0.5 * mm.width;
-    backCtx.strokeStyle = colorPalette.accent;
 
     if (view == "axial"){
         let ring = new Path2D();
@@ -604,9 +595,9 @@ function* drawRing(graphStr, view){
             0, 0, 2 * Math.PI
         );
 
-        backCtx.fillStyle = colorPalette.primary;
-        backCtx.clip(ring, "evenodd");
-        backCtx.fill(ring);
+        ctx.fillStyle = colorPalette.primary;
+        ctx.clip(ring, "evenodd");
+        ctx.fill(ring);
         ctx.stroke(ring);
     } else if ((view == "sagittal") || (view == "coronal")){
         let leftRing = new Path2D();
@@ -634,13 +625,12 @@ function* drawRing(graphStr, view){
             cornerRadii
         );
 
-        backCtx.fillStyle = colorPalette.primary;
-        backCtx.fill(leftRing);
-        backCtx.fill(rightRing);
+        ctx.fillStyle = colorPalette.primary;
+        ctx.fill(leftRing);
+        ctx.fill(rightRing);
         ctx.stroke(leftRing);
         ctx.stroke(rightRing);
     }
 
     ctx.restore();
-    backCtx.restore();
 }

@@ -1,5 +1,5 @@
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
 
 function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
@@ -242,22 +242,22 @@ export function scaleAnatomy(origin, scaleX, scaleY, anatomyData){
 
 export function drawAnatomy(viewData){
     // draw viewData
-    backCtx.lineCap = "round";
-    backCtx.lineJoin = "bevel";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "bevel";
     
     viewData.forEach((block) => {
-        backCtx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
-        backCtx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
-        backCtx.lineWidth = block.outlineThickness;
-        backCtx.beginPath();
+        ctx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
+        ctx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
+        ctx.lineWidth = block.outlineThickness;
+        ctx.beginPath();
         block.curves.forEach((curve,ind) => {
             if (ind == 0){
-                backCtx.moveTo(curve.x1,curve.y1);
+                ctx.moveTo(curve.x1,curve.y1);
             }
-            backCtx.bezierCurveTo(curve.x2,curve.y2,curve.x3,curve.y3,curve.x4,curve.y4);
+            ctx.bezierCurveTo(curve.x2,curve.y2,curve.x3,curve.y3,curve.x4,curve.y4);
         });
-        backCtx.fill();
-        backCtx.stroke();
+        ctx.fill();
+        ctx.stroke();
     });
 }
 

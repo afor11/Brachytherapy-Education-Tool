@@ -12,12 +12,6 @@ export let ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
-
-backCanvas.width = canvas.width;
-backCanvas.height = canvas.height;
-
 // keeps track of the current layer that is being drawn on
 let layerNum = 0;
 
@@ -54,22 +48,6 @@ effectHandler({
     }
 });
 
-//loop over moduleData and evaluate any attribute functions (these are neccisary since attributes that reference
-//themselves must be intialized after the creation of moduleData, so they are stored in a function and after the
-//creation of moduleData, they are evaluated and replaced based on the result of that function evaluation)
-Object.keys(moduleData).forEach((module) => {
-    ["graphs","sliders","dropDowns","labels","buttons"].forEach((obj) => {
-        if (typeof moduleData[module][obj] !== "undefined"){
-            Object.keys(moduleData[module][obj]).forEach((attribute) => {
-                let attributefn = moduleData[module][obj][attribute];
-                if (typeof attributefn === "function"){
-                    moduleData[module][obj][attribute] = attributefn(attribute);
-                }
-            });
-        }
-    });
-});
-
 resetNavBar(moduleData);
 effectHandler({
     tryCode: function* () {
@@ -82,7 +60,6 @@ setInterval(tick,50);
 
 function tick(){
     resetCanvas(ctx);
-    resetCanvas(backCtx);
     layerNum = 0;
 
     effectHandler({
@@ -100,9 +77,6 @@ function tick(){
         };
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        backCanvas.width = canvas.width;
-        backCanvas.height = canvas.height;
         effectHandler({
             tryCode: function* () {
                 yield* runFn(moduleData[module].onReload);

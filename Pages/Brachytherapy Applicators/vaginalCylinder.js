@@ -12,9 +12,6 @@ import { AlgebraicEffect } from '../../algebraicEffect.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
-
 export let vaginalCylinderPage = new Module({
     graphs: {
         graph1: new Graph({
@@ -553,8 +550,8 @@ export function* drawTandem(graphStr, view){
 
         // fill the tandem in white below the grid lines so anatomy may be draw without making
         // the applicator anatomy colored
-        backCtx.fillStyle = colorPalette.primary;
-        backCtx.fill(new Path2D(tandemPath));
+        ctx.fillStyle = colorPalette.primary;
+        ctx.fill(new Path2D(tandemPath));
     }
 
     ctx.restore();

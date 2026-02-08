@@ -7,9 +7,6 @@ import { MarchingSquares } from './MarchingSquares.js';
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
-let backCanvas = document.getElementById("backCanvas");
-let backCtx = backCanvas.getContext("2d");
-
 export class Graph {
     constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1}){
         this.x = x;
@@ -82,7 +79,7 @@ export class Graph {
     }
     overlayAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
-            backCtx.save();
+            ctx.save();
 
             let clippingRegion = new Path2D();
             const cornerRounding = Math.min(this.graphDimensions.width / 2, this.graphDimensions.height / 2);
@@ -96,11 +93,11 @@ export class Graph {
                 :
                     this.cornerRounding * cornerRounding
             );
-            backCtx.clip(clippingRegion);
+            ctx.clip(clippingRegion);
 
             drawAnatomy(this.scaledAnatomy);
 
-            backCtx.restore();
+            ctx.restore();
         }
     }
     getPointDoseFromSeed(seed, pos){
