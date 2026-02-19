@@ -8,10 +8,10 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1, zSlice = 0}){
         this.x = x;
         this.y = y;
-        this.zSlice = 0; // depth of the slice being rendered by this graph from the perspective of the graph itself
+        this.zSlice = zSlice; // depth of the slice being rendered by this graph from the perspective of the graph itself
         this.width = width;
         this.height = height;
         this.seeds = seeds;
@@ -156,7 +156,7 @@ export class Graph {
         const currGraphState = this.getGraphState();
 
         let dose = this.seeds.reduce((totalDose, seed) => {
-            if (!seed.enabled || (seed.dwellTime == 0)){return totalDose;}
+            if (!seed.enabled || (seed.dwellTime == 0)){return totalDose}
             let dose = [];
             let seedString = this.getSeedState(seed);
             if ((this.cachedDose.has(seedString)) && (this.cachedDose.get(seedString).graphState === currGraphState)){
@@ -202,7 +202,10 @@ export class Graph {
                 let doseSlice = [];
                 let totalDoseSlice = [];
                 for (let j = 0; j < this.xTicks.length; j++){
-                    let pointDose = this.getPointDoseFromSeed(seed, this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice}));
+                    let pointDose = this.getPointDoseFromSeed(
+                        seed,
+                        this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice})
+                    );
                     doseSlice.push(pointDose);
                     totalDoseSlice.push(totalDose[i][j] + pointDose);
                 }
@@ -213,6 +216,7 @@ export class Graph {
             // update cache
             this.cachedDose.set(seedString, doseCache);
             usedCaches.set(seedString, true);
+
             return dose;
         }, defaultDose);
 
@@ -222,7 +226,9 @@ export class Graph {
             }
         });
 
-        let refDose = this.getPointDose(this.perspective({x: refPoint.x, y: refPoint.y, z: this.zSlice}));
+        let refDose = this.getPointDose(
+            this.perspective({x: refPoint.x, y: refPoint.y, z: this.zSlice})
+        );
         refDose = ((refDose == 0) ? 1 : refDose); // prevent divide by 0 errors
 
         let isodose = [];

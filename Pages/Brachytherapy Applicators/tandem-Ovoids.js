@@ -58,7 +58,8 @@ export let tandemAndOvoidsPage = new Module({
             anatomyApplicator: "tandem+ovoids",
             anatomyParams: {
                 ovoidDiameter: 20,
-            }
+            },
+            zSlice: -1
         })
     },
     sliders: {
@@ -194,6 +195,7 @@ export let tandemAndOvoidsPage = new Module({
             module.graphs.graph2.yTicks = module.graphs.graph1.yTicks;
             module.graphs.graph3.xTicks = module.graphs.graph1.xTicks;
             module.graphs.graph3.yTicks = module.graphs.graph1.yTicks;
+            module.graphs.graph3.zSlice = -module.applicator.ovoidDiameter / 20;
 
             if (module.graphs.graph1.selectedSeed != -1){
                 module.graphs.graph1.selectedSeed = Math.min(
