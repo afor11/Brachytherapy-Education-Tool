@@ -46,12 +46,12 @@ light mode:
 */
 export const airKermaSliderLimits = {
     "103-Pd": {
-        min: 0.2,
+        min: 1,
         max: 4
     },
     "125-I": {
         min: 0.2,
-        max: 4
+        max: 0.6
     },
     "192-Ir": {
         min: 10000,
@@ -59,7 +59,7 @@ export const airKermaSliderLimits = {
     },
     "60-Co": {
         min: 100000,
-        max: 900000
+        max: 400000
     }
 };
 
