@@ -58,8 +58,8 @@ export const airKermaSliderLimits = {
         max: 60000
     },
     "60-Co": {
-        min: 100000,
-        max: 400000
+        min: 10000,
+        max: 40000
     }
 };
 
