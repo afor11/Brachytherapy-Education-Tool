@@ -737,3 +737,8 @@ export function resetCanvas(context) {
     context.fillStyle = colorPalette.primary;
     context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 }
+
+
+export function getPropFromAddress(obj, address) {
+    return address.reduce((currObj, path) => currObj[path], obj);
+}

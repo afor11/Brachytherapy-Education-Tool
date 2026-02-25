@@ -4,7 +4,8 @@ import { PlanarArrayOfSeeds } from './Pages/planararrayofseeds.js';
 import { brachytherapyApplicatorsPage } from './Pages/Brachytherapy Applicators/brachytherapyapplicators.js';
 import { navBar, resetNavBar } from './navBar.js';
 import { effectHandler, AlgebraicEffect } from './algebraicEffect.js';
-import { runFn, resetCanvas } from './utils.js';
+import { runFn, resetCanvas, getPropFromAddress } from './utils.js';
+import { home } from './Pages/home.js';
 
 let canvas = document.getElementById("canvas");
 export let ctx = canvas.getContext("2d");
@@ -15,8 +16,8 @@ canvas.height = window.innerHeight;
 // keeps track of the current layer that is being drawn on
 let layerNum = 0;
 
-export let module = "single seed";
-export function setModule(newModule) {module = newModule;}
+export let page = ["home"];
+export function setPage(...newPage) {page = newPage}
 let scrollPos = {
     x: 0,
     y: 0
@@ -29,12 +30,16 @@ export let view = {
 };
 
 window.mouse = {x: 0, y: 0, down: false};
-export let moduleData = {
-    "single seed": singleSeedPage,
-    "string of seeds": stringofseedsPage,
-    "planar array of seeds": PlanarArrayOfSeeds,
-    "brachytherapy applicators": brachytherapyApplicatorsPage,
+export let pages = {
+    "home": home,
+    "modules": {
+        "single seed": singleSeedPage,
+        "string of seeds": stringofseedsPage,
+        "planar array of seeds": PlanarArrayOfSeeds,
+        "brachytherapy applicators": brachytherapyApplicatorsPage,
+    }
 };
+let getPageData = () => getPropFromAddress(pages, page);
 
 effectHandler({
     tryCode: function* (){
@@ -48,11 +53,9 @@ effectHandler({
     }
 });
 
-resetNavBar(moduleData);
+resetNavBar(pages["modules"]);
 effectHandler({
-    tryCode: function* () {
-        yield* runFn(moduleData[module].onReload);
-    },
+    tryCode: runFn(getPageData().onReload),
     handleCode: mainEffectHandler
 });
 
@@ -63,9 +66,7 @@ function tick(){
     layerNum = 0;
 
     effectHandler({
-        tryCode: function* () {
-            yield* runFn(moduleData[module].onUpdate);
-        },
+        tryCode: runFn(getPageData().onUpdate),
         handleCode: mainEffectHandler
     });
     if ((canvas.width != window.innerWidth) || (canvas.height != window.innerHeight)){
@@ -78,9 +79,7 @@ function tick(){
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         effectHandler({
-            tryCode: function* () {
-                yield* runFn(moduleData[module].onReload);
-            },
+            tryCode: runFn(getPageData().onReload),
             handleCode: mainEffectHandler
         });
     }
@@ -95,9 +94,7 @@ addEventListener("scroll",function (){
 addEventListener("pointermove",function (e){
     updateMousePos(e);
     effectHandler({
-        tryCode: function* () {
-            yield* runFn(moduleData[module].onMouseMove, e);
-        },
+        tryCode: runFn(getPageData().onMouseMove, e),
         handleCode: mainEffectHandler
     });
 });
@@ -111,9 +108,7 @@ addEventListener("pointerdown",function (e){
         })
     });
     effectHandler({
-        tryCode: function* () {
-            yield* runFn(moduleData[module].onMouseDown, e);
-        },
+        tryCode: runFn(getPageData().onMouseDown, e),
         handleCode: mainEffectHandler
     });
 });
@@ -121,17 +116,13 @@ addEventListener("pointerup",function (e){
     updateMousePos(e);
     mouse.down = false;
     effectHandler({
-        tryCode: function* () {
-            yield* runFn(moduleData[module].onMouseUp, e);
-        },
+        tryCode: runFn(getPageData().onMouseUp, e),
         handleCode: mainEffectHandler
     });
 });
 addEventListener("keydown", function (e) {
     effectHandler({
-        tryCode: function* () {
-            yield* runFn(moduleData[module].onKeyDown, e);
-        },
+        tryCode: runFn(getPageData().onKeyDown, e),
         handleCode: mainEffectHandler
     });
 });
@@ -143,7 +134,7 @@ function updateMousePos(e){
 
 function mainEffectHandler(effect, ...args){
     if (effect === "GET MODULE"){
-        return moduleData[module];
+        return getPageData();
     }
     if (effect === "ERROR"){
         console.error("error");
@@ -153,5 +144,13 @@ function mainEffectHandler(effect, ...args){
     }
     if (effect === "HOVERING") {
         return true; //#
+    }
+    if (effect === "START") {
+        page = ["modules", "single seed"];
+        resetNavBar(pages["modules"]);
+        effectHandler({
+            tryCode: runFn(getPageData().onReload),
+            handleCode: mainEffectHandler
+        });
     }
 }

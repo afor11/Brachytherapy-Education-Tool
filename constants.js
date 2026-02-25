@@ -21,7 +21,7 @@ export let colorPalette = {
     accent: "#1E1E1E",
     green: {dark: "#50C878", light: "#AFE1AF"},
     red: {dark: "#EE4B2B", light: "rgba(216, 83, 109, 1)"},
-    grey: "#D3D3D3"
+    grey: {dark: "#332a23", light: "#D3D3D3"}
 };
 
 /*

@@ -292,7 +292,7 @@ export class Graph {
         // draw vertical gridlines
         for (let i = minXTick; i <= maxXTick; i++){
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
-            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey;
+            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey.light;
             ctx.beginPath();
             ctx.moveTo(gridlineX, this.graphDimensions.y);
             ctx.lineTo(gridlineX, this.graphDimensions.y + this.graphDimensions.height);
@@ -302,7 +302,7 @@ export class Graph {
         // draw horizontal gridlines
         for (let i = minYTick; i <= maxYTick; i++){
             let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
-            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey;
+            ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey.light;
             ctx.beginPath();
             ctx.moveTo(this.graphDimensions.x, gridlineY);
             ctx.lineTo(this.graphDimensions.x + this.graphDimensions.width, gridlineY);

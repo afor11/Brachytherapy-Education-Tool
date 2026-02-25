@@ -1,3 +1,4 @@
+import { AlgebraicEffect } from "./algebraicEffect.js";
 import { nothing } from "./utils.js";
 
 export class Module {
@@ -11,14 +12,15 @@ export class Module {
         onReload,
         defaultInputHandler: {
             onMouseMove = nothing,
-            onMouseDown = function () {
-                ["dropDowns","sliders","labels","buttons"].forEach((obj) => {
-                    if (typeof this[obj] !== "undefined"){
-                        Object.values(this[obj]).forEach((attribute) => {
-                            attribute.checkClicked();
-                        });
+            onMouseDown = function* () {
+                let self = yield new AlgebraicEffect("GET MODULE");
+                for (let obj of ["dropDowns","sliders","labels","buttons"]) {
+                    if (typeof self[obj] !== "undefined"){
+                        for (let attribute of Object.values(self[obj])) {
+                            yield* attribute.checkClicked();
+                        }
                     }
-                });
+                }
             },
             onMouseUp = nothing,
             onKeyDown = nothing
