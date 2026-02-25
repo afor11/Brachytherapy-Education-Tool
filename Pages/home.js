@@ -58,6 +58,18 @@ export let home = new Module({
             onClick: () => {},
             outline: {thickness: Math.min(canvas.width, canvas.height) * 0.05, color: colorPalette.accent},
             hoverCol: colorPalette.grey.light
+        }),
+        nameDateTag: new Button({
+            x: 0, y: 0, width: 0, height: 0,
+            label: {
+                text: "Avi Ford, 2026",
+                font: "default",
+                color: colorPalette.accent
+            },
+            bgColor: colorPalette.primary,
+            onClick: () => {},
+            outline: {thickness: 0, color: colorPalette.accent},
+            hoverCol: colorPalette.grey.light
         })
     },
     onUpdate: function* () {
@@ -66,6 +78,7 @@ export let home = new Module({
         yield* this.buttons.start.draw();
         yield* this.buttons.userGuide.draw();
         yield* this.buttons.disclaimer.draw();
+        yield* this.buttons.nameDateTag.draw();
 
         if (logoLoaded) {
             // get logo region
@@ -121,6 +134,13 @@ export let home = new Module({
             width: canvas.width,
             height: canvas.height * 0.05
         }, { horizontal: 0.2, vertical: 0 }));
+
+        Object.assign(this.buttons.nameDateTag, getRegionBound({
+            x: 0,
+            y: canvas.height * 0.97,
+            width: canvas.width * 0.1,
+            height: canvas.height * 0.03
+        }, { horizontal: 0, vertical: 0 }));
 
         yield* setEqualFont([this.buttons.start, this.buttons.userGuide]);
 
