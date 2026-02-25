@@ -9,7 +9,7 @@ let ctx = canvas.getContext("2d");
 
 let logo = new Image();
 let logoLoaded = false;
-logo.src = "../Images/BERT logo_2.png";
+logo.src = "Images/BERT logo_2.png";
 logo.onload = function() {
     logoLoaded = true;
 }
