@@ -3,6 +3,7 @@ import { anatomyData, colorPalette } from './constants.js';
 import { magnitude , cloneObj, getMax, getMin, getFontSize, distance, clamp } from './utils.js';
 import { AlgebraicEffect } from './algebraicEffect.js';
 import { MarchingSquares } from './MarchingSquares.js';
+import { Button } from './UIclasses/Button.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -50,6 +51,12 @@ export class Graph {
         this.isolines = [12.5, 50, 100, 200, 400, 800];
         this.isolineColors = ["#D92684", "#D97B26","#D9262A", "#84D926", "#26D9D5", "#7B26D9"];
         this.cornerRounding = cornerRounding;
+        this.mouseLabel = new Button({
+            x: 0, y: 0, width: 0, height: 0, onClick: () => {}, outline: {color: colorPalette.accent, thickness: 0},
+            label: {text: "", font: "default", color: colorPalette.accent},
+            bgColor: colorPalette.primary,
+            hoverCol: colorPalette.primary
+        });
     }
     *refreshAnatomy(){
         if (typeof this.anatomyParams !== "undefined"){
@@ -503,27 +510,19 @@ export class Graph {
             && (point.y < this.graphDimensions.y + this.graphDimensions.height)
         )
     }
-    drawMouseLabel(){
+    *drawMouseLabel(){
         if (this.pointOnGraph(window.mouse)){
-            let doseAtMouse = this.getPointDose(this.perspective({...this.screenToGraphPos(window.mouse), z: 0})).toFixed(2) + "Gy";
-            let boundingBox = {
-                x: window.mouse.x,
-                y: window.mouse.y,
-                width: this.graphDimensions.width * 0.15,
-                height: this.graphDimensions.height * 0.05,
-            };
+            let graphPos = this.perspective({...this.screenToGraphPos(window.mouse), z: 0});
+            let doseAtMouse = this.getPointDose(graphPos);
 
-            ctx.fillStyle = colorPalette.primary;
-            ctx.font = getFontSize(boundingBox.width, boundingBox.height, doseAtMouse, (size) => `${size}px Arial`) + "px Arial";
-            let metrics = ctx.measureText(doseAtMouse);
-            let labelTextWidth = metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft;
-            let labelTextHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-            ctx.fillRect(boundingBox.x,boundingBox.y - labelTextHeight,labelTextWidth,labelTextHeight);
-            
-            ctx.fillStyle = colorPalette.accent;
-            ctx.textBaseline = "bottom";
-            ctx.fillText(doseAtMouse,boundingBox.x,boundingBox.y);
-            ctx.textBaseline = "alphabetic";
+            this.mouseLabel.x = mouse.x;
+            this.mouseLabel.y = mouse.y - this.mouseLabel.height;
+            this.mouseLabel.width = canvas.width * 0.2;
+            this.mouseLabel.height = canvas.height * 0.025;
+
+            this.mouseLabel.label = `${doseAtMouse.toFixed(2)} Gy at (${graphPos.x.toFixed(2)}, ${graphPos.y.toFixed(2)}, ${graphPos.z.toFixed(2)})`;
+
+            yield* this.mouseLabel.draw();
         }
     }
 }

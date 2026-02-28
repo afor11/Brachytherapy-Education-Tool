@@ -18,10 +18,6 @@ let layerNum = 0;
 
 export let page = ["home"];
 export function setPage(...newPage) {page = newPage}
-let scrollPos = {
-    x: 0,
-    y: 0
-};
 export let view = {
     x: 0,
     y: canvas.height * 0.1,
@@ -85,12 +81,6 @@ function tick(){
     }
 }
 
-addEventListener("scroll",function (){
-    scrollPos = {
-        x: window.scrollX,
-        y: window.scrollY
-    }
-});
 addEventListener("pointermove",function (e){
     updateMousePos(e);
     effectHandler({
@@ -128,8 +118,8 @@ addEventListener("keydown", function (e) {
 });
 
 function updateMousePos(e){
-    mouse.x = e.clientX + scrollPos.x;
-    mouse.y = e.clientY + scrollPos.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
 }
 
 function mainEffectHandler(effect, ...args){

@@ -78,9 +78,9 @@ export let singleSeedPage = new Module({
         yield* this.dropDowns.graph2Model.draw();
 
         this.graphs.graph1.drawRefPoints();
-        this.graphs.graph1.drawMouseLabel();
+        yield* this.graphs.graph1.drawMouseLabel();
         this.graphs.graph2.drawRefPoints();
-        this.graphs.graph2.drawMouseLabel();
+        yield* this.graphs.graph2.drawMouseLabel();
     },
     onReload: function* () {
         refreshNavBar(thisModule);

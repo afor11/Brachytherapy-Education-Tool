@@ -158,7 +158,7 @@ export let stringofseedsPage = new Module({
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
         yield* this.labels.graph1Reference.draw();
-        this.graphs.graph1.drawMouseLabel();
+        yield* this.graphs.graph1.drawMouseLabel();
 
         // draw the add seed button
         yield* this.buttons.graph1AddSeed.draw();

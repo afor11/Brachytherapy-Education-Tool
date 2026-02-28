@@ -188,7 +188,7 @@ export let PlanarArrayOfSeeds = new Module({
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
         yield* this.labels.graph1Reference.draw();
-        this.graphs.graph1.drawMouseLabel();
+        yield* this.graphs.graph1.drawMouseLabel();
         yield* this.buttons.graph1ExpandArray.draw();
         yield* this.buttons.graph1ShrinkArray.draw();
         yield* this.sliders.graph1SeedSpacing.draw();
@@ -199,7 +199,7 @@ export let PlanarArrayOfSeeds = new Module({
         this.graphs.graph2.drawGraphSeeds();
         this.graphs.graph2.drawRefPoints();
         yield* this.labels.graph2Reference.draw();
-        this.graphs.graph2.drawMouseLabel();
+        yield* this.graphs.graph2.drawMouseLabel();
         yield* this.buttons.graph2ExpandArray.draw();
         yield* this.buttons.graph2ShrinkArray.draw();
         yield* this.sliders.graph2SeedSpacing.draw();

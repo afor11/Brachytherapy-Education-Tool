@@ -117,7 +117,7 @@ export let vaginalCylinderPage = new Module({
 
                 // push seeds
                 module.graphs.graph1.seeds = [];
-                for (let i = (module.applicator.length / 10) - 0.7; i >= 0; i -= 1){
+                for (let i = (module.applicator.length / 10) - 0.7; i >= 0; i -= 0.5){
                     module.graphs.graph1.seeds.push(
                         new Seed(
                             {x: 0, y: i, z: 0},
@@ -256,7 +256,7 @@ export let vaginalCylinderPage = new Module({
         this.graphs.graph1.drawGraph();
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
-        this.graphs.graph1.drawMouseLabel();
+        yield* this.graphs.graph1.drawMouseLabel();
 
         yield* this.labels.treatmentTime.draw();
         yield* this.labels.graph1Reference.draw();

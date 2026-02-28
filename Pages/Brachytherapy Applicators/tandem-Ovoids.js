@@ -143,7 +143,7 @@ export let tandemAndOvoidsPage = new Module({
                 }
 
                 module.graphs.graph1.seeds = [];
-                for (let i = (module.applicator.length / 10) - 0.7; i >= 0; i -= 1){
+                for (let i = (module.applicator.length / 10) - 0.7; i >= 0; i -= 0.5){
                     module.graphs.graph1.seeds.push(
                         new Seed(
                             {x: 0, y: i, z: 0},
@@ -309,12 +309,12 @@ export let tandemAndOvoidsPage = new Module({
         yield* drawTandem("graph3","axial");
         yield* drawOvoids("graph3","axial");
 
-        Object.values(this.graphs).forEach((graph) => {
+        for (let graph of Object.values(this.graphs)) {
             graph.drawGraph();
             graph.drawGraphSeeds();
             graph.drawRefPoints();
-            graph.drawMouseLabel();
-        });
+            yield* graph.drawMouseLabel();
+        }
 
         yield* this.labels.treatmentTime.draw();
         yield* this.labels.graph1AirKerma.draw();

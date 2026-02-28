@@ -197,25 +197,44 @@ export function getRange(min, max, step){
     return range;
 }
 
-export function toggleSeedEnable(graph,seedInd){
+export function toggleSeedEnable(graph, seedInd){
     return new Button({
         x: 0, y: 0, width: 0, height: 0, bgColor: colorPalette.secondary,
         onClick: function* () {
+            // get module and self
             let thisModule = yield new AlgebraicEffect("GET MODULE");
             let self = yield new AlgebraicEffect("GET SELF");
+
+            // get the seed index
             let seedIndValue = seedInd.call(thisModule);
             if (seedIndValue == -1){return}
 
+            // toggle seed being enabled
             let seedEnabled = thisModule.graphs[graph].seeds[seedIndValue].enabled;
             thisModule.graphs[graph].seeds[seedIndValue].enabled = !seedEnabled;
+
+            // toggle label
             self.label = (seedEnabled ? "enable seed" : "disable seed");
 
+            // reload page
             yield* runFn(thisModule.onReload);
         },
         label: {text: "disable seed", font: "default", color: colorPalette.primary},
         outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.001},
         hoverCol: colorPalette.secondary,
-        animate: function* () {yield* expandOnHover(false)},
+        animate: function* () {
+            // get module, graph, and self
+            let thisModule = yield new AlgebraicEffect("GET MODULE");
+            let thisGraph = thisModule.graphs[graph];
+            let self = yield new AlgebraicEffect("GET SELF");
+
+            // set seed label according to if seed is enabled or disabled
+            let seedIndValue = seedInd.call(thisModule);
+            if (seedIndValue != -1) {
+                self.label = (thisGraph.seeds[seedIndValue].enabled ? "disable seed" : "enable seed");
+                yield* expandOnHover(false);
+            }
+        },
     });
 }
 

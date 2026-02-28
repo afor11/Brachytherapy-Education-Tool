@@ -45,19 +45,19 @@ light mode:
 }
 */
 export const airKermaSliderLimits = {
-    "103-Pd": {
-        min: 1,
+    "Pd-103": {
+        min: 0.6,
         max: 4
     },
-    "125-I": {
+    "I-125": {
         min: 0.2,
         max: 0.6
     },
-    "192-Ir": {
+    "Ir-192": {
         min: 10000,
         max: 60000
     },
-    "60-Co": {
+    "Co-60": {
         min: 10000,
         max: 40000
     }
@@ -86,7 +86,7 @@ export const TheraSeed200 = {
     sourceLength: 0.423, // measured in cm
     sourceDiameter: 0.0560, //cm
     halfLife: 408, // measured in in hours
-    isotope: "103-Pd",
+    isotope: "Pd-103",
     pointSource: false,
     HDRsource: false,
     gValues: [0.911, 1.21, 1.37, 1.38, 1.36, 1.3, 1.15, 1, 0.749, 0.555, 0.41, 0.302, 0.223, 0.163, 0.0887, 0.0482, 0.0262, 0.00615],
@@ -125,7 +125,7 @@ export const Best2301 = {
     sourceLength: 0.375, // measured in cm
     sourceDiameter: 0.0250, //cm
     halfLife: 1425.6, // measured in in hours
-    isotope: "125-I",
+    isotope: "I-125",
     pointSource: false,
     HDRsource: false,
     gValues: [1.033, 1.029, 1.027, 1.028, 1.03, 1, 0.938, 0.866, 0.707, 0.555, 0.427, 0.32, 0.248, 0.187, 0.142, 0.103],
@@ -155,7 +155,7 @@ export const GammaMedHDRPlus = {
     sourceLength: 0.35, // measured in cm
     sourceDiameter: 0.06, //measurec in cm
     halfLife: 1771.848, // measured in in hours
-    isotope: "192-Ir",
+    isotope: "Ir-192",
     pointSource: false,
     HDRsource: true,
     gValues: [0.998,0.988,0.997,0.996,0.998,1,1.003,1.006,1.006,1.004,0.999,0.993,0.968,0.936],
@@ -213,7 +213,7 @@ export const BEBIG_GK60M21 = {
     sourceLength: 0.35, // measured in cm
     sourceDiameter: 0.06, //cm
     halfLife: 46196.82, // measured in in hours
-    isotope: "60-Co",
+    isotope: "Co-60",
     pointSource: false,
     HDRsource: true,
     gValues: [0.83, 0.83, 0.961, 1.037, 1.072, 1.077, 1.066, 1.05, 1.037, 1.028, 1.019, 1.018, 1.011, 1, 0.992, 0.984, 0.968, 0.952, 0.935, 0.919, 0.884, 0.849],
@@ -269,7 +269,7 @@ export const ElektaFlexisource = {
     sourceLength: 0.35, // measured in cm
     sourceDiameter: 0.06, // cm
     halfLife: 1771.92, // measured in in hours
-    isotope: "192-Ir",
+    isotope: "Ir-192",
     pointSource: false,
     HDRsource: true,
     gValues: [0.991,0.991,0.997,0.998,1.000,1.002,1.004,1.005,1.003,0.999,0.991,0.968,0.935],
