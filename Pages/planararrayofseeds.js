@@ -9,6 +9,7 @@ import { Button } from '../UIclasses/Button.js';
 import { Slider } from '../UIclasses/Slider.js';
 import { NumberInput } from '../UIclasses/NumberInput.js';
 import { AlgebraicEffect } from '../algebraicEffect.js';
+import { Dropdown } from '../UIclasses/Dropdown.js';
 
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
@@ -123,67 +124,6 @@ export let PlanarArrayOfSeeds = new Module({
             }
         }
 
-        // update the expand / shrink array buttons to their y-position matches the bottom of the enable
-        // seed button or dwell time sliders (in vertical mode)
-        if (view.width / view.height <= 1){
-            let splitY = view.height / 2;
-            let splitX = view.width * 0.25;
-
-            let graph1ExpandArrayBounds = getRegionBound({
-                x: 0,
-                y: view.y + splitY * (
-                    this.graphs.graph1.selectedSeed != -1 ?
-                        (this.graphs.graph1.seeds[0].model.HDRsource ?
-                            0.5
-                        :
-                            0.4)
-                    : 0.3
-                ),
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2});
-            
-            Object.assign(this.buttons.graph1ExpandArray, graph1ExpandArrayBounds);
-            graph1ExpandArrayBounds.y += splitY * 0.1;
-            Object.assign(this.buttons.graph1ShrinkArray, graph1ExpandArrayBounds);
-            graph1ExpandArrayBounds.y += splitY * 0.1;
-            Object.assign(this.labels.graph1SeedSpacing, graph1ExpandArrayBounds);
-            graph1ExpandArrayBounds.y += splitY * 0.15;
-            Object.assign(this.sliders.graph1SeedSpacing, {
-                x: graph1ExpandArrayBounds.x,
-                y: graph1ExpandArrayBounds.y,
-                length: graph1ExpandArrayBounds.width,
-                thickness: graph1ExpandArrayBounds.height * 0.3,
-            });
-
-            let graph2ExpandArrayBounds = getRegionBound({
-                x: 0,
-                y: view.y + splitY * (
-                    this.graphs.graph2.selectedSeed != -1 ?
-                        (this.graphs.graph2.seeds[0].model.HDRsource ?
-                            1.5
-                        :
-                            1.4)
-                    : 1.3
-                ),
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2});
-
-            Object.assign(this.buttons.graph2ExpandArray, graph2ExpandArrayBounds);
-            graph2ExpandArrayBounds.y += splitY * 0.1;
-            Object.assign(this.buttons.graph2ShrinkArray, graph2ExpandArrayBounds);
-            graph2ExpandArrayBounds.y += splitY * 0.1;
-            Object.assign(this.labels.graph2SeedSpacing, graph2ExpandArrayBounds);
-            graph2ExpandArrayBounds.y += splitY * 0.15;
-            Object.assign(this.sliders.graph2SeedSpacing, {
-                x: graph2ExpandArrayBounds.x,
-                y: graph2ExpandArrayBounds.y,
-                length: graph2ExpandArrayBounds.width,
-                thickness: graph2ExpandArrayBounds.height * 0.3,
-            });
-        }
-
         this.graphs.graph1.drawGraph();
         this.graphs.graph1.drawGraphSeeds();
         this.graphs.graph1.drawRefPoints();
@@ -255,272 +195,129 @@ export let PlanarArrayOfSeeds = new Module({
             let splitY = view.height * 0.25;
             let splitX = view.width / 4;
 
-            //resize dropdowns
-            rescaleDropdownButtons(this.dropDowns.graph1Model,{
-                x: 0,
-                y: view.y,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2});
+            let rescaleElm = (elm, rowInd, columnInd) => {
+                if (elm instanceof Dropdown) {
+                    rescaleDropdownButtons(elm,{
+                        x: splitX * columnInd,
+                        y: view.y + rowInd * (splitY / 5),
+                        width: splitX,
+                        height: splitY / 5
+                    }, {horizontal: 0.2, vertical: 0.2});
+                }
+                if ((elm instanceof Button) || (elm instanceof NumberInput)) {
+                    Object.assign(elm, getRegionBound({
+                        x: splitX * columnInd,
+                        y: view.y + rowInd * (splitY / 5),
+                        width: splitX,
+                        height: splitY / 5
+                    }, {horizontal: 0.2, vertical: 0.2}));
+                }
+                if (elm instanceof Slider) {
+                    let sliderBounds = getRegionBound({
+                        x: splitX * columnInd,
+                        y: view.y + (rowInd + 0.5) *(splitY / 5),
+                        width: splitX,
+                        height: splitY * 0.07
+                    }, {horizontal: 0.2, vertical: 0.2});
 
-            rescaleDropdownButtons(this.dropDowns.graph2Model,{
-                x: splitX * 2,
-                y: view.y,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2});
+                    Object.assign(elm, {
+                        x: sliderBounds.x,
+                        y: sliderBounds.y,
+                        length: sliderBounds.width,
+                        thickness: sliderBounds.height
+                    });
+                }
+            }
 
-            //resize labels
-            Object.assign(this.labels.graph1AirKerma, getRegionBound({
-                x: 0,
-                y: view.y + splitY / 5,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph2AirKerma, getRegionBound({
-                x: splitX * 2,
-                y: view.y + splitY / 5,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph1DwellTime, getRegionBound({
-                x: 0,
-                y: view.y + (splitY / 5) * 3,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph2DwellTime, getRegionBound({
-                x: splitX * 2,
-                y: view.y + (splitY / 5) * 3,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph1SeedSpacing, getRegionBound({
-                x: splitX,
-                y: view.y + (splitY / 5) * 2,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph2SeedSpacing, getRegionBound({
-                x: splitX * 3,
-                y: view.y + (splitY / 5) * 2,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            //resize sliders
-            let sliderBounds = getRegionBound({
-                x: 0,
-                y: view.y + (splitY / 5) * 2.5,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2});
-
-            Object.assign(this.sliders.graph1AirKerma, {
-                x: sliderBounds.x,
-                y: sliderBounds.y,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            Object.assign(this.sliders.graph2AirKerma, {
-                x: sliderBounds.x + splitX * 2,
-                y: sliderBounds.y,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            Object.assign(this.sliders.graph1DwellTime, {
-                x: sliderBounds.x,
-                y: sliderBounds.y + (splitY / 5) * 2,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            Object.assign(this.sliders.graph2DwellTime, {
-                x: sliderBounds.x + splitX * 2,
-                y: sliderBounds.y + (splitY / 5) * 2,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            Object.assign(this.sliders.graph1SeedSpacing, {
-                x: sliderBounds.x + splitX,
-                y: sliderBounds.y + (splitY / 5),
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            Object.assign(this.sliders.graph2SeedSpacing, {
-                x: sliderBounds.x + splitX * 3,
-                y: sliderBounds.y + (splitY / 5),
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.4
-            });
-
-            // resize buttons
-            Object.assign(this.buttons.graph1EnableSeed, getRegionBound({
-                x: 0,
-                y: view.y + (splitY / 5) * 3,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph2EnableSeed, getRegionBound({
-                x: splitX * 2,
-                y: view.y + (splitY / 5) * 3,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph1ExpandArray, getRegionBound({
-                x: splitX,
-                y: view.y,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph1ShrinkArray, getRegionBound({
-                x: splitX,
-                y: view.y + (splitY / 5),
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph2ExpandArray, getRegionBound({
-                x: 3 * splitX,
-                y: view.y,
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph2ShrinkArray, getRegionBound({
-                x: 3 * splitX,
-                y: view.y + (splitY / 5),
-                width: splitX,
-                height: splitY / 5
-            }, {horizontal: 0.2, vertical: 0.2}));
-        }else{
+            // objects layed out just like on screen
+            [
+                [this.dropDowns.graph1Model,                                   this.labels.graph1Reference,    this.dropDowns.graph2Model,                                   this.labels.graph2Reference,    ],
+                [this.labels.graph1AirKerma,                                   this.buttons.graph1ExpandArray, this.labels.graph2AirKerma,                                   this.buttons.graph2ExpandArray, ],
+                [this.sliders.graph1AirKerma,                                  this.buttons.graph1ShrinkArray, this.sliders.graph2AirKerma,                                  this.buttons.graph2ShrinkArray, ],
+                [[this.buttons.graph1EnableSeed, this.labels.graph1DwellTime], this.labels.graph1SeedSpacing, [this.buttons.graph2EnableSeed, this.labels.graph2DwellTime], this.labels.graph2SeedSpacing,   ],
+                [this.sliders.graph1DwellTime,                                 this.sliders.graph1SeedSpacing, this.sliders.graph2DwellTime,                                 this.sliders.graph2SeedSpacing, ]
+            ].forEach((row, rowInd) =>
+                row.forEach((elm, columnInd) => {
+                    if (Array.isArray(elm)) {
+                        elm.forEach((overlappingElm) => {
+                            rescaleElm(overlappingElm, rowInd, columnInd);
+                        });
+                    } else {
+                        rescaleElm(elm, rowInd, columnInd)
+                    }
+                })
+            );
+        } else {
             let splitY = view.height / 2;
             let splitX = view.width * 0.25;
 
-            //resize dropdowns
-            rescaleDropdownButtons(this.dropDowns.graph1Model,{
-                x: 0,
-                y: view.y,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2});
+            let rescaleElm = (elm, ind) => {
+                if (elm instanceof Dropdown) {
+                    rescaleDropdownButtons(elm,{
+                        x: 0,
+                        y: view.y + ind * splitY * 0.1,
+                        width: splitX,
+                        height: splitY * 0.1
+                    }, {horizontal: 0.2, vertical: 0.2});
+                }
+                if ((elm instanceof Button) || (elm instanceof NumberInput)) {
+                    Object.assign(elm, getRegionBound({
+                        x: 0,
+                        y: view.y + ind * splitY * 0.1,
+                        width: splitX,
+                        height: splitY * 0.1
+                    }, {horizontal: 0.2, vertical: 0.2}));
+                }
+                if (elm instanceof Slider) {
+                    let sliderBounds = getRegionBound({
+                        x: 0,
+                        y: view.y + (ind * splitY * 0.1) + (0.05 * splitY),
+                        width: splitX,
+                        height: splitY * 0.03
+                    }, {horizontal: 0.2, vertical: 0.2});
 
-            rescaleDropdownButtons(this.dropDowns.graph2Model,{
-                x: 0,
-                y: view.y + splitY,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2});
+                    Object.assign(elm, {
+                        x: sliderBounds.x,
+                        y: sliderBounds.y,
+                        length: sliderBounds.width,
+                        thickness: sliderBounds.height
+                    });
+                }
+            };
 
-            //resize labels
-            Object.assign(this.labels.graph1AirKerma, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 0.1,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
+            [
+                this.dropDowns.graph1Model,
+                this.labels.graph1Reference,
+                this.labels.graph1AirKerma,
+                this.sliders.graph1AirKerma,
+                this.buttons.graph1ExpandArray,
+                this.buttons.graph1ShrinkArray,
+                this.labels.graph1SeedSpacing,
+                this.sliders.graph1SeedSpacing,
+                [this.buttons.graph1EnableSeed, this.labels.graph1DwellTime],
+                this.sliders.graph1DwellTime,
 
-            Object.assign(this.labels.graph2AirKerma, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 1.1,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph1DwellTime, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 0.3,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.labels.graph2DwellTime, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 1.3,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            //resize sliders
-            let sliderBounds = getRegionBound({
-                x: 0,
-                y: view.y + splitY * 0.25,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2});
-
-            Object.assign(this.sliders.graph1AirKerma, {
-                x: sliderBounds.x,
-                y: sliderBounds.y,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.3
+                this.dropDowns.graph2Model,
+                this.labels.graph2Reference,
+                this.labels.graph2AirKerma,
+                this.sliders.graph2AirKerma,
+                this.buttons.graph2ExpandArray,
+                this.buttons.graph2ShrinkArray,
+                this.labels.graph2SeedSpacing,
+                this.sliders.graph2SeedSpacing,
+                [this.buttons.graph2EnableSeed, this.labels.graph2DwellTime],
+                this.sliders.graph2DwellTime,
+            ].forEach((elm, ind) => {
+                if (Array.isArray(elm)) {
+                    elm.forEach((overlappingElm) => {
+                        rescaleElm(overlappingElm, ind);
+                    });
+                } else {
+                    rescaleElm(elm, ind);
+                }
             });
-
-            Object.assign(this.sliders.graph2AirKerma, {
-                x: sliderBounds.x,
-                y: sliderBounds.y + splitY,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.3
-            });
-
-            Object.assign(this.sliders.graph1DwellTime, {
-                x: sliderBounds.x,
-                y: sliderBounds.y + splitY * 0.2,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.3
-            });
-
-            Object.assign(this.sliders.graph2DwellTime, {
-                x: sliderBounds.x,
-                y: sliderBounds.y + splitY * 1.2,
-                length: sliderBounds.width,
-                thickness: sliderBounds.height * 0.3
-            });
-
-            // resize buttons
-            Object.assign(this.buttons.graph1EnableSeed, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 0.3,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
-
-            Object.assign(this.buttons.graph2EnableSeed, getRegionBound({
-                x: 0,
-                y: view.y + splitY * 1.3,
-                width: splitX,
-                height: splitY * 0.1
-            }, {horizontal: 0.2, vertical: 0.2}));
         }
 
-        //resize reference dose labels
-        let labelPos = this.graphs.graph1.graphToScreenPos(this.graphs.graph1.refpoints[0]);
-        Object.assign(this.labels.graph1Reference, {
-            x: labelPos.x,
-            y: labelPos.y,
-            width: this.graphs.graph1.graphDimensions.width * 0.27,
-            height: this.graphs.graph1.graphDimensions.height * 0.09,
-        });
-
-        labelPos = this.graphs.graph2.graphToScreenPos(this.graphs.graph2.refpoints[0]);
-        Object.assign(this.labels.graph2Reference, {
-            x: labelPos.x,
-            y: labelPos.y,
-            width: this.graphs.graph2.graphDimensions.width * 0.27,
-            height: this.graphs.graph2.graphDimensions.height * 0.09,
-        });
         yield* runFn(this.onUpdate);
     },
     defaultInputHandler: {
