@@ -2,6 +2,8 @@ import { GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource, airKermaSliderLimits
 import { Seed } from '../../seed.js';
 import { Graph } from '../../graph.js';
 import { Button } from '../../UIclasses/Button.js';
+import { Dropdown } from '../../UIclasses/Dropdown.js';
+import { Slider } from '../../UIclasses/Slider.js';
 import { Module } from '../../module.js';
 import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover, resetCanvas } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
@@ -17,7 +19,7 @@ export let vaginalCylinderPage = new Module({
         graph1: new Graph({
             x: 0, y: 0, width: 0, height: 0,
             seeds: [],
-            xTicks: getRange(-2, 2, 0.0625),
+            xTicks: getRange(-3, 3, 0.0625),
             yTicks: getRange(-2, 6, 0.0625),
             perspective: (point) => point,
             name: "graph1",
@@ -97,12 +99,6 @@ export let vaginalCylinderPage = new Module({
         applicator: {
             length: 30,
             diameter: 20
-        },
-        menu: {
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0
         },
         applicatorLoaded: "",
         *refreshApplicator(){
@@ -197,8 +193,8 @@ export let vaginalCylinderPage = new Module({
 
             // set xTicks and yTicks to fit applicator
             module.graphs.graph1.xTicks = getRange(
-                -(module.applicator.diameter / 10) / 2 - 1,
-                (module.applicator.diameter / 10) / 2 + 1,
+                -(module.applicator.diameter / 10) / 2 - 2,
+                (module.applicator.diameter / 10) / 2 + 2,
                 0.0625
             );
             module.graphs.graph1.yTicks = getRange(
@@ -230,25 +226,6 @@ export let vaginalCylinderPage = new Module({
         yield* drawTandem("graph1", "coronal");
 
         if (this.graphs.graph1.selectedSeed != -1){
-            ctx.lineWidth = Math.min(canvas.width,canvas.height) * 0.005;
-            ctx.strokeStyle = colorPalette.accent;
-            ctx.fillStyle = colorPalette.primary;
-            ctx.beginPath();
-            ctx.rect(this.menu.x, this.menu.y, this.menu.width, this.menu.height);
-            ctx.fill();
-            ctx.stroke();
-
-            let graph = this.graphs.graph1;
-            let seedScreenPos = graph.graphToScreenPos(
-                graph.perspective(
-                    graph.seeds[graph.selectedSeed].pos
-                )
-            );
-            ctx.beginPath();
-            ctx.moveTo(seedScreenPos.x, seedScreenPos.y);
-            ctx.lineTo(this.menu.x, this.menu.y);
-            ctx.stroke();
-
             yield* this.labels.graph1DwellTime.draw();
             yield* this.sliders.graph1DwellTime.draw();
         }
@@ -276,7 +253,7 @@ export let vaginalCylinderPage = new Module({
         refreshNavBar("brachytherapy applicators");
 
         let splitX = view.width * 0.5;
-        let yStep = view.height * 0.1;
+        let yStep = view.height / 12;
 
         //resize graphs
         Object.assign(this.graphs.graph1, getRegionBound(
@@ -302,7 +279,12 @@ export let vaginalCylinderPage = new Module({
             this.buttons.resetDwellTimes,
             this.dropDowns.graph1Model,
             this.labels.graph1AirKerma,
-            this.sliders.graph1AirKerma
+            this.sliders.graph1AirKerma,
+            this.dropDowns.applicatorModel,
+            this.dropDowns.applicatorLength,
+            this.dropDowns.applicatorDiameter,
+            this.labels.graph1DwellTime,
+            this.sliders.graph1DwellTime
         ].forEach((elm, ind) => {
             let region = [
                 {
@@ -314,11 +296,35 @@ export let vaginalCylinderPage = new Module({
                 {horizontal: 0.2, vertical: 0.2}
             ];
 
-            if (elm.constructor.name === "Dropdown"){
-                rescaleDropdownButtons(elm,...region);
-                return;
+            if (elm instanceof Dropdown) {
+                if (elm === this.dropDowns.graph1Model) {
+                    rescaleDropdownButtons(elm, ...region);
+                } else {
+                    let buttonWidth = (canvas.width - splitX) / elm.options.length;
+                    setDropdownProps(elm, {
+                        button: getRegionBound(...region),
+                        optionProps: (optionInd) => {
+                            let cornerRounding = [0, 0, 0, 0];
+                            if (optionInd == 0) {
+                                cornerRounding = [0.5, 0, 0, 0.5];
+                            }
+                            if (optionInd == (elm.options.length - 1)) {
+                                cornerRounding = [0, 0.5, 0.5, 0];
+                            }
+                            return {
+                                cornerRounding: cornerRounding,
+                                ...getRegionBound({
+                                    x: splitX * 0.9 + buttonWidth * optionInd,
+                                    y: view.y + yStep * ind,
+                                    width: buttonWidth,
+                                    height: yStep
+                                }, {horizontal: 0, vertical: 0.2})
+                            };
+                        }
+                    });
+                }
             }
-            if (elm.constructor.name === "Slider"){
+            if (elm instanceof Slider) {
                 let regionBound = getRegionBound(...region);
                 Object.assign(elm, {
                     x: regionBound.x,
@@ -326,108 +332,11 @@ export let vaginalCylinderPage = new Module({
                     length: regionBound.width,
                     thickness: regionBound.height * 0.2
                 });
-                return;
             }
-            Object.assign(elm, getRegionBound(...region));
-        });
-
-        // rescale applicator dropdowns
-        let buttonWidth = (canvas.width - splitX) / this.dropDowns.applicatorModel.options.length;
-        setDropdownProps(this.dropDowns.applicatorModel, {
-            button: getRegionBound({
-                x: 0,
-                y: view.y + yStep * 6,
-                width: splitX,
-                height: yStep
-            }, {horizontal: 0.2, vertical: 0.2}),
-            optionProps: (ind) => {
-                let cornerRounding = [0, 0, 0, 0];
-                if (ind == 0) {
-                    cornerRounding = [0.5, 0, 0, 0.5];
-                }
-                if (ind == (this.dropDowns.applicatorModel.options.length - 1)) {
-                    cornerRounding = [0, 0.5, 0.5, 0];
-                }
-                return {
-                    cornerRounding: cornerRounding,
-                    ...getRegionBound({
-                        x: splitX * 0.9 + buttonWidth * ind,
-                        y: view.y + yStep * 6,
-                        width: buttonWidth,
-                        height: yStep
-                    }, {horizontal: 0, vertical: 0.2})
-                };
+            if ((elm instanceof Button) || (elm instanceof NumberInput)) {
+                Object.assign(elm, getRegionBound(...region));
             }
         });
-
-        [
-            this.dropDowns.applicatorLength,
-            this.dropDowns.applicatorDiameter
-        ].forEach((appDropdown, yInd) => {
-            let buttonWidth = (canvas.width - splitX) / appDropdown.options.length;
-            setDropdownProps(appDropdown, {
-                button: getRegionBound({
-                    x: 0,
-                    y: view.y + yStep * (7 + yInd),
-                    width: splitX,
-                    height: yStep
-                }, {horizontal: 0.2, vertical: 0.2}),
-                optionProps: (ind) => {
-                    let cornerRounding = [0, 0, 0, 0];
-                    if (ind == 0) {
-                        cornerRounding = [0.5, 0, 0, 0.5];
-                    }
-                    if (ind == (appDropdown.options.length - 1)) {
-                        cornerRounding = [0, 0.5, 0.5, 0];
-                    }
-                    return {
-                        cornerRounding: cornerRounding,
-                        ...getRegionBound({
-                            x: splitX * 0.9 + buttonWidth * ind,
-                            y: view.y + yStep * (7 + yInd),
-                            width: buttonWidth,
-                            height: yStep
-                        }, {horizontal: 0, vertical: 0.2})
-                    };
-                }
-            });
-        });
-
-        if (this.graphs.graph1.selectedSeed != -1){
-            // get the position of the menu
-            let graph = this.graphs.graph1;
-            let seedScreenPos = graph.graphToScreenPos(
-                graph.perspective(
-                    graph.seeds[graph.selectedSeed].pos
-                )
-            );
-            this.menu = {
-                x: seedScreenPos.x + view.width * 0.2,
-                y: seedScreenPos.y,
-                width: view.width * 0.2,
-                height: view.height * 0.1
-            };
-            // shift the menu over if it is past the edge
-            this.menu.x = Math.min(this.menu.x, view.width - this.menu.width);
-
-            // split the menu into two halves and fit the label and slider to their respective halves
-            let halfMenuBound = {
-                x: this.menu.x,
-                y: this.menu.y,
-                width: this.menu.width,
-                height: this.menu.height / 2
-            };
-            Object.assign(this.labels.graph1DwellTime, getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2}));
-
-            halfMenuBound.y += halfMenuBound.height * 1.25;
-            let regionBound = getRegionBound(halfMenuBound, {horizontal: 0.2, vertical: 0.2});
-            Object.assign(this.sliders.graph1DwellTime, {
-                x: regionBound.x,
-                y: regionBound.y,
-                length: regionBound.width,
-                thickness: regionBound.height * 0.2
-            });
-        }
 
         yield* setEqualFont([
             this.labels.treatmentTime,
@@ -438,6 +347,7 @@ export let vaginalCylinderPage = new Module({
             this.dropDowns.applicatorModel,
             this.dropDowns.applicatorLength,
             this.dropDowns.applicatorDiameter,
+            this.labels.graph1DwellTime
         ]);
     },
     defaultInputHandler: {

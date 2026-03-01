@@ -7,7 +7,21 @@ var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
 export class NumberInput {
-    constructor({x:x, y:y, width:width, height:height, label:{text:text, color: color}, bgColor:bgColor, getValue: getValue, onEnter: onEnter, numDecimalsEditing: numDecimalsEditing, animate = function* () {}, hoverCol = {selected: colorPalette.secondary ,notSelected: colorPalette.grey.light}, cornerRounding = 0.5}){
+    constructor({
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        label: {text: text, color: color},
+        bgColor: bgColor,
+        getValue: getValue,
+        onEnter: onEnter,
+        numDecimalsEditing: numDecimalsEditing,
+        animate = function* () {},
+        hoverCol = {selected: colorPalette.secondary ,notSelected: colorPalette.grey.light},
+        cornerRounding = 0.5,
+        outline = {thickness: 0, color: colorPalette.accent}
+    }){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -42,6 +56,7 @@ export class NumberInput {
         this.hoverCol = hoverCol;
         this.layer = 0;
         this.cornerRounding = cornerRounding;
+        this.outline = outline;
     }
     *getValue(){
         let self = this;
@@ -83,13 +98,21 @@ export class NumberInput {
         }
 
         // change fill color based on hovering / fill rect
-        ctx.fillStyle = (yield* this.hovering()) ?
-            this.hoverCol[(this.editing ? "selected" : "notSelected")]
-        :
-            this.bgColor[(this.editing ? "selected" : "notSelected")];
+        ctx.fillStyle = (
+            (yield* this.hovering()) ?
+                this.hoverCol[(this.editing ? "selected" : "notSelected")]
+            :
+                this.bgColor[(this.editing ? "selected" : "notSelected")]
+        );
+
         ctx.beginPath();
         ctx.roundRect(this.x, this.y, this.width, this.height, getCornerRounding(this, this.cornerRounding));
         ctx.fill();
+        if (this.outline.thickness > 0) {
+            ctx.strokeStyle = this.outline.color;
+            ctx.lineWidth = this.outline.thickness;
+            ctx.stroke();
+        }
 
         // setup text
         ctx.font = this.font + "px Arial";

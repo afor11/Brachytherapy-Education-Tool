@@ -238,7 +238,7 @@ export function toggleSeedEnable(graph, seedInd){
     });
 }
 
-export function referencePointLabel(graph, ind, label = (value) => `Dose: ${value} Gy`){
+export function referencePointLabel(graph, ind, label = (value) => `Dose: ${value} Gy`, outline){
     return new NumberInput({
         x: 0, y: 0, width: 0, height: 0,
         label: {
@@ -259,6 +259,7 @@ export function referencePointLabel(graph, ind, label = (value) => `Dose: ${valu
         },
         numDecimalsEditing: 3,
         animate: function* () {yield* expandOnHover(false)},
+        outline: outline
     })
 }
 
@@ -668,13 +669,13 @@ export function* setEqualFont(elms) {
     // get font
     let font = Infinity;
     for (let elm of elms){
-        if (elm.constructor.name === "Dropdown"){
+        if (elm instanceof Dropdown){
             font = Math.min(font, elm.normalizeFont());
         }
-        if (elm.constructor.name === "Button"){
+        if (elm instanceof Button){
             font = Math.min(font, elm.getDefaultFont());
         }
-        if (elm.constructor.name === "NumberInput"){
+        if (elm instanceof NumberInput){
             font = Math.min(font, elm.recalcFont(
                 yield* chainEffectHandler({
                     tryCode: function*(){
@@ -693,14 +694,14 @@ export function* setEqualFont(elms) {
 
     // set font
     elms.forEach((elm) => {
-        if (elm.constructor.name === "Dropdown"){
+        if (elm instanceof Dropdown){
             elm.recalcFontOnDraw = false; // ensures the Dropdown class does not try to correct this font size when drawing
             elm.button.font = font + "px Arial";
         }
-        if (elm.constructor.name === "Button"){
+        if (elm instanceof Button){
             elm.font = font + "px Arial";
         }
-        if (elm.constructor.name === "NumberInput"){
+        if (elm instanceof NumberInput){
             elm.recalcFontOnDraw = false; // ensures the NumberInput class does not try to correct this font size when drawing
             elm.font = font;
         }

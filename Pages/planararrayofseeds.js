@@ -76,8 +76,8 @@ export let PlanarArrayOfSeeds = new Module({
         graph2AirKerma: airKermaLabel("graph2"),
         graph1DwellTime: multSeedDwellTimeLabel("graph1"),
         graph2DwellTime: multSeedDwellTimeLabel("graph2"),
-        graph1Reference: referencePointLabel("graph1",0),
-        graph2Reference: referencePointLabel("graph2",0),
+        graph1Reference: referencePointLabel("graph1", 0, undefined, {color: colorPalette.accent, thickness: Math.min(canvas.width, canvas.height) * 0.02}),
+        graph2Reference: referencePointLabel("graph2", 0, undefined, {color: colorPalette.accent, thickness: Math.min(canvas.width, canvas.height) * 0.02}),
         graph1SeedSpacing: seedSpacingLabel("graph1"),
         graph2SeedSpacing: seedSpacingLabel("graph2"),
     },
@@ -191,6 +191,20 @@ export let PlanarArrayOfSeeds = new Module({
             graph.refreshGraph();
         });
 
+        Object.assign(this.labels.graph1Reference, {
+            x: this.graphs.graph1.graphDimensions.x,
+            y: this.graphs.graph1.graphDimensions.y - this.graphs.graph1.graphDimensions.width * 0.1,
+            width: this.graphs.graph1.graphDimensions.width * 0.3,
+            height: this.graphs.graph1.graphDimensions.width * 0.1
+        });
+
+        Object.assign(this.labels.graph2Reference, {
+            x: this.graphs.graph2.graphDimensions.x,
+            y: this.graphs.graph2.graphDimensions.y - this.graphs.graph2.graphDimensions.width * 0.1,
+            width: this.graphs.graph2.graphDimensions.width * 0.3,
+            height: this.graphs.graph2.graphDimensions.width * 0.1
+        });
+
         if (view.width / view.height > 1){
             let splitY = view.height * 0.25;
             let splitX = view.width / 4;
@@ -231,11 +245,11 @@ export let PlanarArrayOfSeeds = new Module({
 
             // objects layed out just like on screen
             [
-                [this.dropDowns.graph1Model,                                   this.labels.graph1Reference,    this.dropDowns.graph2Model,                                   this.labels.graph2Reference,    ],
-                [this.labels.graph1AirKerma,                                   this.buttons.graph1ExpandArray, this.labels.graph2AirKerma,                                   this.buttons.graph2ExpandArray, ],
-                [this.sliders.graph1AirKerma,                                  this.buttons.graph1ShrinkArray, this.sliders.graph2AirKerma,                                  this.buttons.graph2ShrinkArray, ],
-                [[this.buttons.graph1EnableSeed, this.labels.graph1DwellTime], this.labels.graph1SeedSpacing, [this.buttons.graph2EnableSeed, this.labels.graph2DwellTime], this.labels.graph2SeedSpacing,   ],
-                [this.sliders.graph1DwellTime,                                 this.sliders.graph1SeedSpacing, this.sliders.graph2DwellTime,                                 this.sliders.graph2SeedSpacing, ]
+                [this.dropDowns.graph1Model,                                   this.buttons.graph1ExpandArray, this.dropDowns.graph2Model,                                   this.buttons.graph2ExpandArray, ],
+                [this.labels.graph1AirKerma,                                   this.buttons.graph1ShrinkArray, this.labels.graph2AirKerma,                                   this.buttons.graph2ShrinkArray, ],
+                [this.sliders.graph1AirKerma,                                  this.labels.graph1SeedSpacing,  this.sliders.graph2AirKerma,                                  this.labels.graph2SeedSpacing,  ],
+                [[this.buttons.graph1EnableSeed, this.labels.graph1DwellTime], this.sliders.graph1SeedSpacing, [this.buttons.graph2EnableSeed, this.labels.graph2DwellTime], this.sliders.graph2SeedSpacing, ],
+                [this.sliders.graph1DwellTime,                                 {},                             this.sliders.graph2DwellTime,                                 {}                            , ]
             ].forEach((row, rowInd) =>
                 row.forEach((elm, columnInd) => {
                     if (Array.isArray(elm)) {
