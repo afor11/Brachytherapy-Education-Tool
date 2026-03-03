@@ -186,6 +186,7 @@ export let tandemAndRingPage = new Module({
                 module.graphs.graph3.seeds = module.graphs.graph1.seeds;
             }
 
+            // get tick marks (accounting for applicator and ensuring the y-values remain consistent)
             module.graphs.graph1.xTicks = getRange(
                 -(module.applicator.ringDiameter / 10) - 2.6,
                 (module.applicator.ringDiameter / 10) + 2.6,
@@ -201,7 +202,11 @@ export let tandemAndRingPage = new Module({
             module.graphs.graph2.yTicks = [...module.graphs.graph1.yTicks];
 
             module.graphs.graph3.xTicks = [...module.graphs.graph1.xTicks];
-            module.graphs.graph3.yTicks = [...module.graphs.graph2.xTicks];
+            module.graphs.graph3.yTicks = getRange(
+                -module.graphs.graph1.unitHeight() / 2,
+                module.graphs.graph1.unitHeight() / 2,
+                0.0625
+            );
 
             module.graphs.graph1.refpoints = [{x: 2, y: 2, z: 0},{x: -2, y: 2, z: 0}];
             module.graphs.graph2.refpoints = module.graphs.graph1.refpoints;
