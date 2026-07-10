@@ -159,8 +159,8 @@ export let tandemAndRingPage = new Module({
                 // space ring points base on this: https://www.desmos.com/calculator/nhwzaakhwz formula
                 const arcDistance = 10; // arc distance between seeds (mm)
                 let angles = getRange(
-                    3 * Math.PI / 4,
-                    9 * Math.PI / 4,
+                    Math.PI / 2,
+                    (5 * Math.PI / 2) - (2 * arcDistance / module.applicator.ringDiameter),
                     2 * arcDistance / module.applicator.ringDiameter
                 );
 

@@ -41,7 +41,7 @@ export let home = new Module({
             },
             bgColor: colorPalette.secondary,
             onClick: function () {
-                window.location.href = "https://www.merriam-webster.com/dictionary/placeholder"; //# update with link to user guide
+                window.location.href = "https://docs.google.com/document/d/e/2PACX-1vSVrE-ioNkNoD8S0KzqGutx5gjOninEnR17ysZ39VBcZdWexUDw0_N-QojtLg1l9fjhLMGFVgOEk7T8/pub?embedded=true"; //# update with link to user guide
             },
             outline: {thickness: 0, color: colorPalette.accent},
             animate: expandOnHover,

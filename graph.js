@@ -9,7 +9,7 @@ let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
 export class Graph {
-    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1, zSlice = 0}){
+    constructor({x, y, width, height, seeds, xTicks, yTicks, perspective, name, refpoints, anatomyView, anatomyApplicator, anatomyParams, scale = "cm", cornerRounding = 0.1, zSlice = 0}) {
         this.x = x;
         this.y = y;
         this.zSlice = zSlice; // depth of the slice being rendered by this graph from the perspective of the graph itself
@@ -34,7 +34,7 @@ export class Graph {
         this.unitWidth = () => getMax(this.xTicks) - getMin(this.xTicks); // width of the graph in graph units
         this.unitHeight = () => getMax(this.yTicks) - getMin(this.yTicks); // height of the graph in graph units
         this.seedType = () => this.seeds[0]?.model;
-        if (typeof anatomyView !== "undefined"){
+        if (typeof anatomyView !== "undefined") {
             this.anatomyView = anatomyView;
             this.anatomyApplicator = anatomyApplicator;
             this.anatomyParams = anatomyParams;
@@ -58,11 +58,11 @@ export class Graph {
             hoverCol: colorPalette.primary
         });
     }
-    *refreshAnatomy(){
-        if (typeof this.anatomyParams !== "undefined"){
+    *refreshAnatomy() {
+        if (typeof this.anatomyParams !== "undefined") {
             let appData = (yield new AlgebraicEffect("GET APPLICATOR DATA")) ?? {};
             Object.keys(appData).forEach((param) => {
-                if (Object.hasOwn(this.anatomyParams, param)){
+                if (Object.hasOwn(this.anatomyParams, param)) {
                     this.anatomyParams[param] = appData[param];
                 }
             });
@@ -74,8 +74,8 @@ export class Graph {
             this.rescaleAnatomy();
         }
     }
-    rescaleAnatomy(){
-        if (typeof this.anatomyParams !== "undefined"){
+    rescaleAnatomy() {
+        if (typeof this.anatomyParams !== "undefined") {
             this.scaledAnatomy = scaleAnatomy(
                 this.graphToScreenPos({x: 0, y: 0}),
                 this.unit().width / 10,
@@ -84,8 +84,8 @@ export class Graph {
             );
         }
     }
-    overlayAnatomy(){
-        if (typeof this.anatomyParams !== "undefined"){
+    overlayAnatomy() {
+        if (typeof this.anatomyParams !== "undefined") {
             ctx.save();
 
             let clippingRegion = new Path2D();
@@ -107,7 +107,7 @@ export class Graph {
             ctx.restore();
         }
     }
-    getPointDoseFromSeed(seed, pos){
+    getPointDoseFromSeed(seed, pos) {
         let relativePos = {
             x: (pos.x - seed.pos.x),
             y: (pos.y - seed.pos.y),
@@ -123,12 +123,12 @@ export class Graph {
             theta: Math.acos(dot)
         });
     }
-    getPointDose(pos){
+    getPointDose(pos) {
         return this.seeds.reduce((dose,seed) => {
             return dose + this.getPointDoseFromSeed(seed, pos);
         },0);
     }
-    getGraphState(){
+    getGraphState() {
         return JSON.stringify([
             this.zSlice,
             this.xTicks,
@@ -137,7 +137,7 @@ export class Graph {
             this.refpoints
         ]);
     }
-    getSeedState(seed){
+    getSeedState(seed) {
         return JSON.stringify([
             seed.model.name,
             seed.pos,
@@ -146,7 +146,7 @@ export class Graph {
             seed.geometryRef
         ]);
     }
-    getIsodose(refPoint){
+    getIsodose(refPoint) {
 
         let usedCaches = new Map();
         this.cachedDose.forEach((_, seedString) => {
@@ -154,19 +154,19 @@ export class Graph {
         });
 
         let defaultDose = [];
-        for (let i = 0; i < this.yTicks.length; i++){
+        for (let i = 0; i < this.yTicks.length; i++) {
             defaultDose.push(
-                new Array(this.xTicks.length).fill(0)
+                new Float64Array(this.xTicks.length)
             );
         }
 
         const currGraphState = this.getGraphState();
 
         let dose = this.seeds.reduce((totalDose, seed) => {
-            if (!seed.enabled || (seed.dwellTime == 0)){return totalDose}
+            if (!seed.enabled || (seed.dwellTime == 0)) {return totalDose}
             let dose = [];
             let seedString = this.getSeedState(seed);
-            if ((this.cachedDose.has(seedString)) && (this.cachedDose.get(seedString).graphState === currGraphState)){
+            if ((this.cachedDose.has(seedString)) && (this.cachedDose.get(seedString).graphState === currGraphState)) {
                 // this seed has been cached
                 let cachedDose = this.cachedDose.get(seedString);
                 
@@ -186,8 +186,8 @@ export class Graph {
 
                 // the graph state has not changed since the seed has been cached
                 let cachedDoseData = cachedDose.dose;
-                for (let i = 0; i < this.yTicks.length; i++){
-                    for (let j = 0; j < this.xTicks.length; j++){
+                for (let i = 0; i < this.yTicks.length; i++) {
+                    for (let j = 0; j < this.xTicks.length; j++) {
                         totalDose[i][j] += cachedDoseData[i][j] * doseScaleFactor;
                     }
                 }
@@ -205,10 +205,10 @@ export class Graph {
             };
 
             // calculate dose from the specific seed
-            for (let i = 0; i < this.yTicks.length; i++){
+            for (let i = 0; i < this.yTicks.length; i++) {
                 let doseSlice = [];
                 let totalDoseSlice = [];
-                for (let j = 0; j < this.xTicks.length; j++){
+                for (let j = 0; j < this.xTicks.length; j++) {
                     let pointDose = this.getPointDoseFromSeed(
                         seed,
                         this.perspective({x: this.xTicks[j], y: this.yTicks[i], z: this.zSlice})
@@ -228,7 +228,7 @@ export class Graph {
         }, defaultDose);
 
         this.cachedDose.forEach((_, seedString) => {
-            if (!usedCaches.get(seedString)){
+            if (!usedCaches.get(seedString)) {
                 this.cachedDose.delete(seedString);
             }
         });
@@ -239,9 +239,9 @@ export class Graph {
         refDose = ((refDose == 0) ? 1 : refDose); // prevent divide by 0 errors
 
         let isodose = [];
-        for (let i = 0; i < this.yTicks.length; i++){
+        for (let i = 0; i < this.yTicks.length; i++) {
             let slice = [];
-            for (let j = 0; j < this.xTicks.length; j++){
+            for (let j = 0; j < this.xTicks.length; j++) {
                 slice.push(100 * dose[i][j] / refDose);
             }
             isodose.push(slice);
@@ -249,7 +249,7 @@ export class Graph {
 
         return isodose;
     }
-    refreshGraph(){
+    refreshGraph() {
         Object.assign(this.isolineGraph, {
             xTicks: this.xTicks,
             yTicks: this.yTicks,
@@ -268,7 +268,7 @@ export class Graph {
 
         this.graphDimensions = this.isolineGraph.dimensions;
     }
-    drawGraph(){
+    drawGraph() {
         // setup constants and ctx
         ctx.textAlign = "center";
         ctx.fillStyle = colorPalette.accent;
@@ -297,7 +297,7 @@ export class Graph {
         ctx.clip(boarder);
 
         // draw vertical gridlines
-        for (let i = minXTick; i <= maxXTick; i++){
+        for (let i = minXTick; i <= maxXTick; i++) {
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
             ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey.light;
             ctx.beginPath();
@@ -307,7 +307,7 @@ export class Graph {
         }
 
         // draw horizontal gridlines
-        for (let i = minYTick; i <= maxYTick; i++){
+        for (let i = minYTick; i <= maxYTick; i++) {
             let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
             ctx.strokeStyle = (i == 0) ? colorPalette.accent : colorPalette.grey.light;
             ctx.beginPath();
@@ -351,7 +351,7 @@ export class Graph {
         ) * 0.5 + "px Arial";
 
         // draw vertical labels
-        for (let i = minXTick; i <= maxXTick; i++){
+        for (let i = minXTick; i <= maxXTick; i++) {
             let gridlineX = this.graphToScreenPos({x: i, y: 0}).x;
             ctx.fillText(i, gridlineX, this.y + this.height * 0.925);
         }
@@ -364,7 +364,7 @@ export class Graph {
 
         // draw horizontal labels
         ctx.textAlign = "end";
-        for (let i = minYTick; i <= maxYTick; i++){
+        for (let i = minYTick; i <= maxYTick; i++) {
             let gridlineY = this.graphToScreenPos({x: 0, y: i}).y;
             ctx.fillText(i, this.x + this.width * 0.075, gridlineY);
         }
@@ -418,7 +418,7 @@ export class Graph {
         ctx.textAlign = "start";
         ctx.textBaseline = "alphabetic";
     }
-    drawRefPoints(){
+    drawRefPoints() {
         let size = Math.min(this.graphDimensions.width,this.graphDimensions.height) * 0.01;
         this.refpoints.forEach((refpoint) => {
             let screenPos = this.graphToScreenPos(this.perspective(refpoint));
@@ -433,26 +433,26 @@ export class Graph {
             ctx.stroke();
         });
     }
-    graphToScreenPos(point){
+    graphToScreenPos(point) {
         return {
             x: this.graphDimensions.x + ((point.x - getMin(this.xTicks)) / this.unitWidth()) * this.graphDimensions.width,
             y: this.graphDimensions.y + this.graphDimensions.height - ((point.y - getMin(this.yTicks)) / this.unitHeight()) * this.graphDimensions.height,
         };
     }
-    screenToGraphPos(point){
+    screenToGraphPos(point) {
         return {
             x: getMin(this.xTicks) + ((point.x - this.graphDimensions.x) / this.graphDimensions.width) * this.unitWidth(),
             y: getMax(this.yTicks) + ((point.y - this.graphDimensions.y) / this.graphDimensions.height) * (getMin(this.yTicks) - getMax(this.yTicks))
         }
     }
-    drawGraphSeeds(){
+    drawGraphSeeds() {
         let seedRadius = this.seedRadius();
         ctx.lineWidth = seedRadius * 0.5;
         this.seeds.forEach((seed) => {
             let seedPos = this.perspective(seed.pos);
             if ((seedPos.x <= getMax(this.xTicks)) && (seedPos.x >= getMin(this.xTicks))
-                && (seedPos.y <= getMax(this.yTicks)) && (seedPos.y >= getMin(this.yTicks))){
-                if ((!seed.enabled) || (seed.model.HDRsource && (seed.dwellTime == 0))){
+                && (seedPos.y <= getMax(this.yTicks)) && (seedPos.y >= getMin(this.yTicks))) {
+                if ((!seed.enabled) || (seed.model.HDRsource && (seed.dwellTime == 0))) {
                     ctx.fillStyle = "rgb(255, 255, 255)";
                     ctx.strokeStyle = "rgb(0, 0, 0)";
                 }else{
@@ -466,9 +466,9 @@ export class Graph {
                 ctx.fill();
             }
         });
-        if (this.selectedSeed != -1){
+        if (this.selectedSeed != -1) {
             let screenPos = this.graphToScreenPos(this.perspective(this.seeds[this.selectedSeed].pos));
-            if (this.pointOnGraph(screenPos)){
+            if (this.pointOnGraph(screenPos)) {
                 ctx.fillStyle = "rgb(169, 255, 103)";
                 ctx.beginPath();
                 ctx.arc(screenPos.x,screenPos.y,seedRadius,0,2 * Math.PI);
@@ -476,15 +476,15 @@ export class Graph {
             }
         }
     }
-    *checkClicked(){
-        if (!window.mouse.down){
+    *checkClicked() {
+        if (!window.mouse.down) {
             return false;
         }
 
         let closestSeed = this.seeds.reduce((closestSeed, seed, ind) => {
             let seedPos = this.graphToScreenPos(this.perspective(seed.pos));
             let seedDist = distance([mouse.x, mouse.y],[seedPos.x, seedPos.y]);
-            if ((seedDist < closestSeed.dist) && this.pointOnGraph(seedPos)){
+            if ((seedDist < closestSeed.dist) && this.pointOnGraph(seedPos)) {
                 return {
                     dist: seedDist,
                     ind: ind
@@ -493,16 +493,18 @@ export class Graph {
             return closestSeed;
         },{dist: Infinity});
 
-        if ((closestSeed.dist < this.seedRadius() * 5) && this.pointOnGraph(window.mouse)){
+        // toggle seed off if a seed is already selected
+        if (this.selectedSeed != -1) {
+            this.selectedSeed = -1;
+            return false;
+        }else if ((closestSeed.dist < this.seedRadius() * 5) && this.pointOnGraph(window.mouse)) {
             this.selectedSeed = closestSeed.ind;
             return true;
-        } else if (this.selectedSeed != -1){
-            this.selectedSeed = -1;
         }
 
         return false;
     }
-    pointOnGraph(point){
+    pointOnGraph(point) {
         return (
             (point.x > this.graphDimensions.x)
             && (point.x < this.graphDimensions.x + this.graphDimensions.width)
@@ -510,8 +512,8 @@ export class Graph {
             && (point.y < this.graphDimensions.y + this.graphDimensions.height)
         )
     }
-    *drawMouseLabel(){
-        if (this.pointOnGraph(window.mouse)){
+    *drawMouseLabel() {
+        if (this.pointOnGraph(window.mouse)) {
             let graphPos = this.perspective({...this.screenToGraphPos(window.mouse), z: 0});
             let doseAtMouse = this.getPointDose(graphPos);
 
