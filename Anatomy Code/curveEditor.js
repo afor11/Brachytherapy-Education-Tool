@@ -1,20 +1,31 @@
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
-const img = document.getElementById("image");
+const images = [document.getElementById("image"), document.getElementById("image2")];
 
 
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = "sagittaltandem+ovoids"; // viewname cannot have whitespace
+const viewName = ["coronaltandem+ring", "sagittaltandem+ring"]; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
-let paramSet = {
-    length: 40,
-    ovoidDiameter: 35,
-    angle: 90
-};
+let paramSet = [
+    {
+        "ringDiameter": 20,
+        "length": 20
+    },
+    {
+        "ringDiameter": 20,
+        "length": 20,
+        "angle": 30
+    }
+];
 let usingParamSet = false;
+
+// bottom bit (cervix) consistent (top bit changes with respect to tandem length)
+// thickness of walls is also consistent
+// larger clerance around the tandem/ovoids
+// tip of tandem is 1 cm away from the top of the uterus wall
 
 /*
 x = go to next block
@@ -83,41 +94,6 @@ load(loadString, resetLoadString) = when entered in console, loadString
 
 //don't modify anything below here unless you know what you're doing
 
-let params;
-let defaultParams = [];
-let paramSetInd = 0;
-if (usingParamSet){
-    // look through the param set and take the n-fold cartesian product of all
-    // valid parameter values to generate a set of parameters the user can go
-    // between using "n" (use the first element as the inital value of "params")
-    let paramSetLoop = [];
-    for (let i = 0; i < Object.keys(paramSet).length; i++){
-        paramSetLoop.push(0);
-    }
-    while (
-        paramSetLoop[paramSetLoop.length - 1]
-        < Object.values(paramSet)[paramSetLoop.length - 1].length
-    ){
-        defaultParams.push(
-            paramSetLoop.reduce((obj,num,keyInd) => {
-                obj[Object.keys(paramSet)[keyInd]] = Object.values(paramSet)[keyInd][num];
-                return obj;
-            },
-            {})
-        );
-        paramSetLoop[0]++;
-        paramSetLoop.forEach((value,ind) => {
-            if ((ind < (paramSetLoop.length - 1)) && (value >= Object.values(paramSet)[ind].length)){
-                paramSetLoop[ind] = 0;
-                paramSetLoop[ind + 1]++;
-            }
-        });
-    }
-    params = {...defaultParams[0]};
-}else{
-    params = {...paramSet}
-}
-
 //setup canvas and variables
 ctx.canvas.width = window.innerWidth;
 ctx.canvas.height = window.innerHeight;
@@ -125,59 +101,110 @@ ctx.lineCap = "round";
 ctx.lineJoin = "bevel";
 
 let mouse = {x: 0, y: 0};
-let imageLoaded = false;
-let showControlPoints = true;
-let showCurves = true;
-let showPicture = true;
-let viewInd = 0;
-let blockEditing = 0;
-let paramEditing = 0;
-let jsonString = "";
 
-let data = {
-    editingMode: "measuringScale",
-    measuringPoints: [],
-    measuredDistance: "",
-    origin: {x: 0, y: 0},
-    loadingData: {},
-    selectedControlPoint: {curveInd:-1, subcurveID: -1},
-    blockFinished: false,
-    curveTemp: [],
-    jsonData: {},
-    tapeMeasures: [],
-    addingTapeMeasure: false,
-};
-// default json data
-data.jsonData[viewName] = [
-    {
-        params: params,
-        blocks: [
-            {
-                name: "",
-                blockColor: [0,100,50,0.5],
-                outlineThickness: 1,
-                outlineColor: [0,0,0,0.5],
-                curves: []
-            }
-        ]
+// make an array of data objects, one for each image (view)
+let data = paramSet.map((paramSet, ind) => {
+    let params;
+    let defaultParams = [];
+    let paramSetInd = 0;
+    if (usingParamSet){
+        // look through the param set and take the n-fold cartesian product of all
+        // valid parameter values to generate a set of parameters the user can go
+        // between using "n" (use the first element as the inital value of "params")
+        let paramSetLoop = [];
+        for (let i = 0; i < Object.keys(paramSet).length; i++){
+            paramSetLoop.push(0);
+        }
+        while (
+            paramSetLoop[paramSetLoop.length - 1]
+            < Object.values(paramSet)[paramSetLoop.length - 1].length
+        ){
+            defaultParams.push(
+                paramSetLoop.reduce((obj,num,keyInd) => {
+                    obj[Object.keys(paramSet)[keyInd]] = Object.values(paramSet)[keyInd][num];
+                    return obj;
+                },
+                {})
+            );
+            paramSetLoop[0]++;
+            paramSetLoop.forEach((value,ind) => {
+                if ((ind < (paramSetLoop.length - 1)) && (value >= Object.values(paramSet)[ind].length)){
+                    paramSetLoop[ind] = 0;
+                    paramSetLoop[ind + 1]++;
+                }
+            });
+        }
+        params = {...defaultParams[0]};
+    }else{
+        params = {...paramSet}
     }
-];
 
-let lastDatas = [];
-let nextDatas = [];
-saveData();
+    return {
+        editingMode: "measuringScale",
+        measuringPoints: [],
+        measuredDistance: "",
+        origin: {x: 0, y: 0},
+        loadingData: {},
+        selectedControlPoint: {curveInd: -1, subcurveID: -1},
+        blockFinished: false,
+        curveTemp: [],
+        jsonData: {
+            // default json data
+            [viewName[ind]]: [
+                {
+                    params: params,
+                    blocks: [
+                        {
+                            name: "",
+                            blockColor: [0,100,50,0.5],
+                            outlineThickness: 1,
+                            outlineColor: [0,0,0,0.5],
+                            curves: []
+                        }
+                    ]
+                }
+            ]
+        },
+        tapeMeasures: [],
+        addingTapeMeasure: false,
+        imageLoaded: false,
+        showControlPoints: true,
+        showCurves: true,
+        showPicture: true,
+        showOverlay: true,
+        viewInd: 0,
+        blockEditing: 0,
+        paramEditing: 0,
+        jsonString: "",
+        params: params,
+        defaultParams: defaultParams,
+        paramSetInd: paramSetInd,
+    };
+});
 
-img.addEventListener("load",() => {imageLoaded = true;});
-if (img.complete){
-    imageLoaded = true;
+let lastDatas = new Array(images.length).fill(0).map(() => []);
+let nextDatas = new Array(images.length).fill(0).map(() => []);
+for (let i = 0; i < images.length; i++) {
+    saveData(i);
 }
+
+images.forEach((img, ind) => {
+    // update imageLoaded when the image is loaded
+    img.addEventListener("load",() => {data[ind].imageLoaded = true;});
+
+    // check if the image has already loaded
+    if (img.complete){
+        data[ind].imageLoaded = true;
+    }
+});
 
 setInterval(tick,50);
 
 class MeasuringTape {
-    constructor (firstPoint, ID){
+    constructor (firstPoint, ID, dataInd){
         this.points = [firstPoint];
         this.ID = ID;
+        this.dataInd = dataInd;
     }
     checkClick() {
         let numPointsBefore = this.points.length;
@@ -187,10 +214,10 @@ class MeasuringTape {
         );
         if (this.points.length == 0){
             //if the tape measure has no points, delete it
-            for (let i = this.ID + 1; i < data.tapeMeasures.length; i++){ //decrement all ID's after the deleted one
-                data.tapeMeasures[i].ID--;
+            for (let i = this.ID + 1; i < data[this.dataInd].tapeMeasures.length; i++){ //decrement all ID's after the deleted one
+                data[this.dataInd].tapeMeasures[i].ID--;
             }
-            data.tapeMeasures.splice(this.ID,1);
+            data[this.dataInd].tapeMeasures.splice(this.ID,1);
             return true;
         }
         if (this.points.length == numPointsBefore){
@@ -209,11 +236,11 @@ class MeasuringTape {
         if (this.points.length < 2){return 0;}
         return (
             getDistance(
-                [this.points[0].x,this.points[0].y],
-                [this.points[1].x,this.points[1].y]
-            ) * data.measuredDistance / getDistance(
-                [data.measuringPoints[0].x,data.measuringPoints[0].y],
-                [data.measuringPoints[1].x,data.measuringPoints[1].y]
+                [this.points[0].x, this.points[0].y],
+                [this.points[1].x, this.points[1].y]
+            ) * data[this.dataInd].measuredDistance / getDistance(
+                [data[this.dataInd].measuringPoints[0].x, data[this.dataInd].measuringPoints[0].y],
+                [data[this.dataInd].measuringPoints[1].x, data[this.dataInd].measuringPoints[1].y]
             )
         );
     }
@@ -238,7 +265,7 @@ class MeasuringTape {
             ctx.lineTo(this.points[1].x,this.points[1].y);
             ctx.stroke();
             
-            if (showControlPoints) {
+            if (data[this.dataInd].showControlPoints) {
                 //draw measurement
                 ctx.strokeStyle = "white";
                 ctx.strokeText(
@@ -278,22 +305,52 @@ class MeasuringTape {
     }
 }
 
-function drawImage(){
+function drawImages(){
     // if the image is loaded, scale it, then draw it to the canvas
-    if (imageLoaded){
-        let scale = Math.min(canvas.width / img.width,canvas.height / img.height);
-        ctx.drawImage(
-            img,
-            (canvas.width - (scale * img.width)) / 2,
-            (canvas.height - (scale * img.height)) / 2,
-            scale * img.width,
-            scale * img.height
-        );
+    let viewWidth = canvas.width / data.length;
+    for (let i = 0; i < data.length; i++) {
+        if (data[i].imageLoaded && data[i].showPicture){
+            let scale = Math.min(viewWidth / images[i].width, canvas.height / images[i].height);
+            ctx.drawImage(
+                images[i],
+                (i * viewWidth) + (viewWidth - (scale * images[i].width)) / 2,
+                (canvas.height - (scale * images[i].height)) / 2,
+                scale * images[i].width,
+                scale * images[i].height
+            );
+        }
     }
-    
 }
 
-function drawApplicatorTandemRing(view){
+function drawApplicators() {
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+    for (let i = 0; i < data.length; i++) {
+        if (data[i].showPicture) {
+            let orientation = "";
+            if (viewName[i].includes("coronal")) {
+                drawTandem("coronal", data[i]);
+                orientation = "coronal";
+            } else if (viewName[i].includes("sagittal")) {
+                drawTandem("sagittal", data[i]);
+                orientation = "sagittal";
+            } else if (viewName[i].includes("axial")) {
+                drawTandem("axial", data[i]);
+                orientation = "axial";
+            }
+
+            if (viewName[i].includes("tandem+ovoids")) {
+                drawApplicatorTandemOvoids(orientation, data[i]);
+            } else if (viewName[i].includes("tandem+ring")) {
+                drawApplicatorTandemRing(orientation, data[i]);
+            }
+        }
+    }
+    ctx.lineCap = "round";
+    ctx.lineJoin = "bevel";
+}
+
+function drawApplicatorTandemRing(view, data){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -301,7 +358,7 @@ function drawApplicatorTandemRing(view){
     ){
         return;
     }
-    let applicator = params;
+    let applicator = data.params;
     let graph = {
         graphDimensions: {
             x: 0,
@@ -392,7 +449,7 @@ function drawApplicatorTandemRing(view){
     ctx.restore();
 }
 
-function drawApplicatorTandemOvoids(view){
+function drawApplicatorTandemOvoids(view, data){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -400,7 +457,7 @@ function drawApplicatorTandemOvoids(view){
     ){
         return;
     }
-    let applicator = params;
+    let applicator = data.params;
     let graph = {
         graphDimensions: {
             x: 0,
@@ -506,7 +563,7 @@ function drawApplicatorTandemOvoids(view){
     ctx.restore();
 }
 
-function drawTandem(view){
+function drawTandem(view, data){
     if (
         (data.measuringPoints.length < 2)
         || (typeof data.measuredDistance === "undefined")
@@ -514,7 +571,7 @@ function drawTandem(view){
     ){
         return;
     }
-    let applicator = params;
+    let applicator = data.params;
     let graph = {
         graphDimensions: {
             x: 0,
@@ -603,160 +660,160 @@ function drawTandem(view){
     ctx.restore();
 }
 
-function tick(){
+function tick() {
     //reset canvas
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (showPicture){
-        drawImage();
-    }
-    if (showCurves){
-        drawCurves();
-    }
-    if (showPicture){
-        ctx.lineCap = "butt";
-        ctx.lineJoin = "miter";
-        drawApplicatorTandemOvoids("sagittal");
-        drawTandem("sagittal");
-        ctx.lineCap = "round";
-        ctx.lineJoin = "bevel";
-    }
-    if (showControlPoints){
-        drawControlPoints(data.jsonData[viewName][viewInd].blocks[blockEditing]);
-    }
+    drawImages();
+    drawCurves();
+    drawApplicators();
 
-    if ((data.editingMode === "enteringScale") || (data.editingMode === "measuringScale")){
-        ctx.lineWidth = 2 / window.devicePixelRatio;
-        ctx.strokeStyle = "black";
-        if (data.measuringPoints.length == 2){
-            ctx.beginPath();
-            ctx.moveTo(data.measuringPoints[0].x,data.measuringPoints[0].y);
-            ctx.lineTo(data.measuringPoints[1].x,data.measuringPoints[1].y);
-            ctx.stroke();
-        }
-
-        ctx.fillStyle = "black";
-        ctx.strokeStyle = "white";
-        data.measuringPoints.forEach((point) => {
-            ctx.beginPath();
-            ctx.arc(point.x,point.y,10 / window.devicePixelRatio,0,7);
-            ctx.fill();
-            ctx.stroke();
-        });
-    }
-
-    if ((data.editingMode === "enteringOrigin") || (data.editingMode === "loadingData")){
-        ctx.lineWidth = 2 / window.devicePixelRatio;
-        ctx.fillStyle = "black";
-        ctx.strokeStyle = "white";
-        ctx.beginPath();
-        ctx.arc(data.origin.x,data.origin.y,10 / window.devicePixelRatio,0,7);
-        ctx.fill();
-        ctx.stroke();
-    }
-
-    //draw the tape measures
-    data.tapeMeasures.forEach((tapeMeasure) => {
-        tapeMeasure.draw();
-    });
-
-    let drawDefault = true;
     let menuPos = {
         x: window.scrollX,
         y: window.scrollY + (50 / window.devicePixelRatio),
     }
-    ctx.fillStyle = "black";
-    ctx.font = (50 / window.devicePixelRatio) + "px Arial";
-    if (data.editingMode === "enteringScale"){
-        ctx.fillText("Distance: " + data.measuredDistance + " mm",menuPos.x,menuPos.y);
-        drawDefault = false;
-    }
-    if (data.editingMode === "enteringName"){
-        ctx.fillText("Name: " + data.jsonData[viewName][viewInd].blocks[blockEditing].name,menuPos.x,menuPos.y);
-        drawDefault = false;
-    }
-    if (data.editingMode === "adjustingFillColor"){
-        let block = data.jsonData[viewName][viewInd].blocks[blockEditing];
-        ctx.fillText("Editing Fill Color: hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")",menuPos.x,menuPos.y);
-        drawDefault = false;
-    }
-    if (data.editingMode === "adjustingOutlineColor"){
-        let block = data.jsonData[viewName][viewInd].blocks[blockEditing];
-        ctx.fillText("Editing Outline Color: hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")",menuPos.x,menuPos.y);
-        drawDefault = false;
-    }
-    if (data.editingMode === "editingCurve"){
-        ctx.fillText("Editing Curve " + (data.blockFinished ? "(Block Finished)" : "(Block not Finished)"),menuPos.x,menuPos.y);
-        drawDefault = false;
-    }
-    if (data.editingMode === "loadingData"){
-        ctx.fillText(
-            "Loading Data (Editing: "
-                + Object.keys(params)[paramEditing]
-                + (
-                    usingParamSet ?
-                        (", " + ((paramSetInd / (defaultParams.length - 1)) * 100).toFixed(1) + "%")
-                    :
-                    (
-                        (typeof jsonString !== "undefined") ?
-                            (", " + ((paramSetInd / (JSON.parse(jsonString)[viewName].length - 1)) * 100).toFixed(1) + "%")
+    for (let i = 0; i < data.length; i++) {
+        // draw control points
+        if (data[i].showControlPoints){
+            drawControlPoints(i);
+        }
+
+        // draw inital measuring tool
+        if ((data[i].editingMode === "enteringScale") || (data[i].editingMode === "measuringScale")){
+            ctx.lineWidth = 2 / window.devicePixelRatio;
+            ctx.strokeStyle = "black";
+            if (data[i].measuringPoints.length == 2){
+                ctx.beginPath();
+                ctx.moveTo(data[i].measuringPoints[0].x, data[i].measuringPoints[0].y);
+                ctx.lineTo(data[i].measuringPoints[1].x, data[i].measuringPoints[1].y);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = "black";
+            ctx.strokeStyle = "white";
+            data[i].measuringPoints.forEach((point) => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 10 / window.devicePixelRatio, 0, 7);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        // draw origin
+        if ((data[i].editingMode === "enteringOrigin") || (data[i].editingMode === "loadingData")){
+            ctx.lineWidth = 2 / window.devicePixelRatio;
+            ctx.fillStyle = "black";
+            ctx.strokeStyle = "white";
+            ctx.beginPath();
+            ctx.arc(data[i].origin.x, data[i].origin.y, 10 / window.devicePixelRatio, 0, 7);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // draw the tape measures
+        data[i].tapeMeasures.forEach((tapeMeasure) => {
+            tapeMeasure.draw();
+        });
+
+        // draw the mode overlay
+        let drawDefault = true;
+        ctx.fillStyle = "black";
+        ctx.font = (50 / window.devicePixelRatio) + "px Arial";
+        if (data[i].editingMode === "enteringScale"){
+            ctx.fillText("Distance: " + data[i].measuredDistance + " mm", menuPos.x, menuPos.y);
+            drawDefault = false;
+        }
+        if (data[i].editingMode === "enteringName"){
+            ctx.fillText("Name: " + data[i].jsonData[viewName[i]][data[i].viewInd].blocks[data[i].blockEditing].name, menuPos.x, menuPos.y);
+            drawDefault = false;
+        }
+        if (data[i].editingMode === "adjustingFillColor"){
+            let block = data[i].jsonData[viewName[i]][data[i].viewInd].blocks[data[i].blockEditing];
+            ctx.fillText("Editing Fill Color: hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")", menuPos.x, menuPos.y);
+            drawDefault = false;
+        }
+        if (data[i].editingMode === "adjustingOutlineColor"){
+            let block = data[i].jsonData[viewName[i]][data[i].viewInd].blocks[data[i].blockEditing];
+            ctx.fillText("Editing Outline Color: hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")", menuPos.x, menuPos.y);
+            drawDefault = false;
+        }
+        if (data[i].editingMode === "editingCurve"){
+            ctx.fillText("Editing Curve " + (data[i].blockFinished ? "(Block Finished)" : "(Block not Finished)"), menuPos.x, menuPos.y);
+            drawDefault = false;
+        }
+        if (data[i].editingMode === "loadingData"){
+            ctx.fillText(
+                "Loading Data (Editing: "
+                    + Object.keys(data[i].params)[data[i].paramEditing]
+                    + (
+                        usingParamSet ?
+                            (", " + ((data[i].paramSetInd / (data[i].defaultParams.length - 1)) * 100).toFixed(1) + "%")
                         :
-                            ""
-                    )
+                        (
+                            (typeof data[i].jsonString !== "undefined") ?
+                                (", " + ((data[i].paramSetInd / (JSON.parse(data[i].jsonString)[viewName[i]].length - 1)) * 100).toFixed(1) + "%")
+                            :
+                                ""
+                        )
 
-                ) + ")",
-            menuPos.x,menuPos.y
-        );
-        drawDefault = false;
+                    ) + ")",
+                menuPos.x, menuPos.y
+            );
+            drawDefault = false;
+        }
+        if (drawDefault){
+            ctx.fillText(data[i].editingMode, menuPos.x, menuPos.y);
+        }
+
+        // draw parameters or adding tape measure
+        ctx.fillStyle = "black";
+        ctx.strokeStyle = "white";
+        ctx.lineWidth =  10 / window.devicePixelRatio;
+        ctx.font = (30 / window.devicePixelRatio) + "px Arial";
+        let paramYOffset = 1;
+
+        if (data[i].addingTapeMeasure || ((data[i].tapeMeasures.length > 0) && (data[i].tapeMeasures[data[i].tapeMeasures.length - 1].points.length < 2))){
+            ctx.strokeText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
+            ctx.fillText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
+            paramYOffset = 2;
+        }
+
+        Object.keys(data[i].params).forEach((key, ind) => {
+            ctx.strokeText(
+                key + ": " + data[i].params[key],
+                menuPos.x + (40 / window.devicePixelRatio),
+                menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
+            );
+            ctx.fillText(
+                key + ": " + data[i].params[key],
+                menuPos.x + (40 / window.devicePixelRatio),
+                menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
+            );
+        });
+
+        if (data[i].showOverlay) {
+            //draw valid actions
+            ctx.textAlign = 'right';
+            getValidActions(data[i]).forEach((action,ind) => {
+                ctx.strokeText(
+                    action,
+                    menuPos.x + ((canvas.width / data.length) * 0.99) / window.devicePixelRatio,
+                    menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+                );
+                ctx.fillText(
+                    action,
+                    menuPos.x + ((canvas.width / data.length) * 0.99) / window.devicePixelRatio,
+                    menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+                );
+            });
+            ctx.textAlign = 'left';
+        }
+
+        menuPos.x += canvas.width / data.length;
     }
-    if (drawDefault){
-        ctx.fillText(data.editingMode,menuPos.x,menuPos.y);
-    }
-
-    //draw parameters
-    ctx.fillStyle = "black";
-    ctx.strokeStyle = "white";
-    ctx.lineWidth =  10 / window.devicePixelRatio;
-    ctx.font = (30 / window.devicePixelRatio) + "px Arial";
-    let paramYOffset = 1;
-
-    if (data.addingTapeMeasure || ((data.tapeMeasures.length > 0) && (data.tapeMeasures[data.tapeMeasures.length - 1].points.length < 2))){
-        ctx.strokeText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
-        ctx.fillText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
-        paramYOffset = 2;
-    }
-
-    Object.keys(params).forEach((key,ind) => {
-        ctx.strokeText(
-            key + ": " + params[key],
-            menuPos.x + (40 / window.devicePixelRatio),
-            menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
-        );
-        ctx.fillText(
-            key + ": " + params[key],
-            menuPos.x + (40 / window.devicePixelRatio),
-            menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
-        );
-    });
-
-    //draw valid actions
-    ctx.textAlign = 'right';
-    getValidActions().forEach((action,ind) => {
-        ctx.strokeText(
-            action,
-            menuPos.x + (canvas.width * 0.99) / window.devicePixelRatio,
-            menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
-        );
-        ctx.fillText(
-            action,
-            menuPos.x + (canvas.width * 0.99) / window.devicePixelRatio,
-            menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
-        );
-    });
-    ctx.textAlign = 'left';
 }
 
-function getValidActions(){
+function getValidActions(data){
     let validActions = ["<: undo", ">: redo"];
     if (data.editingMode === "enteringName"){
         validActions.push("enter name");
@@ -766,7 +823,8 @@ function getValidActions(){
         "q: toggle visable points",
         "v: toggle showing curves",
         "b: toggle showing picture",
-        "m: new measuring tape"
+        "m: new measuring tape",
+        "`: toggle overlay"
     );
     if ((data.editingMode === "adjustingFillColor") || (data.editingMode === "adjustingOutlineColor")){
         if (data.editingMode === "adjustingFillColor"){
@@ -850,32 +908,38 @@ function getValidActions(){
     return validActions;
 }
 
-function saveData(){
-    lastDatas.push(cloneObj(data));
-    if (lastDatas.length > maxUndos){
-        lastDatas = lastDatas.splice(1);
+// ## update saveData / loadData to work with many views
+function saveData(dataInd) {
+    lastDatas[dataInd].push(cloneObj(data[dataInd]));
+    if (lastDatas[dataInd].length > maxUndos){
+        lastDatas[dataInd] = lastDatas[dataInd].splice(1);
     }
-    nextDatas = [];
+    nextDatas[dataInd] = [];
 }
 
 function drawCurves(){
-    data.jsonData[viewName][viewInd].blocks.forEach((block) => {
-        ctx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
-        ctx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
-        ctx.lineWidth = block.outlineThickness;
-        ctx.beginPath();
-        block.curves.forEach((curve,ind) => {
-            if (ind == 0){
-                ctx.moveTo(curve.x1,curve.y1);
-            }
-            ctx.bezierCurveTo(curve.x2,curve.y2,curve.x3,curve.y3,curve.x4,curve.y4);
-        });
-        ctx.fill();
-        ctx.stroke();
-    });
+    for (let i = 0; i < data.length; i++) {
+        if (data[i].showCurves) {
+            data[i].jsonData[viewName[i]][data[i].viewInd].blocks.forEach((block) => {
+                ctx.fillStyle = "hsla(" + block.blockColor[0] + ", " + block.blockColor[1] + "%, " + block.blockColor[2] + "%, " + block.blockColor[3] + ")";
+                ctx.strokeStyle = "hsla(" + block.outlineColor[0] + ", " + block.outlineColor[1] + "%, " + block.outlineColor[2] + "%, " + block.outlineColor[3] + ")";
+                ctx.lineWidth = block.outlineThickness;
+                ctx.beginPath();
+                block.curves.forEach((curve,ind) => {
+                    if (ind == 0){
+                        ctx.moveTo(curve.x1, curve.y1);
+                    }
+                    ctx.bezierCurveTo(curve.x2, curve.y2, curve.x3, curve.y3, curve.x4, curve.y4);
+                });
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+    }
 }
 
-function drawControlPoints(block){
+function drawControlPoints(dataInd){
+    let block = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing];
     ctx.fillStyle = "black";
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2 / window.devicePixelRatio;
@@ -886,7 +950,7 @@ function drawControlPoints(block){
             {x: curve.x3,y: curve.y3},
             {x: curve.x4,y: curve.y4}
         ].forEach((controlPoint) => {
-            if (data.editingMode === "selectingSplit"){
+            if (data[dataInd].editingMode === "selectingSplit"){
                 ctx.beginPath();
                 ctx.arc(evalSpline(curve,0.5).x,evalSpline(curve,0.5).y,10 / window.devicePixelRatio,0,7);
                 ctx.fill();
@@ -899,94 +963,107 @@ function drawControlPoints(block){
             }
         });
     });
-    if (data.curveTemp.length > 0){
-        for (let i = 0; i < data.curveTemp.length; i += 2){
+    if (data[dataInd].curveTemp.length > 0){
+        for (let i = 0; i < data[dataInd].curveTemp.length; i += 2){
             ctx.beginPath();
-            ctx.arc(data.curveTemp[i],data.curveTemp[i + 1],10 / window.devicePixelRatio,0,7);
+            ctx.arc(data[dataInd].curveTemp[i], data[dataInd].curveTemp[i + 1], 10 / window.devicePixelRatio, 0, 7);
             ctx.fill();
             ctx.stroke();
         }
     }
 }
 
-function load(json,resetJson){
-    if (!["enteringOrigin","enteringScale","measuringScale"].includes(data.editingMode)){
-        saveData();
-        if (resetJson){
-            jsonString = json;
-            data.loadingData = JSON.parse(json);
-        }else{
-            data.loadingData = JSON.parse(jsonString);
-        }
-        viewInd = data.loadingData[viewName].findIndex((point) => // find a point with the same param values
-            Object.keys(point.params).reduce((paramsEqual,param) => 
-                paramsEqual && (params[param] == point.params[param])
-            ,true)
-        );
-        if (viewInd == -1){ // add a new view if the view with desired params does not exist
-            let targetPoint = {
-                params: params,
-                blocks: [
-                    {
-                        name: "",
-                        blockColor: [0,100,50,0.5],
-                        outlineThickness: 1,
-                        outlineColor: [0,0,0,0.5],
-                        curves: []
-                    }
-                ]
-            };
-            data.loadingData[viewName].push(
-                {
-                    params: targetPoint.params,
-                    blocks: lerpParametrizedCurves(targetPoint, cloneObj(data.loadingData[viewName]))
-                }
+function load(json, resetJson) {
+    for (let i = 0; i < data.length; i++) {
+        if (!["enteringOrigin", "enteringScale", "measuringScale"].includes(data[i].editingMode)){
+            saveData(i);
+            if (resetJson){
+                data[i].jsonString = json;
+                data[i].loadingData = JSON.parse(json);
+            }else{
+                data[i].loadingData = JSON.parse(data[i].jsonString);
+            }
+            data[i].viewInd = data[i].loadingData[viewName[i]].findIndex((point) => // find a point with the same param values
+                Object.keys(point.params).reduce((paramsEqual, param) => 
+                    paramsEqual && (data[i].params[param] == point.params[param])
+                ,true)
             );
-            viewInd = data.loadingData[viewName].length - 1;
+            if (data[i].viewInd == -1){ // add a new view if the view with desired params does not exist
+                let targetPoint = {
+                    params: data[i].params,
+                    blocks: [
+                        {
+                            name: "",
+                            blockColor: [0,100,50,0.5],
+                            outlineThickness: 1,
+                            outlineColor: [0,0,0,0.5],
+                            curves: []
+                        }
+                    ]
+                };
+                data[i].loadingData[viewName[i]].push(
+                    {
+                        params: targetPoint.params,
+                        blocks: lerpParametrizedCurves(targetPoint, cloneObj(data[i].loadingData[viewName[i]]))
+                    }
+                );
+                data[i].viewInd = data[i].loadingData[viewName[i]].length - 1;
+            }
+            data[i].blockEditing = 0;
+            data[i].editingMode = "loadingData";
+            scaleData();
         }
-        blockEditing = 0;
-        data.editingMode = "loadingData";
-        scaleData();
     }
 }
-function getSaveString(){
-    let scaledJson = cloneObj(data.jsonData);
-    let scaleFactor = getDistance(
-        [data.measuringPoints[0].x,data.measuringPoints[0].y],
-        [data.measuringPoints[1].x,data.measuringPoints[1].y]
-    ) / data.measuredDistance;
-    scaledJson[viewName].forEach((point) => {
-        point.blocks.forEach((block) => {
-            block.outlineThickness = block.outlineThickness / scaleFactor;
-            block.curves.forEach((curve) => {
-                for (let i = 1; i < 5; i++){
-                    curve["x" + i] = (curve["x" + i] - data.origin.x) / scaleFactor;
-                    curve["y" + i] = (curve["y" + i] - data.origin.y) / scaleFactor;
-                }
-            });
-        });
-    });
-    return JSON.stringify(scaledJson);
-}
-function scaleData(){
-    if (typeof data.loadingData[viewName] != "undefined"){
-        let scaledCurves = cloneObj(data.loadingData);
+
+function getSaveString() {
+    let scaledJson = {};
+    for (let i = 0; i < data.length; i++) {
         let scaleFactor = getDistance(
-            [data.measuringPoints[0].x,data.measuringPoints[0].y],
-            [data.measuringPoints[1].x,data.measuringPoints[1].y]
-        ) / data.measuredDistance;
-        scaledCurves[viewName].forEach((point) => {
+            [data[i].measuringPoints[0].x, data[i].measuringPoints[0].y],
+            [data[i].measuringPoints[1].x, data[i].measuringPoints[1].y]
+        ) / data[i].measuredDistance;
+
+        Object.assign(scaledJson, cloneObj(data[i].jsonData));
+
+        // scale the control points / outline thickness to be in terms of mm instead of px
+        scaledJson[viewName[i]].forEach((point) => {
             point.blocks.forEach((block) => {
-                block.outlineThickness = block.outlineThickness * scaleFactor;
+                block.outlineThickness = block.outlineThickness / scaleFactor;
                 block.curves.forEach((curve) => {
-                    for (let i = 1; i < 5; i++){
-                        curve["x" + i] = (curve["x" + i] * scaleFactor) + data.origin.x;
-                        curve["y" + i] = (curve["y" + i] * scaleFactor) + data.origin.y;
+                    for (let j = 1; j < 5; j++){
+                        curve["x" + j] = (curve["x" + j] - data[i].origin.x) / scaleFactor;
+                        curve["y" + j] = (curve["y" + j] - data[i].origin.y) / scaleFactor;
                     }
                 });
             });
         });
-        data.jsonData = scaledCurves;
+    }
+    return JSON.stringify(scaledJson);
+}
+
+function scaleData(){
+    for (let i = 0; i < data.length; i++) {
+        let viewData = data[i];
+        if (typeof viewData.loadingData[viewName[i]] != "undefined"){
+            let scaledCurves = cloneObj(viewData.loadingData);
+            let scaleFactor = getDistance(
+                [viewData.measuringPoints[0].x, viewData.measuringPoints[0].y],
+                [viewData.measuringPoints[1].x, viewData.measuringPoints[1].y]
+            ) / viewData.measuredDistance;
+            scaledCurves[viewName[i]].forEach((point) => {
+                point.blocks.forEach((block) => {
+                    block.outlineThickness = block.outlineThickness * scaleFactor;
+                    block.curves.forEach((curve) => {
+                        for (let i = 1; i < 5; i++){
+                            curve["x" + i] = (curve["x" + i] * scaleFactor) + viewData.origin.x;
+                            curve["y" + i] = (curve["y" + i] * scaleFactor) + viewData.origin.y;
+                        }
+                    });
+                });
+            });
+            viewData.jsonData = scaledCurves;
+        }
     }
 }
 function cloneObj(obj){
@@ -996,196 +1073,203 @@ function cloneObj(obj){
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX + window.scrollX;
     mouse.y = e.clientY + window.scrollY;
-    if ((data.editingMode === "editingCurve") && (data.selectedControlPoint.curveInd != -1)){
-        let curves = data.jsonData[viewName][viewInd].blocks[blockEditing].curves;
-        let curve = curves[data.selectedControlPoint.curveInd]; // look at the selected curve
-        if ((data.selectedControlPoint.subcurveID == 0) && (data.blockFinished || (data.selectedControlPoint.curveInd > 0))){
-            let previousCurve = curves[(data.selectedControlPoint.curveInd - 1) % curves.length]; // look at the curve before the selected one
+    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    if ((data[dataInd].editingMode === "editingCurve") && (data[dataInd].selectedControlPoint.curveInd != -1)){
+        let curves = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves;
+        let curve = curves[data[dataInd].selectedControlPoint.curveInd]; // look at the selected curve
+        if ((data[dataInd].selectedControlPoint.subcurveID == 0) && (data[dataInd].blockFinished || (data[dataInd].selectedControlPoint.curveInd > 0))){
+            let previousCurve = curves[(data[dataInd].selectedControlPoint.curveInd - 1) % curves.length]; // look at the curve before the selected one
             previousCurve.x4 = mouse.x;
             previousCurve.y4 = mouse.y;
         }
-        if ((data.selectedControlPoint.subcurveID == 3) && (data.blockFinished || (data.selectedControlPoint.curveInd < (curves.length - 1)))){
-            let nextCurve = curves[(data.selectedControlPoint.curveInd + 1) % curves.length]; // look at the curve before the selected one
+        if ((data[dataInd].selectedControlPoint.subcurveID == 3) && (data[dataInd].blockFinished || (data[dataInd].selectedControlPoint.curveInd < (curves.length - 1)))){
+            let nextCurve = curves[(data[dataInd].selectedControlPoint.curveInd + 1) % curves.length]; // look at the curve before the selected one
             nextCurve.x1 = mouse.x;
             nextCurve.y1 = mouse.y;
         }
-        curve["x" + (data.selectedControlPoint.subcurveID + 1)] = mouse.x;
-        curve["y" + (data.selectedControlPoint.subcurveID + 1)] = mouse.y;
+        curve["x" + (data[dataInd].selectedControlPoint.subcurveID + 1)] = mouse.x;
+        curve["y" + (data[dataInd].selectedControlPoint.subcurveID + 1)] = mouse.y;
     }
 });
+
 document.addEventListener("keydown", (e) => {
-    if (data.editingMode === "enteringName"){
-        if ((e.key === "Backspace") && (data.jsonData[viewName][viewInd].blocks[blockEditing].name.length > 0)){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].name = data.jsonData[viewName][viewInd].blocks[blockEditing].name.slice(0,-1);
+    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    if (data[dataInd].editingMode === "enteringName"){
+        if ((e.key === "Backspace") && (data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name.length > 0)){
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name.slice(0,-1);
             return;
         }
         if (e.key === "Enter"){
-            saveData();
-            data.editingMode = "addingCurve";
+            saveData(dataInd);
+            data[dataInd].editingMode = "addingCurve";
             return;
         }
         if (e.key === "Shift"){
             return;
         }
         if (!["<",">"].includes(e.key)){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].name += e.key;
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name += e.key;
             return;
         }
     }
-    if (e.key === "m"){
-        saveData();
-        data.addingTapeMeasure = true;
+    if (e.key === "`"){
+        data[dataInd].showOverlay = !data[dataInd].showOverlay;
         return;
     }
-    if (data.editingMode === "adjustingFillColor"){
+    if (e.key === "m"){
+        saveData(dataInd);
+        data[dataInd].addingTapeMeasure = true;
+        return;
+    }
+    if (data[dataInd].editingMode === "adjustingFillColor"){
         if (e.key === "c"){
-            saveData();
-            data.editingMode = "adjustingOutlineColor";
+            saveData(dataInd);
+            data[dataInd].editingMode = "adjustingOutlineColor";
             return;
         }
         if ("qawsed".includes(e.key)){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[Math.floor("aqswde".indexOf(e.key) / 2)] += 4 * (Math.floor("aqswde".indexOf(e.key)) % 2) - 2;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].blockColor[Math.floor("aqswde".indexOf(e.key) / 2)] += 4 * (Math.floor("aqswde".indexOf(e.key)) % 2) - 2;
+            clampEditingColors(dataInd);
             return;
         }
         if (e.key === "r"){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[3] += 0.05;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].blockColor[3] += 0.05;
+            clampEditingColors(dataInd);
             return;
         }
         if (e.key === "f"){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[3] -= 0.05;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].blockColor[3] -= 0.05;
+            clampEditingColors(dataInd);
             return;
         }
     }
-    if (data.editingMode === "adjustingOutlineColor"){
+    if (data[dataInd].editingMode === "adjustingOutlineColor"){
         if (e.key === "c"){
-            saveData();
-            data.editingMode = "editingCurve";
+            saveData(dataInd);
+            data[dataInd].editingMode = "editingCurve";
             return;
         }
         if ("qawsed".includes(e.key)){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[Math.floor("aqswde".indexOf(e.key) / 2)] += 4 * (Math.floor("aqswde".indexOf(e.key)) % 2) - 2;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineColor[Math.floor("aqswde".indexOf(e.key) / 2)] += 4 * (Math.floor("aqswde".indexOf(e.key)) % 2) - 2;
+            clampEditingColors(dataInd);
             return;
         }
         if (e.key === "r"){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[3] += 0.05;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineColor[3] += 0.05;
+            clampEditingColors(dataInd);
             return;
         }
         if (e.key === "f"){
-            data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[3] -= 0.05;
-            clampEditingColors();
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineColor[3] -= 0.05;
+            clampEditingColors(dataInd);
             return;
         }
     }
     if (e.key === "q"){
-        showControlPoints = !showControlPoints;
+        data[dataInd].showControlPoints = !data[dataInd].showControlPoints;
         return;
     }
     if (e.key === "v"){
-        showCurves = !showCurves;
+        data[dataInd].showCurves = !data[dataInd].showCurves;
         return;
     }
     if (e.key === "b"){
-        showPicture = !showPicture;
+        data[dataInd].showPicture = !data[dataInd].showPicture;
         return;
     }
-    if ((data.editingMode === "enteringOrigin") || (data.editingMode === "loadingData")){
+    if ((data[dataInd].editingMode === "enteringOrigin") || (data[dataInd].editingMode === "loadingData")){
         if (e.key === "Enter"){
-            if (data.editingMode === "enteringOrigin"){
-                saveData();
-                data.editingMode = "enteringName";
+            if (data[dataInd].editingMode === "enteringOrigin"){
+                saveData(dataInd);
+                data[dataInd].editingMode = "enteringName";
             }else{
-                saveData();
-                data.editingMode = "editingCurve";
-                data.blockFinished = true;
+                saveData(dataInd);
+                data[dataInd].editingMode = "editingCurve";
+                data[dataInd].blockFinished = true;
             }
         }
         if ((e.key === "w") || (e.key === "ArrowUp")){
-            data.origin.y--;
+            data[dataInd].origin.y--;
             scaleData();
         }
         if ((e.key === "s") || (e.key === "ArrowDown")){
-            data.origin.y++;
+            data[dataInd].origin.y++;
             scaleData();
         }
         if ((e.key === "a") || (e.key === "ArrowLeft")){
-            data.origin.x--;
+            data[dataInd].origin.x--;
             scaleData();
         }
         if ((e.key === "d") || (e.key === "ArrowRight")){
-            data.origin.x++;
+            data[dataInd].origin.x++;
             scaleData();
         }
         if (e.key === "e"){
-            data.measuredDistance -= 0.1;
+            data[dataInd].measuredDistance -= 0.1;
             scaleData();
         }
         if (e.key === "r"){
-            data.measuredDistance += 0.1;
+            data[dataInd].measuredDistance += 0.1;
             scaleData();
         }
-        if (data.editingMode === "loadingData"){
+        if (data[dataInd].editingMode === "loadingData"){
             if (e.key === "f"){
-                paramEditing = clamp(paramEditing - 1, 0, Object.keys(params).length - 1);
+                data[dataInd].paramEditing = clamp(data[dataInd].paramEditing - 1, 0, Object.keys(data[dataInd].params).length - 1);
             }
             if (e.key === "h"){
-                paramEditing = clamp(paramEditing + 1, 0, Object.keys(params).length - 1);
+                data[dataInd].paramEditing = clamp(data[dataInd].paramEditing + 1, 0, Object.keys(data[dataInd].params).length - 1);
             }
             if ("tTgG".includes(e.key)){
-                params[Object.keys(params)[paramEditing]] += [1,0.015625,-1,-0.015625]["tTgG".indexOf(e.key)];
-                load(jsonString,false);
+                data[dataInd].params[Object.keys(data[dataInd].params)[data[dataInd].paramEditing]] += [1,0.015625,-1,-0.015625]["tTgG".indexOf(e.key)];
+                load(data[dataInd].jsonString, false);
             }
             if (e.key === "n"){
                 if (usingParamSet){
-                    paramSetInd = Math.min(paramSetInd + 1, defaultParams.length - 1);
-                    params = {...defaultParams[paramSetInd]};
+                    data[dataInd].paramSetInd = Math.min(data[dataInd].paramSetInd + 1, data[dataInd].defaultParams.length - 1);
+                    data[dataInd].params = {...data[dataInd].defaultParams[data[dataInd].paramSetInd]};
                 }else{
-                    let paramList = JSON.parse(jsonString)[viewName].map((point) => point.params);
-                    paramSetInd = Math.min(paramSetInd + 1, paramList.length - 1);
-                    params = {...paramList[paramSetInd]};
+                    let paramList = JSON.parse(data[dataInd].jsonString)[viewName[dataInd]].map((point) => point.params);
+                    data[dataInd].paramSetInd = Math.min(data[dataInd].paramSetInd + 1, paramList.length - 1);
+                    data[dataInd].params = {...paramList[data[dataInd].paramSetInd]};
                 }
-                load(jsonString,false);
+                load(data[dataInd].jsonString, false);
             }
             if (e.key === "N"){
                 if (usingParamSet){
-                    paramSetInd = Math.max(paramSetInd - 1, 0);
-                    params = {...defaultParams[paramSetInd]};
+                    data[dataInd].paramSetInd = Math.max(data[dataInd].paramSetInd - 1, 0);
+                    data[dataInd].params = {...data[dataInd].defaultParams[data[dataInd].paramSetInd]};
                 }else{
-                    let paramList = JSON.parse(jsonString)[viewName].map((point) => point.params);
-                    paramSetInd = Math.max(paramSetInd - 1, 0);
-                    params = {...paramList[paramSetInd]};
+                    let paramList = JSON.parse(data[dataInd].jsonString)[viewName[dataInd]].map((point) => point.params);
+                    data[dataInd].paramSetInd = Math.max(data[dataInd].paramSetInd - 1, 0);
+                    data[dataInd].params = {...paramList[data[dataInd].paramSetInd]};
                 }
-                load(jsonString,false);
+                load(data[dataInd].jsonString, false);
             }
         }
         if ((e.key != "<") && (e.key != ">")){
             return;
         }
     }
-    if ((data.editingMode === "editingCurve") && data.blockFinished){
+    if ((data[dataInd].editingMode === "editingCurve") && data[dataInd].blockFinished){
         if (e.key === "a"){
-            saveData();
-            load(getSaveString(),true);
+            saveData(dataInd);
+            load(getSaveString(), true);
             return;
         }
         if (e.key === "y"){
-            data.editingMode = "selectingSplit";
+            data[dataInd].editingMode = "selectingSplit";
             return;
         }
         if (e.key === "z"){
-            saveData();
-            blockEditing = Math.max(blockEditing - 1, 0);
+            saveData(dataInd);
+            data[dataInd].blockEditing = Math.max(data[dataInd].blockEditing - 1, 0);
         }
         if (e.key === "x"){
-            saveData();
-            blockEditing = Math.min(blockEditing + 1, data.jsonData[viewName][viewInd].blocks.length - 1);
+            saveData(dataInd);
+            data[dataInd].blockEditing = Math.min(data[dataInd].blockEditing + 1, data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1);
         }
         if ("tTfFgGhH".includes(e.key)){
-            saveData();
+            saveData(dataInd);
             let yScale = 0;
             let xScale = 0;
             if (e.key === "t"){yScale = 0.1;}
@@ -1196,7 +1280,7 @@ document.addEventListener("keydown", (e) => {
             if (e.key === "F"){xScale = -0.01;}
             if (e.key === "h"){xScale = 0.1;}
             if (e.key === "H"){xScale = 0.01;}
-            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     curve["x" + i] += (curve["x" + i] - mouse.x) * xScale;
                     curve["y" + i] += (curve["y" + i] - mouse.y) * yScale;
@@ -1204,9 +1288,9 @@ document.addEventListener("keydown", (e) => {
             });
         }
         if ("uUiI".includes(e.key)){
-            saveData();
+            saveData(dataInd);
             let dAngle = [0.1,0.005,-0.1,-0.005]["uUiI".indexOf(e.key)];
-            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     let x = (curve["x" + i] - mouse.x);
                     let y = (curve["y" + i] - mouse.y);
@@ -1216,8 +1300,8 @@ document.addEventListener("keydown", (e) => {
             });
         }
         if ("[]".includes(e.key)){
-            saveData();
-            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+            saveData(dataInd);
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     if (e.key === "]"){
                         curve["x" + i] += 2 * (mouse.x - curve["x" + i]);
@@ -1229,7 +1313,7 @@ document.addEventListener("keydown", (e) => {
             });
         }
         if (";:pP'\"lL".includes(e.key)){
-            saveData();
+            saveData(dataInd);
             let xOffset = 0;
             let yOffset = 0;
             if (e.key === ";"){yOffset = 10;}
@@ -1240,7 +1324,7 @@ document.addEventListener("keydown", (e) => {
             if (e.key === "\""){xOffset = 1;}
             if (e.key === "l"){xOffset = -10;}
             if (e.key === "L"){xOffset = -1;}
-            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve) => {
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve) => {
                 for (let i = 1; i < 5; i++){
                     curve["x" + i] += xOffset;
                     curve["y" + i] += yOffset;
@@ -1248,99 +1332,99 @@ document.addEventListener("keydown", (e) => {
             });
         }
     }
-    if (data.editingMode === "enteringScale"){
-        if ((e.key === "Backspace") && (data.measuredDistance.length > 0)){
-            data.measuredDistance = data.measuredDistance.slice(0,-1);
+    if (data[dataInd].editingMode === "enteringScale"){
+        if ((e.key === "Backspace") && (data[dataInd].measuredDistance.length > 0)){
+            data[dataInd].measuredDistance = data[dataInd].measuredDistance.slice(0,-1);
             return;
         }
         if (e.key === "Enter"){
-            saveData();
-            data.measuredDistance = parseInt(data.measuredDistance);
-            data.editingMode = "enteringOrigin";
+            saveData(dataInd);
+            data[dataInd].measuredDistance = parseInt(data[dataInd].measuredDistance);
+            data[dataInd].editingMode = "enteringOrigin";
             return;
         }
         if ("0123456789.".includes(e.key)){
-            data.measuredDistance += e.key;
+            data[dataInd].measuredDistance += e.key;
             return;
         }
     }
-    if ((e.key === "c") && data.blockFinished){
-        saveData();
-        data.editingMode = "adjustingFillColor";
+    if ((e.key === "c") && data[dataInd].blockFinished){
+        saveData(dataInd);
+        data[dataInd].editingMode = "adjustingFillColor";
         return;
     }
     if (e.key === "n"){ // new block
-        saveData();
-        data.blockFinished = false;
-        data.editingMode = "enteringName";
-        data.jsonData[viewName][viewInd].blocks.push({
+        saveData(dataInd);
+        data[dataInd].blockFinished = false;
+        data[dataInd].editingMode = "enteringName";
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.push({
             name: "",
             blockColor: [0,100,50,0.5],
             outlineThickness: 1,
             outlineColor: [0,0,0,0.5],
             curves: []
         });
-        blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
+        data[dataInd].blockEditing = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1;
         return;
     }
-    if ((e.key === "<") && (lastDatas.length > 0)){ //undo
-        nextDatas.unshift(cloneObj(data));
-        data = cloneObj(lastDatas[lastDatas.length - 1]);
-        data.tapeMeasures.forEach((tapeMeasure, ind) => {
-            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID);
+    if ((e.key === "<") && (lastDatas[dataInd].length > 0)){ //undo
+        nextDatas[dataInd].unshift(cloneObj(data[dataInd]));
+        data[dataInd] = cloneObj(lastDatas[dataInd][lastDatas[dataInd].length - 1]);
+        data[dataInd].tapeMeasures.forEach((tapeMeasure, ind) => {
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID, dataInd);
             if (typeof tapeMeasure.points[1] !== "undefined"){
                 tempTape.points.push(tapeMeasure.points[1]);
             }
-            data.tapeMeasures[ind] = tempTape;
+            data[dataInd].tapeMeasures[ind] = tempTape;
         });
-        lastDatas.splice(lastDatas.length - 1);
-        blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
+        lastDatas[dataInd].splice(lastDatas[dataInd].length - 1);
+        data[dataInd].blockEditing = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1;
         return;
     }
-    if ((e.key === ">") && (nextDatas.length > 0)){ //redo
-        let lastData = cloneObj(data);
-        data = cloneObj(nextDatas[0]);
-        data.tapeMeasures.forEach((tapeMeasure, ind) => {
-            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID);
+    if ((e.key === ">") && (nextDatas[dataInd].length > 0)){ //redo
+        let lastData = cloneObj(data[dataInd]);
+        data[dataInd] = cloneObj(nextDatas[dataInd][0]);
+        data[dataInd].tapeMeasures.forEach((tapeMeasure, ind) => {
+            let tempTape = new MeasuringTape(tapeMeasure.points[0], tapeMeasure.ID, dataInd);
             if (typeof tapeMeasure.points[1] !== "undefined"){
                 tempTape.points.push(tapeMeasure.points[1]);
             }
-            data.tapeMeasures[ind] = tempTape;
+            data[dataInd].tapeMeasures[ind] = tempTape;
         });
-        nextDatas = nextDatas.splice(1);
-        lastDatas.push(lastData);
-        if (lastDatas.length > maxUndos){
-            lastDatas = lastDatas.splice(1);
+        nextDatas[dataInd] = nextDatas[dataInd].splice(1);
+        lastDatas[dataInd].push(lastData);
+        if (lastDatas[dataInd].length > maxUndos){
+            lastDatas[dataInd] = lastDatas[dataInd].splice(1);
         }
-        blockEditing = data.jsonData[viewName][viewInd].blocks.length - 1;
+        data[dataInd].blockEditing = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1;
         return;
     }
     if (e.key === "w"){ //increment line thickness
-        saveData();
-        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness++;
+        saveData(dataInd);
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineThickness++;
         return;
     }
     if (e.key === "s"){ //decrement line thickness
-        saveData();
-        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness =
+        saveData(dataInd);
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineThickness =
             Math.max(
-                data.jsonData[viewName][viewInd].blocks[blockEditing].outlineThickness - 1,
+                data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineThickness - 1,
                 0
             );
         return;
     }
-    if ((e.key === "d") && !data.blockFinished){ // add curve
-        data.editingMode = "addingCurve";
+    if ((e.key === "d") && !data[dataInd].blockFinished){ // add curve
+        data[dataInd].editingMode = "addingCurve";
         return;
     }
-    if ((e.key === "f") && !data.blockFinished){ // connect to end of block
-        data.editingMode = "finishingBlock";
+    if ((e.key === "f") && !data[dataInd].blockFinished){ // connect to end of block
+        data[dataInd].editingMode = "finishingBlock";
         return;
     }
-    if ((e.key === "k") && (data.jsonData[viewName][viewInd].blocks.length > 1)){ //delete block
-        saveData();
-        data.jsonData[viewName][viewInd].blocks.splice(blockEditing,1);
-        blockEditing = Math.max(blockEditing - 1, 0);
+    if ((e.key === "k") && (data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length > 1)){ //delete block
+        saveData(dataInd);
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.splice(data[dataInd].blockEditing,1);
+        data[dataInd].blockEditing = Math.max(data[dataInd].blockEditing - 1, 0);
         return;
     }
     if (e.key === "o"){ //save
@@ -1348,79 +1432,81 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 });
+
 document.addEventListener("click", (e) => {
-    if (data.addingTapeMeasure){
-        saveData();
-        data.tapeMeasures.push(
-            new MeasuringTape({x: mouse.x, y: mouse.y},data.tapeMeasures.length)
+    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    if (data[dataInd].addingTapeMeasure){
+        saveData(dataInd);
+        data[dataInd].tapeMeasures.push(
+            new MeasuringTape({x: mouse.x, y: mouse.y}, data[dataInd].tapeMeasures.length, dataInd)
         );
-        data.addingTapeMeasure = false;
+        data[dataInd].addingTapeMeasure = false;
         return;
     }
-    for (let i = 0; i < data.tapeMeasures.length; i++){
-        if (data.tapeMeasures[i].checkClick()){
-            saveData();
+    for (let i = 0; i < data[dataInd].tapeMeasures.length; i++){
+        if (data[dataInd].tapeMeasures[i].checkClick()){
+            saveData(dataInd);
             return;
         }
     }
-    if ((data.editingMode === "addingCurve") || (data.editingMode === "finishingBlock")){
-        saveData();
-        data.curveTemp.push(mouse.x);
-        data.curveTemp.push(mouse.y);
-        let connectToLast = data.jsonData[viewName][viewInd].blocks[blockEditing].curves.length > 0;
-        if (data.curveTemp.length == (
+    if ((data[dataInd].editingMode === "addingCurve") || (data[dataInd].editingMode === "finishingBlock")){
+        saveData(dataInd);
+        data[dataInd].curveTemp.push(mouse.x);
+        data[dataInd].curveTemp.push(mouse.y);
+        let connectToLast = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.length > 0;
+        if (data[dataInd].curveTemp.length == (
             connectToLast ?
-                ((data.editingMode === "finishingBlock") ? 4 : 6)
+                ((data[dataInd].editingMode === "finishingBlock") ? 4 : 6)
             :
-                ((data.editingMode === "finishingBlock") ? 6 : 8)
+                ((data[dataInd].editingMode === "finishingBlock") ? 6 : 8)
         )){
             let newCurve;
-            let curves = data.jsonData[viewName][viewInd].blocks[blockEditing].curves;
+            let curves = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves;
             if (connectToLast){
                 newCurve = {
                     x1: curves[curves.length - 1].x4,
                     y1: curves[curves.length - 1].y4,
-                    x2: data.curveTemp[0],
-                    y2: data.curveTemp[1],
-                    x3: data.curveTemp[2],
-                    y3: data.curveTemp[3],
-                    x4: ((data.editingMode === "finishingBlock") ? curves[0].x1 : data.curveTemp[4]),
-                    y4: ((data.editingMode === "finishingBlock") ? curves[0].y1 : data.curveTemp[5]),
+                    x2: data[dataInd].curveTemp[0],
+                    y2: data[dataInd].curveTemp[1],
+                    x3: data[dataInd].curveTemp[2],
+                    y3: data[dataInd].curveTemp[3],
+                    x4: ((data[dataInd].editingMode === "finishingBlock") ? curves[0].x1 : data[dataInd].curveTemp[4]),
+                    y4: ((data[dataInd].editingMode === "finishingBlock") ? curves[0].y1 : data[dataInd].curveTemp[5]),
                 };
             }else{
                 newCurve = {
-                    x1: data.curveTemp[0],
-                    y1: data.curveTemp[1],
-                    x2: data.curveTemp[2],
-                    y2: data.curveTemp[3],
-                    x3: data.curveTemp[4],
-                    y3: data.curveTemp[5],
-                    x4: ((data.editingMode === "finishingBlock") ? curves[0].x1 : data.curveTemp[6]),
-                    y4: ((data.editingMode === "finishingBlock") ? curves[0].y1 : data.curveTemp[7]),
+                    x1: data[dataInd].curveTemp[0],
+                    y1: data[dataInd].curveTemp[1],
+                    x2: data[dataInd].curveTemp[2],
+                    y2: data[dataInd].curveTemp[3],
+                    x3: data[dataInd].curveTemp[4],
+                    y3: data[dataInd].curveTemp[5],
+                    x4: ((data[dataInd].editingMode === "finishingBlock") ? curves[0].x1 : data[dataInd].curveTemp[6]),
+                    y4: ((data[dataInd].editingMode === "finishingBlock") ? curves[0].y1 : data[dataInd].curveTemp[7]),
                 };
             }
             
             curves.push(newCurve);
-            data.curveTemp = [];
+            data[dataInd].curveTemp = [];
 
-            if (data.editingMode === "finishingBlock"){
-                data.blockFinished = true;
+            if (data[dataInd].editingMode === "finishingBlock"){
+                data[dataInd].blockFinished = true;
             }
 
-            data.editingMode = "editingCurve";
+            data[dataInd].editingMode = "editingCurve";
         }
         return;
     }
-    if (data.editingMode === "editingCurve"){
-        saveData();
-        if (data.selectedControlPoint.curveInd != -1){
-            data.selectedControlPoint = {
+    if (data[dataInd].editingMode === "editingCurve"){
+        saveData(dataInd);
+        if (data[dataInd].selectedControlPoint.curveInd != -1){
+            data[dataInd].selectedControlPoint = {
                 curveInd: -1,
                 subcurveID: -1,
             };
             return; //deselect control point when a control point is selected, the mouse is clicked
         }
-        data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve,curveInd) => {
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve,curveInd) => {
             [
                 {x: curve.x1,y: curve.y1},
                 {x: curve.x2,y: curve.y2},
@@ -1428,7 +1514,7 @@ document.addEventListener("click", (e) => {
                 {x: curve.x4,y: curve.y4}
             ].forEach((controlPoint,subcurveID) => {
                 if (getDistance([mouse.x,mouse.y],[controlPoint.x, controlPoint.y]) < 10 / window.devicePixelRatio){
-                    data.selectedControlPoint = {
+                    data[dataInd].selectedControlPoint = {
                         curveInd: curveInd,
                         subcurveID: subcurveID,
                     }
@@ -1437,10 +1523,10 @@ document.addEventListener("click", (e) => {
         });
         return;
     }
-    if (data.editingMode === "selectingSplit"){
+    if (data[dataInd].editingMode === "selectingSplit"){
         let splitInd = -1;
         let curveToSplit;
-        data.jsonData[viewName][viewInd].blocks[blockEditing].curves.forEach((curve, curveInd) => {
+        data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.forEach((curve, curveInd) => {
             if (getDistance(
                 [evalSpline(curve,0.5).x, evalSpline(curve,0.5).y],
                 [mouse.x,mouse.y]
@@ -1450,40 +1536,42 @@ document.addEventListener("click", (e) => {
             }
         });
         if (splitInd != -1){
-            saveData();
-            data.jsonData[viewName][viewInd].blocks[blockEditing].curves.splice(
+            saveData(dataInd);
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves.splice(
                 splitInd, 1,
                 splitCurve(curveToSplit,0,0.5),
                 splitCurve(curveToSplit,0.5,1)
             );
-            data.editingMode = "editingCurve";
+            data[dataInd].editingMode = "editingCurve";
             return;
         }
     }
-    if (data.editingMode === "measuringScale"){
-        saveData();
-        data.measuringPoints.push({x: mouse.x, y: mouse.y});
-        if (data.measuringPoints.length == 2){
-            data.editingMode = "enteringScale";
+    if (data[dataInd].editingMode === "measuringScale"){
+        saveData(dataInd);
+        data[dataInd].measuringPoints.push({x: mouse.x, y: mouse.y});
+        if (data[dataInd].measuringPoints.length == 2){
+            data[dataInd].editingMode = "enteringScale";
         }
         return;
     }
-    if ((data.editingMode === "enteringOrigin") || (data.editingMode === "loadingData")){
-        saveData();
-        data.origin = {...{x: mouse.x, y: mouse.y}};
+    if ((data[dataInd].editingMode === "enteringOrigin") || (data[dataInd].editingMode === "loadingData")){
+        saveData(dataInd);
+        data[dataInd].origin = {...{x: mouse.x, y: mouse.y}};
         scaleData();
         return;
     }
 });
 
-function clampEditingColors(){
-    data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor.forEach((color,ind) => {
-        data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[ind] = clamp(color, [0,0,0,0][ind] , [360,100,100,1][ind]);
-        data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[ind] = Math.round(data.jsonData[viewName][viewInd].blocks[blockEditing].blockColor[ind] * 100) / 100;
+function clampEditingColors(dataInd) {
+    let blockColor = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].blockColor;
+    let outlineColor = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].outlineColor;
+    blockColor.forEach((color,ind) => {
+        blockColor[ind] = clamp(color, [0,0,0,0][ind] , [360,100,100,1][ind]);
+        blockColor[ind] = Math.round(blockColor[ind] * 100) / 100;
     });
-    data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor.forEach((color,ind) => {
-        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[ind] = clamp(color, [0,0,0,0][ind] , [360,100,100,1][ind]);
-        data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[ind] = Math.round(data.jsonData[viewName][viewInd].blocks[blockEditing].outlineColor[ind] * 100) / 100;
+    outlineColor.forEach((color,ind) => {
+        outlineColor[ind] = clamp(color, [0,0,0,0][ind] , [360,100,100,1][ind]);
+        outlineColor[ind] = Math.round(outlineColor[ind] * 100) / 100;
     });
 }
 
@@ -1706,6 +1794,7 @@ function lerpParametrizedCurves(target, points){
     });
     return lerpParametrizedCurves(slicedTarget, lerpedPoints);
 }
+
 function getSurroundingPoints(target, points){
     // get position of each point from its params, and its value from its blocks
     let encodedTarget = {pos: Object.values(target.params), value: target.blocks};
