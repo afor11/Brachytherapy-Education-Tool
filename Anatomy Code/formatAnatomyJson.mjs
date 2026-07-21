@@ -35,7 +35,7 @@ async function formatLoadString() {
 
         try {
             await writeFile(outputFile, parsedData, 'utf8');
-            console.log('Load String Generated');
+            console.log('Anatomy Json formatted');
         }catch (err) {
             console.error(":( " + err);
         }

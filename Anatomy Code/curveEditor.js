@@ -25,7 +25,10 @@ let usingParamSet = false;
 // bottom bit (cervix) consistent (top bit changes with respect to tandem length)
 // thickness of walls is also consistent
 // larger clerance around the tandem/ovoids
-// tip of tandem is 1 cm away from the top of the uterus wall
+// tip of tandem is 1 cm away from the (inside) top of the uterus wall
+
+// Tandem / Ring: do axial view (make consistent with sagittal), fix the following params:
+// anything with angle 90
 
 /*
 x = go to next block
@@ -201,7 +204,7 @@ images.forEach((img, ind) => {
 setInterval(tick,50);
 
 class MeasuringTape {
-    constructor (firstPoint, ID, dataInd){
+    constructor (firstPoint, ID, dataInd) {
         this.points = [firstPoint];
         this.ID = ID;
         this.dataInd = dataInd;
@@ -227,12 +230,12 @@ class MeasuringTape {
                 return true;
             }
         }else{
-            //removeing a point counts as a fultilled click
+            //removing a point counts as a fultilled click
             return true;
         }
         return false;
     }
-    getMeasurement(){
+    getMeasurement() {
         if (this.points.length < 2){return 0;}
         return (
             getDistance(
@@ -244,9 +247,9 @@ class MeasuringTape {
             )
         );
     }
-    getAngle(){
+    getAngle() {
         if (this.points.length < 2){return 0;}
-        if (this.points[0].x == this.points[1].x){
+        if (this.points[0].x == this.points[1].x) {
             return ((this.points[0].y > this.points[1].y) ? 1 : -1) * Math.PI / 2;
         }
         return Math.atan2(
@@ -254,12 +257,12 @@ class MeasuringTape {
             this.points[1].x - this.points[0].x
         );
     }
-    draw(){
-        if (this.points.length == 2){
+    draw() {
+        if (this.points.length == 2) {
             //draw line
             ctx.strokeStyle = "black";
-            ctx.lineWidth = 10 / window.devicePixelRatio;
-            ctx.font = (50 / window.devicePixelRatio) + "px Arial";
+            ctx.lineWidth = 3 / window.devicePixelRatio;
+            ctx.font = (15 / window.devicePixelRatio) + "px Arial";
             ctx.beginPath();
             ctx.moveTo(this.points[0].x,this.points[0].y);
             ctx.lineTo(this.points[1].x,this.points[1].y);
@@ -283,22 +286,22 @@ class MeasuringTape {
                 ctx.strokeText(
                     (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
                     lerp(this.points[0].x,this.points[1].x,0.5),
-                    lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
+                    lerp(this.points[0].y,this.points[1].y,0.5) + (15 / window.devicePixelRatio)
                 );
                 ctx.fillText(
                     (this.getAngle() * 180 / Math.PI).toFixed(3) + "deg",
                     lerp(this.points[0].x,this.points[1].x,0.5),
-                    lerp(this.points[0].y,this.points[1].y,0.5) + (50 / window.devicePixelRatio)
+                    lerp(this.points[0].y,this.points[1].y,0.5) + (15 / window.devicePixelRatio)
                 );
             }
         }
 
         //draw points
         ctx.fillStyle = "black";
-        ctx.lineWidth = 3 / window.devicePixelRatio;
+        ctx.lineWidth = 1 / window.devicePixelRatio;
         this.points.forEach((point) => {
             ctx.beginPath();
-            ctx.arc(point.x,point.y,10 / window.devicePixelRatio, 0, 2 * Math.PI);
+            ctx.arc(point.x,point.y, 5 / window.devicePixelRatio, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
         });
@@ -673,6 +676,11 @@ function tick() {
         y: window.scrollY + (50 / window.devicePixelRatio),
     }
     for (let i = 0; i < data.length; i++) {
+        if (getDataInd() == i) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+            ctx.beginPath();
+            ctx.fillRect(i * (canvas.width / data.length), 0, (canvas.width / data.length), canvas.height);
+        }
         // draw control points
         if (data[i].showControlPoints){
             drawControlPoints(i);
@@ -693,7 +701,7 @@ function tick() {
             ctx.strokeStyle = "white";
             data[i].measuringPoints.forEach((point) => {
                 ctx.beginPath();
-                ctx.arc(point.x, point.y, 10 / window.devicePixelRatio, 0, 7);
+                ctx.arc(point.x, point.y, 5 / window.devicePixelRatio, 0, 7);
                 ctx.fill();
                 ctx.stroke();
             });
@@ -705,7 +713,7 @@ function tick() {
             ctx.fillStyle = "black";
             ctx.strokeStyle = "white";
             ctx.beginPath();
-            ctx.arc(data[i].origin.x, data[i].origin.y, 10 / window.devicePixelRatio, 0, 7);
+            ctx.arc(data[i].origin.x, data[i].origin.y, 5 / window.devicePixelRatio, 0, 7);
             ctx.fill();
             ctx.stroke();
         }
@@ -718,7 +726,7 @@ function tick() {
         // draw the mode overlay
         let drawDefault = true;
         ctx.fillStyle = "black";
-        ctx.font = (50 / window.devicePixelRatio) + "px Arial";
+        ctx.font = (30 / window.devicePixelRatio) + "px Arial";
         if (data[i].editingMode === "enteringScale"){
             ctx.fillText("Distance: " + data[i].measuredDistance + " mm", menuPos.x, menuPos.y);
             drawDefault = false;
@@ -768,26 +776,26 @@ function tick() {
         // draw parameters or adding tape measure
         ctx.fillStyle = "black";
         ctx.strokeStyle = "white";
-        ctx.lineWidth =  10 / window.devicePixelRatio;
-        ctx.font = (30 / window.devicePixelRatio) + "px Arial";
+        ctx.lineWidth =  8 / window.devicePixelRatio;
+        ctx.font = (15 / window.devicePixelRatio) + "px Arial";
         let paramYOffset = 1;
 
         if (data[i].addingTapeMeasure || ((data[i].tapeMeasures.length > 0) && (data[i].tapeMeasures[data[i].tapeMeasures.length - 1].points.length < 2))){
-            ctx.strokeText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
-            ctx.fillText("(adding tape measure)", menuPos.x, menuPos.y + (40 / window.devicePixelRatio));
+            ctx.strokeText("(adding tape measure)", menuPos.x, menuPos.y + (25 / window.devicePixelRatio));
+            ctx.fillText("(adding tape measure)", menuPos.x, menuPos.y + (25 / window.devicePixelRatio));
             paramYOffset = 2;
         }
 
         Object.keys(data[i].params).forEach((key, ind) => {
             ctx.strokeText(
                 key + ": " + data[i].params[key],
-                menuPos.x + (40 / window.devicePixelRatio),
-                menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
+                menuPos.x + (25 / window.devicePixelRatio),
+                menuPos.y + (25 / window.devicePixelRatio) * (ind + paramYOffset)
             );
             ctx.fillText(
                 key + ": " + data[i].params[key],
-                menuPos.x + (40 / window.devicePixelRatio),
-                menuPos.y + (40 / window.devicePixelRatio) * (ind + paramYOffset)
+                menuPos.x + (25 / window.devicePixelRatio),
+                menuPos.y + (25 / window.devicePixelRatio) * (ind + paramYOffset)
             );
         });
 
@@ -798,18 +806,18 @@ function tick() {
                 ctx.strokeText(
                     action,
                     menuPos.x + ((canvas.width / data.length) * 0.99) / window.devicePixelRatio,
-                    menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+                    menuPos.y  + (ind + 1) * (25 / window.devicePixelRatio)
                 );
                 ctx.fillText(
                     action,
                     menuPos.x + ((canvas.width / data.length) * 0.99) / window.devicePixelRatio,
-                    menuPos.y  + (ind + 1) * (40 / window.devicePixelRatio)
+                    menuPos.y  + (ind + 1) * (25 / window.devicePixelRatio)
                 );
             });
             ctx.textAlign = 'left';
         }
 
-        menuPos.x += canvas.width / data.length;
+        menuPos.x += (canvas.width / window.devicePixelRatio) / data.length;
     }
 }
 
@@ -908,7 +916,8 @@ function getValidActions(data){
     return validActions;
 }
 
-// ## update saveData / loadData to work with many views
+let getDataInd = () => Math.min(Math.floor(mouse.x / (canvas.width / data.length)), data.length);
+
 function saveData(dataInd) {
     lastDatas[dataInd].push(cloneObj(data[dataInd]));
     if (lastDatas[dataInd].length > maxUndos){
@@ -942,7 +951,7 @@ function drawControlPoints(dataInd){
     let block = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing];
     ctx.fillStyle = "black";
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 2 / window.devicePixelRatio;
+    ctx.lineWidth = 1 / window.devicePixelRatio;
     block.curves.forEach((curve) => {
         [
             {x: curve.x1,y: curve.y1},
@@ -952,12 +961,12 @@ function drawControlPoints(dataInd){
         ].forEach((controlPoint) => {
             if (data[dataInd].editingMode === "selectingSplit"){
                 ctx.beginPath();
-                ctx.arc(evalSpline(curve,0.5).x,evalSpline(curve,0.5).y,10 / window.devicePixelRatio,0,7);
+                ctx.arc(evalSpline(curve,0.5).x, evalSpline(curve,0.5).y, 5 / window.devicePixelRatio, 0, 7);
                 ctx.fill();
                 ctx.stroke();
             }else{
                 ctx.beginPath();
-                ctx.arc(controlPoint.x,controlPoint.y,10 / window.devicePixelRatio,0,7);
+                ctx.arc(controlPoint.x, controlPoint.y, 5 / window.devicePixelRatio, 0, 7);
                 ctx.fill();
                 ctx.stroke();
             }
@@ -966,7 +975,7 @@ function drawControlPoints(dataInd){
     if (data[dataInd].curveTemp.length > 0){
         for (let i = 0; i < data[dataInd].curveTemp.length; i += 2){
             ctx.beginPath();
-            ctx.arc(data[dataInd].curveTemp[i], data[dataInd].curveTemp[i + 1], 10 / window.devicePixelRatio, 0, 7);
+            ctx.arc(data[dataInd].curveTemp[i], data[dataInd].curveTemp[i + 1], 5 / window.devicePixelRatio, 0, 7);
             ctx.fill();
             ctx.stroke();
         }
@@ -1024,7 +1033,11 @@ function getSaveString() {
             [data[i].measuringPoints[1].x, data[i].measuringPoints[1].y]
         ) / data[i].measuredDistance;
 
-        Object.assign(scaledJson, cloneObj(data[i].jsonData));
+        for (let view of Object.keys(data[i].jsonData)) {
+            if (!Object.hasOwn(scaledJson, view) || (view === viewName[i])) {
+                scaledJson[view] = cloneObj(data[i].jsonData[view]);
+            }
+        }
 
         // scale the control points / outline thickness to be in terms of mm instead of px
         scaledJson[viewName[i]].forEach((point) => {
@@ -1073,7 +1086,7 @@ function cloneObj(obj){
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX + window.scrollX;
     mouse.y = e.clientY + window.scrollY;
-    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    let dataInd = getDataInd();
     if ((data[dataInd].editingMode === "editingCurve") && (data[dataInd].selectedControlPoint.curveInd != -1)){
         let curves = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].curves;
         let curve = curves[data[dataInd].selectedControlPoint.curveInd]; // look at the selected curve
@@ -1093,7 +1106,7 @@ document.addEventListener("mousemove", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    let dataInd = getDataInd();
     if (data[dataInd].editingMode === "enteringName"){
         if ((e.key === "Backspace") && (data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name.length > 0)){
             data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name = data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing].name.slice(0,-1);
@@ -1251,6 +1264,16 @@ document.addEventListener("keydown", (e) => {
         }
     }
     if ((data[dataInd].editingMode === "editingCurve") && data[dataInd].blockFinished){
+        if (e.key === "C"){
+            saveData(dataInd);
+            data[dataInd].copy = cloneObj(data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing]);
+            return;
+        }
+        if (e.key === "V"){
+            saveData(dataInd);
+            data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing] = cloneObj(data[dataInd].copy);
+            return;
+        }
         if (e.key === "a"){
             saveData(dataInd);
             load(getSaveString(), true);
@@ -1434,7 +1457,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("click", (e) => {
-    let dataInd = Math.floor(mouse.x / (canvas.width / data.length));
+    let dataInd = getDataInd();
     if (data[dataInd].addingTapeMeasure){
         saveData(dataInd);
         data[dataInd].tapeMeasures.push(
