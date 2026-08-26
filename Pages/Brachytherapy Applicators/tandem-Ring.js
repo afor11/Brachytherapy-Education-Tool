@@ -58,6 +58,7 @@ export let tandemAndRingPage = new Module({
             anatomyApplicator: "tandem+ring",
             anatomyParams: {
                 ringDiameter: 20,
+                angle: 60,
             }
         }),
     },

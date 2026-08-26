@@ -6,17 +6,17 @@ const images = [document.getElementById("image"), document.getElementById("image
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = ["coronaltandem+ring", "sagittaltandem+ring"]; // viewname cannot have whitespace
+const viewName = ["sagittaltandem+ring", "axialtandem+ring"]; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
 let paramSet = [
     {
         "ringDiameter": 20,
-        "length": 20
+        "length": 20,
+        "angle": 30
     },
     {
         "ringDiameter": 20,
-        "length": 20,
         "angle": 30
     }
 ];
@@ -27,8 +27,7 @@ let usingParamSet = false;
 // larger clerance around the tandem/ovoids
 // tip of tandem is 1 cm away from the (inside) top of the uterus wall
 
-// Tandem / Ring: do axial view (make consistent with sagittal), fix the following params:
-// anything with angle 90
+// Tandem / Ring: do axial view (make consistent with sagittal)
 
 /*
 x = go to next block
