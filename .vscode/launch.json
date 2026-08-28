@@ -11,8 +11,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/Anatomy Code/formatAnatomyJson.mjs",
-            // "program": "${workspaceFolder}/Anatomy Code/generateLoadString.js",
+            //"program": "${workspaceFolder}/Anatomy Code/formatAnatomyJson.mjs",
+            "program": "${workspaceFolder}/Anatomy Code/generateLoadString.js",
             "runtimeExecutable": "/usr/local/bin/node"
         }
     ]

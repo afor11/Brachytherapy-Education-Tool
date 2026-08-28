@@ -1,7 +1,7 @@
 import { AlgebraicEffect, effectHandler } from "./algebraicEffect.js";
 import { page, setPage } from "./main.js";
 import { Button } from './UIclasses/Button.js';
-import { setEqualFont, runFn } from "./utils.js";
+import { setEqualFont, runFn, prettifyName } from "./utils.js";
 import { colorPalette } from "./constants.js";
 
 export let navBar = {};
@@ -27,7 +27,7 @@ export function resetNavBar(moduleData){
                     setPage("modules", moduleName);
                     yield* runFn(moduleData[moduleName].onReload);
                 },
-                label: {text: moduleName, font: "default", color: ((moduleName === module) ? colorPalette.primary : colorPalette.secondary)},
+                label: {text: prettifyName(moduleName), font: "default", color: ((moduleName === module) ? colorPalette.primary : colorPalette.secondary)},
                 outline: {color: colorPalette.accent, thickness: Math.min(canvas.width,canvas.height) * 0.001},
                 cornerRounding: 0
             });

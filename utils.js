@@ -762,3 +762,20 @@ export function resetCanvas(context) {
 export function getPropFromAddress(obj, address) {
     return address.reduce((currObj, path) => currObj[path], obj);
 }
+
+export function prettifyName(name) {
+    const prettyNames = {
+        "single seed":               "Single Seed",
+        "string of seeds":           "String of Seeds",
+        "planar array of seeds":     "Planar Array Of Seeds",
+        "brachytherapy applicators": "Brachytherapy Applicators",
+        "VaginalCylinder":           "Vaginal Cylinder",
+        "tandem+ovoids":             "Tandem + Ovoids",
+        "tandem+ring":               "Tandem + Ring",
+    }
+    if (Object.hasOwn(prettyNames, name)) {
+        return prettyNames[name];
+    }
+
+    return name;
+}

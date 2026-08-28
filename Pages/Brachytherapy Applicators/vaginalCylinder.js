@@ -5,7 +5,7 @@ import { Button } from '../../UIclasses/Button.js';
 import { Dropdown } from '../../UIclasses/Dropdown.js';
 import { Slider } from '../../UIclasses/Slider.js';
 import { Module } from '../../module.js';
-import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover, resetCanvas } from '../../utils.js';
+import { getRegionBound, getRange, referencePointLabel, airKermaLabel, modelDropdown, airKermaSlider, rescaleDropdownButtons, runUntilTrue, setDropdownProps, setEqualFont, multSeedDwellTimeSlider, multSeedDwellTimeLabel, blankDropdown, addDropdownOptions, expandOnHover, resetCanvas, prettifyName } from '../../utils.js';
 import { refreshNavBar, navBar } from "../../navBar.js";
 import { view } from '../../main.js';
 import { NumberInput } from '../../UIclasses/NumberInput.js';
@@ -91,7 +91,7 @@ export let vaginalCylinderPage = new Module({
     },
     dropDowns: {
         graph1Model: modelDropdown([GammaMedHDRPlus, BEBIG_GK60M21, ElektaFlexisource],"graph1",GammaMedHDRPlus),
-        applicatorModel: blankDropdown("VaginalCylinder"),
+        applicatorModel: blankDropdown("Applicator " + prettifyName("VaginalCylinder")),
         applicatorLength: blankDropdown("Length: 30mm"),
         applicatorDiameter: blankDropdown("Diameter: 30mm")
     },
@@ -165,11 +165,11 @@ export let vaginalCylinderPage = new Module({
                 );
 
                 // reset applicator model dropdown
-                module.dropDowns.applicatorModel.button.label = "Applicator: VaginalCylinder";
+                module.dropDowns.applicatorModel.button.label = "Applicator " + prettifyName("VaginalCylinder");
                 yield* addDropdownOptions(
                     module.dropDowns.applicatorModel,
                     ["VaginalCylinder", "tandem+ovoids","tandem+ring"],
-                    (opt) => `${opt}`,
+                    prettifyName,
                     (opt) => {
                         return function* () {
                             (yield new AlgebraicEffect("GET PARENT")).collapseDropdown();

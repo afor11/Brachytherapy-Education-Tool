@@ -6,18 +6,17 @@ const images = [document.getElementById("image"), document.getElementById("image
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = ["sagittaltandem+ring", "axialtandem+ring"]; // viewname cannot have whitespace
+const viewName = ["coronaltandem+ovoids", "coronaltandem+ring"]; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
 let paramSet = [
     {
-        "ringDiameter": 20,
         "length": 20,
-        "angle": 30
+        "ovoidDiameter": 20
     },
     {
         "ringDiameter": 20,
-        "angle": 30
+        "length": 20
     }
 ];
 let usingParamSet = false;
@@ -874,6 +873,9 @@ function getValidActions(data){
     }
     if ((data.editingMode === "editingCurve") && data.blockFinished){
         validActions.push(
+            "C: copy block",
+            "V: paste block",
+            "_: paste most recently copied block (works between views)",
             "a: finish drawing",
             "y: split curve",
             "z: to to last block",
@@ -1078,6 +1080,7 @@ function scaleData(){
         }
     }
 }
+
 function cloneObj(obj){
     return JSON.parse(JSON.stringify(obj));
 }
@@ -1266,11 +1269,52 @@ document.addEventListener("keydown", (e) => {
         if (e.key === "C"){
             saveData(dataInd);
             data[dataInd].copy = cloneObj(data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing]);
+            data[dataInd].copyInd = Math.max(...data.map((viewData) => (viewData.copyInd ?? -1))) + 1;
             return;
         }
         if (e.key === "V"){
             saveData(dataInd);
             data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing] = cloneObj(data[dataInd].copy);
+            return;
+        }
+        if (e.key === "_"){
+            saveData(dataInd);
+            // find view index of most recently copied block
+            let copyIndArr = data.map((viewData) => (viewData.copyInd ?? -1));
+            let copyInd = copyIndArr.indexOf(Math.max(...copyIndArr));
+            if (copyInd > -1) {
+                // unscale block from inital view
+                let block = cloneObj(data[copyInd].copy);
+                let scaleFactor = getDistance(
+                    [data[copyInd].measuringPoints[0].x, data[copyInd].measuringPoints[0].y],
+                    [data[copyInd].measuringPoints[1].x, data[copyInd].measuringPoints[1].y]
+                ) / data[copyInd].measuredDistance;
+
+                block.outlineThickness = block.outlineThickness / scaleFactor;
+                block.curves.forEach((curve) => {
+                    for (let j = 1; j < 5; j++){
+                        curve["x" + j] = (curve["x" + j] - data[copyInd].origin.x) / scaleFactor;
+                        curve["y" + j] = (curve["y" + j] - data[copyInd].origin.y) / scaleFactor;
+                    }
+                });
+
+                // scale block to this view
+                scaleFactor = getDistance(
+                    [data[dataInd].measuringPoints[0].x, data[dataInd].measuringPoints[0].y],
+                    [data[dataInd].measuringPoints[1].x, data[dataInd].measuringPoints[1].y]
+                ) / data[dataInd].measuredDistance;
+                
+                block.outlineThickness = block.outlineThickness * scaleFactor;
+                block.curves.forEach((curve) => {
+                    for (let i = 1; i < 5; i++){
+                        curve["x" + i] = (curve["x" + i] * scaleFactor) + data[dataInd].origin.x;
+                        curve["y" + i] = (curve["y" + i] * scaleFactor) + data[dataInd].origin.y;
+                    }
+                });
+
+                // copy block over
+                data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing] = block;
+            }
             return;
         }
         if (e.key === "a"){
