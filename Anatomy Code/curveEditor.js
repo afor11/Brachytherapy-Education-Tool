@@ -830,7 +830,10 @@ function getValidActions(data){
         "v: toggle showing curves",
         "b: toggle showing picture",
         "m: new measuring tape",
-        "`: toggle overlay"
+        "`: toggle overlay",
+        "z: to to last block",
+        "x: go to next block",
+        "C: copy block",
     );
     if ((data.editingMode === "adjustingFillColor") || (data.editingMode === "adjustingOutlineColor")){
         if (data.editingMode === "adjustingFillColor"){
@@ -873,13 +876,10 @@ function getValidActions(data){
     }
     if ((data.editingMode === "editingCurve") && data.blockFinished){
         validActions.push(
-            "C: copy block",
             "V: paste block",
             "_: paste most recently copied block (works between views)",
             "a: finish drawing",
             "y: split curve",
-            "z: to to last block",
-            "x: go to next block",
             "t/T: vertically stretch block",
             "g/G: vertically compress block",
             "h/H: horizontally stretch block",
@@ -1192,6 +1192,17 @@ document.addEventListener("keydown", (e) => {
         data[dataInd].showPicture = !data[dataInd].showPicture;
         return;
     }
+    if (e.key === "z"){
+        data[dataInd].blockEditing = Math.max(data[dataInd].blockEditing - 1, 0);
+    }
+    if (e.key === "x"){
+        data[dataInd].blockEditing = Math.min(data[dataInd].blockEditing + 1, data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1);
+    }
+    if (e.key === "C"){
+        data[dataInd].copy = cloneObj(data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing]);
+        data[dataInd].copyInd = Math.max(...data.map((viewData) => (viewData.copyInd ?? -1))) + 1;
+        return;
+    }
     if ((data[dataInd].editingMode === "enteringOrigin") || (data[dataInd].editingMode === "loadingData")){
         if (e.key === "Enter"){
             if (data[dataInd].editingMode === "enteringOrigin"){
@@ -1266,12 +1277,6 @@ document.addEventListener("keydown", (e) => {
         }
     }
     if ((data[dataInd].editingMode === "editingCurve") && data[dataInd].blockFinished){
-        if (e.key === "C"){
-            saveData(dataInd);
-            data[dataInd].copy = cloneObj(data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing]);
-            data[dataInd].copyInd = Math.max(...data.map((viewData) => (viewData.copyInd ?? -1))) + 1;
-            return;
-        }
         if (e.key === "V"){
             saveData(dataInd);
             data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks[data[dataInd].blockEditing] = cloneObj(data[dataInd].copy);
@@ -1325,14 +1330,6 @@ document.addEventListener("keydown", (e) => {
         if (e.key === "y"){
             data[dataInd].editingMode = "selectingSplit";
             return;
-        }
-        if (e.key === "z"){
-            saveData(dataInd);
-            data[dataInd].blockEditing = Math.max(data[dataInd].blockEditing - 1, 0);
-        }
-        if (e.key === "x"){
-            saveData(dataInd);
-            data[dataInd].blockEditing = Math.min(data[dataInd].blockEditing + 1, data[dataInd].jsonData[viewName[dataInd]][data[dataInd].viewInd].blocks.length - 1);
         }
         if ("tTfFgGhH".includes(e.key)){
             saveData(dataInd);
