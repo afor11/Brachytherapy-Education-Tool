@@ -58,6 +58,7 @@ export let tandemAndOvoidsPage = new Module({
             anatomyApplicator: "tandem+ovoids",
             anatomyParams: {
                 ovoidDiameter: 20,
+                angle: 60
             },
             zSlice: -1
         })
