@@ -6,17 +6,19 @@ const images = [document.getElementById("image"), document.getElementById("image
 // ## to change the image being replicated, change the src of the image element
 // ## in the html, and these params
 
-const viewName = ["coronaltandem+ovoids", "coronaltandem+ring"]; // viewname cannot have whitespace
+const viewName = ["sagittaltandem+ovoids", "sagittaltandem+ring"]; // viewname cannot have whitespace
 const maxUndos = 100;
 // ORDER MATTERS :(
 let paramSet = [
     {
-        "length": 20,
-        "ovoidDiameter": 20
+       "length": 20,
+        "ovoidDiameter": 20,
+        "angle": 30
     },
     {
         "ringDiameter": 20,
-        "length": 20
+        "length": 20,
+        "angle": 30
     }
 ];
 let usingParamSet = false;
